@@ -96,3 +96,14 @@ export interface Feedback {
     scriptId: string;
     managerId: string;
 }
+
+export interface Token {
+    id: string;
+    channelId: string;
+    openId: string;
+    accessToken: string;
+    refreshToken: string;
+    expiresIn: number;       // Thời gian hết hạn của Access Token (giây)
+    refreshExpiresIn: number;// Thời gian hết hạn của Refresh Token (giây)
+    updatedAt: Date;         // Thời điểm cập nhật token lần cuối
+}

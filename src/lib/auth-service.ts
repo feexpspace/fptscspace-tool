@@ -31,6 +31,7 @@ export const registerUser = async (email: string, pass: string, name: string, ro
         };
 
         await setDoc(doc(db, "users", firebaseUser.uid), userData);
+        await signOut(auth);
         return { user: userData, error: null };
     } catch (error: any) {
         return { user: null, error: error.message };
