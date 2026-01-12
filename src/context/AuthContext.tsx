@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { doc, getDoc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, Unsubscribe } from 'firebase/firestore'; // Import thêm Unsubscribe type
 import { auth, db } from '@/lib/firebase';
 import { User } from '@/types/index';
 import { getValidTikTokToken } from '@/app/actions/tiktok-token';
@@ -30,51 +30,79 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [loading, setLoading] = useState(true);
 
     const fetchTikTokToken = async (userId: string) => {
-        const token = await getValidTikTokToken(userId);
-        if (token) {
-            setTiktokToken(token);
-            console.log("TikTok Access Token synced to Context");
+        try {
+            const token = await getValidTikTokToken(userId);
+            if (token) {
+                setTiktokToken(token);
+                console.log("TikTok Access Token synced");
+            }
+        } catch (error) {
+            console.error("Error fetching TikTok token:", error);
         }
     };
 
     useEffect(() => {
+        // Biến để giữ hàm hủy đăng ký Firestore (nếu có)
+        let unsubscribeFirestore: Unsubscribe | null = null;
+
         const unsubscribeAuth = onAuthStateChanged(auth, (fUser) => {
             setFirebaseUser(fUser);
 
+            // 1. Luôn hủy lắng nghe Firestore cũ trước khi xử lý user mới (tránh memory leak)
+            if (unsubscribeFirestore) {
+                (unsubscribeFirestore as Unsubscribe)();
+                unsubscribeFirestore = null;
+            }
+
             if (fUser) {
-                setLoading(true);
-                // 1. Lắng nghe thông tin User từ Firestore
-                const unsubscribeFirestore = onSnapshot(doc(db, "users", fUser.uid), async (docSnapshot) => {
-                    if (docSnapshot.exists()) {
-                        const userData = docSnapshot.data() as User;
-                        setUser(userData);
+                // Có user -> Bắt đầu loading và lắng nghe Firestore
+                setLoading(true); // Ở đây OK vì nó nằm trong callback bất đồng bộ của Auth
 
-                        // 2. KHI ĐÃ CÓ USER -> GỌI SERVER ACTION LẤY TOKEN
-                        // Việc này chạy ngầm và update state sau khi hoàn tất
-                        await fetchTikTokToken(userData.id);
-                    } else {
+                unsubscribeFirestore = onSnapshot(
+                    doc(db, "users", fUser.uid),
+                    async (docSnapshot) => {
+                        if (docSnapshot.exists()) {
+                            const userData = docSnapshot.data() as User;
+                            setUser(userData);
+                            // Gọi action lấy token
+                            fetchTikTokToken(userData.id);
+                        } else {
+                            // User có trong Auth nhưng chưa có trong Firestore (hoặc bị xóa)
+                            setUser(null);
+                            setTiktokToken(null);
+                        }
+                        // Dữ liệu đã về -> Tắt loading
+                        setLoading(false);
+                    },
+                    (error) => {
+                        console.error("Firestore error:", error);
+                        // Nếu lỗi permission (do logout nhanh), reset data
                         setUser(null);
-                        setTiktokToken(null);
+                        setLoading(false);
                     }
-                    setLoading(false);
-                });
-
-                return () => unsubscribeFirestore();
+                );
             } else {
+                // Không có user (Logout)
                 setUser(null);
                 setTiktokToken(null);
                 setLoading(false);
             }
         });
 
-        return () => unsubscribeAuth();
-    }, []);
+        // Cleanup function của useEffect: Chạy khi component unmount
+        return () => {
+            unsubscribeAuth(); // Ngắt auth listener
+            if (unsubscribeFirestore) {
+                (unsubscribeFirestore as Unsubscribe)(); // Ngắt firestore listener nếu đang chạy
+            }
+        };
+    }, []); // Chỉ chạy 1 lần khi mount
 
     return (
         <AuthContext.Provider value={{
             user,
             firebaseUser,
-            tiktokToken, // Expose token ra ngoài
+            tiktokToken,
             loading,
             refreshAccessToken: async () => {
                 if (user) await fetchTikTokToken(user.id);
@@ -85,5 +113,4 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     );
 };
 
-// Hook để sử dụng AuthContext nhanh
 export const useAuth = () => useContext(AuthContext);

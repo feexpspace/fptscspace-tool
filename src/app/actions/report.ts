@@ -5,7 +5,7 @@
 import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs, doc, setDoc, Timestamp, orderBy } from "firebase/firestore";
 import { Video } from "@/types";
-import { getValidTikTokToken } from "./tiktok-token";
+import { getAccessToken, getValidTikTokToken } from "./tiktok-token";
 
 /**
  * Hàm gọi API TikTok lấy TOÀN BỘ video và lưu vào Firestore
@@ -25,7 +25,7 @@ interface TikTokApiResponse {
 
 export async function syncTikTokVideos(userId: string, channelId: string) {
     try {
-        const accessToken = await getValidTikTokToken(userId);
+        const accessToken = await getAccessToken(channelId);
         if (!accessToken) throw new Error("Không lấy được Access Token");
 
         let cursor: number | null = 0;
@@ -35,7 +35,7 @@ export async function syncTikTokVideos(userId: string, channelId: string) {
         // TikTok API endpoint
         const url = "https://open.tiktokapis.com/v2/video/list/";
         // Các trường cần lấy: ID, Ngày tạo, Ảnh bìa, Tiêu đề, Link, Thống kê
-        const fields = "id,create_time,cover_image_url,title,share_url,like_count,comment_count,share_count,view_count";
+        const fields = "id,create_time,cover_image_url,video_description,title,duration,share_url,like_count,comment_count,share_count,view_count";
 
         while (hasMore) {
             const response: Response = await fetch(`${url}?fields=${fields}`, {
@@ -65,15 +65,14 @@ export async function syncTikTokVideos(userId: string, channelId: string) {
                 // TikTok trả về create_time là Unix Timestamp (giây) -> Convert sang Date
                 const createTime = new Date(v.create_time * 1000);
 
-                const videoData: Video = {
-                    id: v.id,
+                const videoData: Omit<Video, 'id'> = {
                     videoId: v.id,
                     createTime: createTime,
                     coverImage: v.cover_image_url,
                     title: v.title || "No Title",
-                    description: v.title || "",
+                    description: v.video_description || "",
                     link: v.share_url,
-                    duration: 0, // API list cơ bản không trả duration
+                    duration: v.duration || 0, // API list cơ bản không trả duration
                     channelId: channelId,
                     channelUsername: "", // Có thể update sau nếu cần
                     channelDisplayName: "",
@@ -135,6 +134,7 @@ export async function getVideosFromDB(channelId: string, year: number, month: nu
         const videos = snapshot.docs.map(doc => {
             const data = doc.data();
             return {
+                id: doc.id,
                 ...data,
                 // Convert Timestamp về Date object để Client Component dùng được
                 createTime: data.createTime.toDate()

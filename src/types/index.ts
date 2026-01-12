@@ -68,6 +68,8 @@ export interface Video {
         view: number;
     };
     channelId: string;
+    editorId?: string;
+    editorName?: string;
 }
 
 /**
@@ -106,4 +108,10 @@ export interface Token {
     expiresIn: number;       // Thời gian hết hạn của Access Token (giây)
     refreshExpiresIn: number;// Thời gian hết hạn của Refresh Token (giây)
     updatedAt: Date;         // Thời điểm cập nhật token lần cuối
+}
+
+export interface Editor {
+    id: string;
+    name: string;
+    email?: string;
 }
