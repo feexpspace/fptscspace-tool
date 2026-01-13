@@ -25,9 +25,19 @@ export default function LoginPage() {
     const router = useRouter();
     const { user, loading } = useAuth();
 
-    useEffect(() => {
-        if (!loading && user) {
+    const navigateBasedOnRole = (role: string) => {
+        if (role === 'member') {
+            router.push("/teams");
+        } else {
+            // Manager hoặc Admin về trang Dashboard chính
             router.push("/");
+        }
+    };
+
+    useEffect(() => {
+        // Tự động chuyển trang nếu đã login và load xong user profile
+        if (!loading && user) {
+            navigateBasedOnRole(user.role);
         }
     }, [user, loading, router]);
 

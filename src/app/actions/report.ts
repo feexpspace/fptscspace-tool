@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // src/app/actions/report.ts
-'use server'
+'use client'
 
 import { db } from "@/lib/firebase";
-import { collection, query, where, getDocs, doc, setDoc, Timestamp, orderBy } from "firebase/firestore";
-import { Video } from "@/types";
+import { collection, query, where, getDocs, doc, setDoc, Timestamp, orderBy, getDoc } from "firebase/firestore";
+import { Statistic, Video } from "@/types";
 import { getAccessToken, getValidTikTokToken } from "./tiktok-token";
 
 /**
@@ -28,9 +28,33 @@ export async function syncTikTokVideos(userId: string, channelId: string) {
         const accessToken = await getAccessToken(channelId);
         if (!accessToken) throw new Error("Không lấy được Access Token");
 
+        const userDocRef = doc(db, "users", userId);
+        const userDoc = await getDoc(userDocRef);
+        if (!userDoc.exists()) {
+            throw new Error("Không tìm thấy User trong Database");
+        }
+
+        const userData = userDoc.data();
+
+        const channelDocRef = doc(db, "channels", channelId);
+        const channelDoc = await getDoc(channelDocRef);
+        if (!channelDoc.exists()) {
+            throw new Error("Không tìm thấy Channel trong Database");
+        }
+
+        const channelData = channelDoc.data();
+
+        // Lấy dữ liệu định danh từ DB
+        const ownerName = userData.name || "Unknown User";
+        const currentDisplayName = userData.channelName || userData.name || "Unknown Channel";
+        const currentFollowers = Number(userData.followers) || 0;
+
         let cursor: number | null = 0;
         let hasMore = true;
         let totalSynced = 0;
+
+        let aggTotalViews = 0;
+        let aggTotalInteractions = 0;
 
         // TikTok API endpoint
         const url = "https://open.tiktokapis.com/v2/video/list/";
@@ -64,6 +88,14 @@ export async function syncTikTokVideos(userId: string, channelId: string) {
             await Promise.all(videos.map(async (v: any) => {
                 // TikTok trả về create_time là Unix Timestamp (giây) -> Convert sang Date
                 const createTime = new Date(v.create_time * 1000);
+
+                const viewCount = Number(v.view_count) || 0;
+                const likeCount = Number(v.like_count) || 0;
+                const commentCount = Number(v.comment_count) || 0;
+                const shareCount = Number(v.share_count) || 0;
+
+                aggTotalViews += viewCount;
+                aggTotalInteractions += (likeCount + commentCount + shareCount);
 
                 const videoData: Omit<Video, 'id'> = {
                     videoId: v.id,
@@ -103,6 +135,37 @@ export async function syncTikTokVideos(userId: string, channelId: string) {
                 break;
             }
         }
+        const today = new Date();
+        const dateId = today.toISOString().split('T')[0];
+        const statId = `${channelId}_${dateId}`;
+
+        const statisticData: Statistic = {
+            id: statId,
+            channelId: channelId,
+            userId: userId, // Link với User ID
+            channelUsername: channelData.username || "",
+            channelOwnerName: ownerName,
+            date: today,
+            followerCount: channelData.follower || 0, // Lấy từ DB Channel
+            videoCount: totalSynced,         // Tổng video quét được từ API
+            totalViews: aggTotalViews,       // Tổng view tính toán
+            totalInteractions: aggTotalInteractions // Tổng tương tác tính toán
+        };
+
+        // Lưu vào collection channel_statistics
+        await setDoc(doc(db, "statistics", statId), {
+            ...statisticData,
+            date: Timestamp.fromDate(today)
+        }, { merge: true });
+
+        // --- BƯỚC 4: Cập nhật ngược lại User Profile ---
+        // Chỉ cập nhật các chỉ số tính toán được (View, Video Count, Last Synced)
+        // Không cập nhật Followers vì không gọi API lấy mới, tránh ghi đè dữ liệu cũ
+        await setDoc(userDocRef, {
+            views: aggTotalViews,
+            videosCount: totalSynced,
+            lastSyncedAt: Timestamp.fromDate(new Date())
+        }, { merge: true });
 
         return { success: true, count: totalSynced };
 

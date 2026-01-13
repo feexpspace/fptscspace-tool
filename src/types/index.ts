@@ -24,6 +24,7 @@ export interface Team {
     managerId: string;
     managerEmail: string;
     managerName: string;
+    members: string[];
 }
 
 /**
@@ -114,4 +115,17 @@ export interface Editor {
     id: string;
     name: string;
     email?: string;
+}
+
+export interface Statistic {
+    id: string;
+    channelId: string;
+    userId: string;
+    channelUsername: string;
+    channelOwnerName: string;
+    date: Date;
+    followerCount: number;
+    videoCount: number;
+    totalViews: number;
+    totalInteractions: number;
 }

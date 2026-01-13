@@ -324,9 +324,7 @@ export default function ReportsPage() {
                                                             />
                                                         </div>
                                                     )}
-                                                    <span className="line-clamp-2 max-w-md font-medium text-zinc-700 dark:text-zinc-300" title={video.title}>
-                                                        {video.title}
-                                                    </span>
+                                                    <ExpandableVideoTitle title={video.title} />
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 text-center">
@@ -353,7 +351,7 @@ export default function ReportsPage() {
                                                             !video.editorId && "text-zinc-400 italic" // Style chữ nhạt nếu chưa chọn
                                                         )}
                                                     >
-                                                        <option value="">-- Chọn Editor --</option>
+                                                        <option value="">Bạn</option>
                                                         {editors.map(editor => (
                                                             <option key={editor.id} value={editor.id} className="text-zinc-900 dark:text-zinc-100 not-italic">
                                                                 {editor.name}
@@ -385,6 +383,37 @@ export default function ReportsPage() {
                     )}
                 </div>
             </main>
+        </div>
+    );
+}
+
+function ExpandableVideoTitle({ title }: { title: string }) {
+    const [isExpanded, setIsExpanded] = useState(false);
+
+    // Chỉ hiện nút "Xem thêm" nếu tiêu đề dài hơn 60 ký tự
+    const isLongText = title.length > 60;
+
+    return (
+        <div className="flex flex-col items-start">
+            <span
+                className={cn(
+                    "font-medium text-zinc-700 dark:text-zinc-300 transition-all break-words max-w-md",
+                    !isExpanded && isLongText ? "line-clamp-2" : "" // Nếu chưa mở rộng thì giới hạn 2 dòng
+                )}
+                title={title}
+            >
+                {title}
+            </span>
+
+            {isLongText && (
+                <button
+                    type="button"
+                    onClick={() => setIsExpanded(!isExpanded)}
+                    className="mt-1 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline focus:outline-none"
+                >
+                    {isExpanded ? "Ẩn bớt" : "Xem thêm"}
+                </button>
+            )}
         </div>
     );
 }

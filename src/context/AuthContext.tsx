@@ -4,7 +4,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { doc, onSnapshot, Unsubscribe } from 'firebase/firestore'; // Import thêm Unsubscribe type
 import { auth, db } from '@/lib/firebase';
-import { User } from '@/types/index';
+import { User, UserRole } from '@/types/index';
 import { getValidTikTokToken } from '@/app/actions/tiktok-token';
 
 interface AuthContextType {
@@ -13,6 +13,10 @@ interface AuthContextType {
     tiktokToken: string | null;
     loading: boolean;
     refreshAccessToken: () => Promise<void>;
+    role: UserRole | null;
+    isAdmin: boolean;
+    isManager: boolean;
+    isMember: boolean;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -21,6 +25,10 @@ const AuthContext = createContext<AuthContextType>({
     tiktokToken: null,
     loading: true,
     refreshAccessToken: async () => { },
+    role: null,
+    isAdmin: false,
+    isManager: false,
+    isMember: false,
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -98,6 +106,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         };
     }, []); // Chỉ chạy 1 lần khi mount
 
+    const role = user?.role || null;
+    const isAdmin = role === 'admin';
+    const isManager = role === 'manager';
+    const isMember = role === 'member';
+
     return (
         <AuthContext.Provider value={{
             user,
@@ -106,7 +119,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             loading,
             refreshAccessToken: async () => {
                 if (user) await fetchTikTokToken(user.id);
-            }
+            },
+            role,
+            isAdmin,
+            isManager,
+            isMember
         }}>
             {!loading && children}
         </AuthContext.Provider>
