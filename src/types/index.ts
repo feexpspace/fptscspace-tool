@@ -123,7 +123,7 @@ export interface Statistic {
     userId: string;
     channelUsername: string;
     channelOwnerName: string;
-    date: Date;
+    updatedAt: Date;
     followerCount: number;
     videoCount: number;
     totalViews: number;

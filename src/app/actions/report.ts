@@ -1,15 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // src/app/actions/report.ts
-'use client'
+'use server'
 
-import { db } from "@/lib/firebase";
-import { collection, query, where, getDocs, doc, setDoc, Timestamp, orderBy, getDoc } from "firebase/firestore";
-import { Statistic, Video } from "@/types";
-import { getAccessToken, getValidTikTokToken } from "./tiktok-token";
-
-/**
- * Hàm gọi API TikTok lấy TOÀN BỘ video và lưu vào Firestore
- */
+import { adminDb } from "@/lib/firebase-admin"; // Dùng Admin SDK
+import { Timestamp } from "firebase-admin/firestore"; // Timestamp của Admin SDK
+import { MonthlyStatistic, Statistic, Video } from "@/types";
+import { getAccessToken } from "./tiktok-token";
 
 interface TikTokApiResponse {
     data: {
@@ -23,42 +19,46 @@ interface TikTokApiResponse {
     };
 }
 
+function getMonthKey(date: Date): string {
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1; // getMonth() trả về 0-11
+    return `${year}-${month.toString().padStart(2, '0')}`;
+}
+
 export async function syncTikTokVideos(userId: string, channelId: string) {
     try {
         const accessToken = await getAccessToken(channelId);
         if (!accessToken) throw new Error("Không lấy được Access Token");
 
-        const userDocRef = doc(db, "users", userId);
-        const userDoc = await getDoc(userDocRef);
-        if (!userDoc.exists()) {
-            throw new Error("Không tìm thấy User trong Database");
-        }
-
+        // 1. Lấy thông tin User
+        const userDocRef = adminDb.collection("users").doc(userId);
+        const userDoc = await userDocRef.get();
+        if (!userDoc.exists) throw new Error("Không tìm thấy User trong Database");
         const userData = userDoc.data();
 
-        const channelDocRef = doc(db, "channels", channelId);
-        const channelDoc = await getDoc(channelDocRef);
-        if (!channelDoc.exists()) {
-            throw new Error("Không tìm thấy Channel trong Database");
-        }
-
+        // 2. Lấy thông tin Channel
+        const channelDoc = await adminDb.collection("channels").doc(channelId).get();
+        if (!channelDoc.exists) throw new Error("Không tìm thấy Channel trong Database");
         const channelData = channelDoc.data();
 
-        // Lấy dữ liệu định danh từ DB
-        const ownerName = userData.name || "Unknown User";
-        const currentDisplayName = userData.channelName || userData.name || "Unknown Channel";
-        const currentFollowers = Number(userData.followers) || 0;
+        const ownerName = userData?.name || "Unknown User";
+        const currentFollowers = channelData?.follower || 0;
 
         let cursor: number | null = 0;
         let hasMore = true;
         let totalSynced = 0;
-
         let aggTotalViews = 0;
         let aggTotalInteractions = 0;
 
-        // TikTok API endpoint
+        const monthlyBuckets = new Map<string, {
+            newVideoCount: number;
+            newViews: number;
+            newInteractions: number;
+        }>();
+
+        let earliestDate: Date | null = null;
+
         const url = "https://open.tiktokapis.com/v2/video/list/";
-        // Các trường cần lấy: ID, Ngày tạo, Ảnh bìa, Tiêu đề, Link, Thống kê
         const fields = "id,create_time,cover_image_url,video_description,title,duration,share_url,like_count,comment_count,share_count,view_count";
 
         while (hasMore) {
@@ -69,7 +69,7 @@ export async function syncTikTokVideos(userId: string, channelId: string) {
                     "Content-Type": "application/json"
                 },
                 body: JSON.stringify({
-                    max_count: 20, // TikTok cho tối đa 20 video mỗi lần gọi
+                    max_count: 20,
                     cursor: cursor
                 })
             });
@@ -83,19 +83,35 @@ export async function syncTikTokVideos(userId: string, channelId: string) {
 
             const videos = res.data.videos || [];
 
-            // Lưu danh sách video vào Firestore
-            // Sử dụng Promise.all để lưu song song cho nhanh
-            await Promise.all(videos.map(async (v: any) => {
-                // TikTok trả về create_time là Unix Timestamp (giây) -> Convert sang Date
+            // --- TỐI ƯU HÓA: KHÔNG CẦN Promise.all Ở ĐÂY ---
+            const batch = adminDb.batch();
+
+            for (const v of videos) {
                 const createTime = new Date(v.create_time * 1000);
+
+                if (!earliestDate || createTime < earliestDate) {
+                    earliestDate = createTime;
+                }
 
                 const viewCount = Number(v.view_count) || 0;
                 const likeCount = Number(v.like_count) || 0;
                 const commentCount = Number(v.comment_count) || 0;
                 const shareCount = Number(v.share_count) || 0;
+                const interactions = likeCount + commentCount + shareCount;
 
+                // Cộng dồn chỉ số tổng
                 aggTotalViews += viewCount;
-                aggTotalInteractions += (likeCount + commentCount + shareCount);
+                aggTotalInteractions += interactions;
+
+                const monthKey = createTime.toISOString().slice(0, 7); // "YYYY-MM"
+
+                if (!monthlyBuckets.has(monthKey)) {
+                    monthlyBuckets.set(monthKey, { newVideoCount: 0, newViews: 0, newInteractions: 0 });
+                }
+                const bucket = monthlyBuckets.get(monthKey)!;
+                bucket.newVideoCount += 1;
+                bucket.newViews += viewCount;
+                bucket.newInteractions += interactions;
 
                 const videoData: Omit<Video, 'id'> = {
                     videoId: v.id,
@@ -104,68 +120,110 @@ export async function syncTikTokVideos(userId: string, channelId: string) {
                     title: v.title || "No Title",
                     description: v.video_description || "",
                     link: v.share_url,
-                    duration: v.duration || 0, // API list cơ bản không trả duration
+                    duration: v.duration || 0,
                     channelId: channelId,
-                    channelUsername: "", // Có thể update sau nếu cần
+                    channelUsername: "",
                     channelDisplayName: "",
                     stats: {
-                        like: v.like_count || 0,
-                        comment: v.comment_count || 0,
-                        share: v.share_count || 0,
-                        view: v.view_count || 0
+                        like: likeCount,
+                        comment: commentCount,
+                        share: shareCount,
+                        view: viewCount
                     }
                 };
 
-                // Lưu vào collection 'videos', dùng videoId làm Document ID để tránh trùng lặp
-                await setDoc(doc(db, "videos", v.id), {
+                const videoRef = adminDb.collection("videos").doc(v.id);
+
+                // batch.set là thao tác đồng bộ (queueing), không cần await
+                batch.set(videoRef, {
                     ...videoData,
-                    // Lưu timestamp firestore để dễ query
                     createTime: Timestamp.fromDate(createTime)
                 }, { merge: true });
-            }));
+            }
+
+            // Ghi batch xuống DB
+            await batch.commit();
 
             totalSynced += videos.length;
-
-            // Kiểm tra phân trang
             hasMore = res.data.has_more;
             cursor = res.data.cursor;
 
-            // An toàn: Nếu cursor trả về không hợp lệ thì dừng
             if (!hasMore || typeof cursor !== 'number') {
                 break;
             }
         }
+
+        // --- GHI THỐNG KÊ (Statistic) ---
         const today = new Date();
-        const dateId = today.toISOString().split('T')[0];
-        const statId = `${channelId}_${dateId}`;
+        const statId = `${channelId}_${today.toISOString().split('T')[0]}`;
 
         const statisticData: Statistic = {
             id: statId,
             channelId: channelId,
-            userId: userId, // Link với User ID
-            channelUsername: channelData.username || "",
+            userId: userId,
+            channelUsername: channelData?.username || "",
             channelOwnerName: ownerName,
-            date: today,
-            followerCount: channelData.follower || 0, // Lấy từ DB Channel
-            videoCount: totalSynced,         // Tổng video quét được từ API
-            totalViews: aggTotalViews,       // Tổng view tính toán
-            totalInteractions: aggTotalInteractions // Tổng tương tác tính toán
+            updatedAt: today,
+            followerCount: channelData?.follower || 0,
+            videoCount: totalSynced,
+            totalViews: aggTotalViews,
+            totalInteractions: aggTotalInteractions
         };
 
-        // Lưu vào collection channel_statistics
-        await setDoc(doc(db, "statistics", statId), {
+        await adminDb.collection("statistics").doc(statId).set({
             ...statisticData,
-            date: Timestamp.fromDate(today)
+            updatedAt: Timestamp.fromDate(today)
         }, { merge: true });
 
-        // --- BƯỚC 4: Cập nhật ngược lại User Profile ---
-        // Chỉ cập nhật các chỉ số tính toán được (View, Video Count, Last Synced)
-        // Không cập nhật Followers vì không gọi API lấy mới, tránh ghi đè dữ liệu cũ
-        await setDoc(userDocRef, {
-            views: aggTotalViews,
-            videosCount: totalSynced,
-            lastSyncedAt: Timestamp.fromDate(new Date())
-        }, { merge: true });
+        if (earliestDate) {
+            const monthlyBatch = adminDb.batch();
+
+            // Bắt đầu từ tháng của video cũ nhất
+            const currentDateIterator = new Date(earliestDate.getFullYear(), earliestDate.getMonth(), 1);
+            const now = new Date();
+
+            while (currentDateIterator <= now) {
+                const monthKey = getMonthKey(currentDateIterator);
+
+                // Lấy dữ liệu bucket của tháng đó
+                const bucket = monthlyBuckets.get(monthKey);
+
+                // --- THAY ĐỔI: KHÔNG CỘNG DỒN NỮA ---
+                // Chỉ lấy số liệu của bucket tháng này, nếu không có video thì là 0
+                const monthVideoCount = bucket ? bucket.newVideoCount : 0;
+                const monthViews = bucket ? bucket.newViews : 0;
+                const monthInteractions = bucket ? bucket.newInteractions : 0;
+
+                const monthlyId = `${channelId}_${monthKey}`;
+                const monthlyRef = adminDb.collection("monthly_statistics").doc(monthlyId);
+
+                // Logic bảo toàn Follower cũ vẫn giữ nguyên (vì Follower không phải là tổng của video)
+                const monthlySnap = await monthlyRef.get();
+
+                const baseMonthlyData = {
+                    id: monthlyId,
+                    channelId,
+                    userId,
+                    month: monthKey,
+                    videoCount: monthVideoCount,       // Số video TẠO TRONG tháng này
+                    totalViews: monthViews,            // Tổng view của các video TẠO TRONG tháng này
+                    totalInteractions: monthInteractions // Tổng tương tác của các video TẠO TRONG tháng này
+                };
+
+                if (monthlySnap.exists) {
+                    monthlyBatch.set(monthlyRef, baseMonthlyData, { merge: true });
+                } else {
+                    monthlyBatch.set(monthlyRef, {
+                        ...baseMonthlyData,
+                        followerCount: currentFollowers // Khởi tạo nếu chưa có
+                    }, { merge: true });
+                }
+
+                currentDateIterator.setMonth(currentDateIterator.getMonth() + 1);
+            }
+
+            await monthlyBatch.commit();
+        }
 
         return { success: true, count: totalSynced };
 
@@ -176,31 +234,28 @@ export async function syncTikTokVideos(userId: string, channelId: string) {
 }
 
 /**
- * Hàm lấy video từ Firestore theo Năm và Tháng
+ * Hàm lấy video từ Firestore (Cũng phải dùng Admin SDK vì file này là 'use server')
  */
-export async function getVideosFromDB(channelId: string, year: number, month: number) { // month: 1-12
+export async function getVideosFromDB(channelId: string, year: number, month: number) {
     try {
         const startDate = new Date(year, month - 1, 1);
         const endDate = new Date(year, month, 0, 23, 59, 59);
 
-        const videosRef = collection(db, "videos");
-        const q = query(
-            videosRef,
-            where("channelId", "==", channelId),
-            where("createTime", ">=", Timestamp.fromDate(startDate)),
-            where("createTime", "<=", Timestamp.fromDate(endDate)),
-            orderBy("createTime", "desc")
-        );
-
-        const snapshot = await getDocs(q);
+        // Admin SDK Query
+        const snapshot = await adminDb.collection("videos")
+            .where("channelId", "==", channelId)
+            .where("createTime", ">=", Timestamp.fromDate(startDate))
+            .where("createTime", "<=", Timestamp.fromDate(endDate))
+            .orderBy("createTime", "desc")
+            .get();
 
         const videos = snapshot.docs.map(doc => {
             const data = doc.data();
             return {
                 id: doc.id,
                 ...data,
-                // Convert Timestamp về Date object để Client Component dùng được
-                createTime: data.createTime.toDate()
+                // Convert Timestamp về Date object
+                createTime: (data.createTime as Timestamp).toDate()
             } as Video;
         });
 

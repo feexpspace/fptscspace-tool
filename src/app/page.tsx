@@ -287,14 +287,14 @@ export default function Home() {
                       <h3 className="font-bold text-lg">Chi tiết theo tháng</h3>
 
                       {/* Chọn Năm */}
-                      <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-zinc-200 dark:bg-black dark:border-zinc-800 shadow-sm">
+                      <div className="flex items-center gap-2 bg-black px-3 py-1.5 rounded-lg border border-zinc-200 dark:bg-black dark:border-zinc-800 shadow-sm">
                         <Calendar className="h-4 w-4 text-zinc-500" />
                         <select
                           value={selectedYear}
                           onChange={(e) => setSelectedYear(Number(e.target.value))}
                           className="bg-transparent outline-none text-sm font-bold cursor-pointer"
                         >
-                          {years.map(y => <option key={y} value={y}>Năm {y}</option>)}
+                          {years.map(y => <option key={y} value={y} className="bg-zinc-900 text-white">Năm {y}</option>)}
                         </select>
                       </div>
                     </div>

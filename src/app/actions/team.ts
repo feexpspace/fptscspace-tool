@@ -1,16 +1,8 @@
+// src/app/actions/team.ts
 'use server'
 
-import { db } from "@/lib/firebase";
+import { adminDb } from "@/lib/firebase-admin"; // Dùng Admin SDK
 import { User, Team } from "@/types/index";
-import {
-    collection,
-    query,
-    where,
-    getDocs,
-    writeBatch,
-    doc,
-    serverTimestamp
-} from "firebase/firestore";
 
 /**
  * Tìm kiếm User để thêm vào team
@@ -18,17 +10,27 @@ import {
  */
 export async function searchAvailableUsers(searchTerm: string) {
     try {
-        const usersRef = collection(db, "users");
-        const q = query(
-            usersRef,
-            where("role", "==", "member"),
-            where("teamId", "==", "")
-        );
-        const snapshot = await getDocs(q);
+        // Sử dụng Admin SDK để query
+        const usersRef = adminDb.collection("users");
+
+        // Query: role là member VÀ chưa có teamId
+        const snapshot = await usersRef
+            .where("role", "==", "member")
+            .where("teamId", "==", "")
+            .get();
+
         const users: User[] = [];
         const lowerTerm = searchTerm.toLowerCase();
+
         snapshot.forEach((doc) => {
-            const userData = { id: doc.id, ...doc.data() } as User;
+            const data = doc.data();
+            // Mapping dữ liệu. Lưu ý xử lý createdAt nếu cần thiết
+            const userData = {
+                id: doc.id,
+                ...data
+            } as User;
+
+            // Filter phía server (memory) vì Firestore không hỗ trợ full-text search 'LIKE'
             if (
                 userData.email.toLowerCase().includes(lowerTerm) ||
                 userData.name.toLowerCase().includes(lowerTerm)
@@ -37,7 +39,7 @@ export async function searchAvailableUsers(searchTerm: string) {
             }
         });
 
-        console.log("Search results:", users);
+        // console.log("Search results:", users);
         return users;
     } catch (error) {
         console.error("Error searching users:", error);
@@ -47,7 +49,7 @@ export async function searchAvailableUsers(searchTerm: string) {
 
 /**
  * Tạo Team mới
- * Sử dụng Batch để đảm bảo atomic: Tạo Team -> Update Manager -> Update Members
+ * Sử dụng Batch của Admin SDK để đảm bảo atomic
  */
 export async function createNewTeam(
     teamName: string,
@@ -57,28 +59,30 @@ export async function createNewTeam(
     memberIds: string[]
 ) {
     try {
-        const batch = writeBatch(db);
+        const batch = adminDb.batch();
 
-        // 1. Tạo Document Team mới
-        const teamRef = doc(collection(db, "teams"));
+        // 1. Tạo Document Team mới (Tự sinh ID)
+        const teamRef = adminDb.collection("teams").doc();
+
         const newTeamData: Omit<Team, 'id'> = {
             name: teamName,
-            createdAt: new Date(), // Sẽ được convert bởi client hoặc dùng Timestamp
+            createdAt: new Date(), // Dùng Timestamp của Admin SDK
             managerId,
             managerEmail,
             managerName,
             members: memberIds
         };
 
+        // Batch Set: Tạo team
         batch.set(teamRef, newTeamData);
 
         // 2. Cập nhật User Manager (Gán teamId cho manager)
-        const managerRef = doc(db, "users", managerId);
+        const managerRef = adminDb.collection("users").doc(managerId);
         batch.update(managerRef, { teamId: teamRef.id });
 
         // 3. Cập nhật từng User Member (Gán teamId cho các thành viên)
         memberIds.forEach((memId) => {
-            const memberRef = doc(db, "users", memId);
+            const memberRef = adminDb.collection("users").doc(memId);
             batch.update(memberRef, { teamId: teamRef.id });
         });
 
