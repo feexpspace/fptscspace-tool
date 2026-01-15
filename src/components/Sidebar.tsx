@@ -8,7 +8,6 @@ import {
     LayoutDashboard,
     Users,
     Tv,
-    FileText,
     ScrollText,
     LogOut,
     Settings,
@@ -96,7 +95,7 @@ export function Sidebar() {
             <div>
                 {/* Logo Area */}
                 <div className="flex items-center gap-3 px-2">
-                    <div className="relative h-10 w-10 flex-shrink-0">
+                    <div className="relative h-10 w-10 shrink-0">
                         <Image
                             src="/logof6.png"
                             alt="Logo"
@@ -188,7 +187,7 @@ export function Sidebar() {
                             {user?.name || "User"}
                         </span>
                         <div className="flex items-center gap-1.5">
-                            <span className="truncate text-[10px] text-zinc-500 max-w-[80px]">
+                            <span className="truncate text-[10px] text-zinc-500 max-w-20">
                                 {user?.email}
                             </span>
                             {/* Hiển thị Role Badge nhỏ */}

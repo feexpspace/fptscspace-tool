@@ -204,7 +204,7 @@ export default function ReportsPage() {
                                 const ch = channels.find(c => c.id === e.target.value);
                                 if (ch) setSelectedChannel(ch);
                             }}
-                            className="appearance-none bg-zinc-900 border border-zinc-800 text-white text-sm rounded-lg pl-9 pr-8 py-2 focus:ring-2 focus:ring-zinc-700 focus:outline-none cursor-pointer min-w-[200px]"
+                            className="appearance-none bg-zinc-900 border border-zinc-800 text-white text-sm rounded-lg pl-9 pr-8 py-2 focus:ring-2 focus:ring-zinc-700 focus:outline-none cursor-pointer min-w-50"
                         >
                             {channels.length > 0 ? (
                                 channels.map(c => (
@@ -298,7 +298,7 @@ export default function ReportsPage() {
                                                     <td className="px-6 py-4">
                                                         <div className="flex items-center gap-3">
                                                             {video.coverImage && (
-                                                                <div className="h-10 w-8 flex-shrink-0 relative overflow-hidden rounded bg-zinc-200">
+                                                                <div className="h-10 w-8 shrink-0 relative overflow-hidden rounded bg-zinc-200">
                                                                     <Image
                                                                         src={video.coverImage}
                                                                         alt="cover"
@@ -383,7 +383,7 @@ function ExpandableVideoTitle({ title }: { title: string }) {
         <div className="flex flex-col items-start">
             <span
                 className={cn(
-                    "font-medium text-zinc-700 dark:text-zinc-300 transition-all break-words max-w-md",
+                    "font-medium text-zinc-700 dark:text-zinc-300 transition-all wrap-break-word max-w-md",
                     !isExpanded && isLongText ? "line-clamp-2" : "" // Nếu chưa mở rộng thì giới hạn 2 dòng
                 )}
                 title={title}
