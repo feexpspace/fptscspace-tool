@@ -12,6 +12,8 @@ import {
     ScrollText,
     LogOut,
     Settings,
+    UserRoundPen,
+    BarChart3,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
@@ -41,6 +43,12 @@ const mainNavItems: SidebarItem[] = [
         allowedRoles: ['admin', 'manager', 'member']
     },
     {
+        name: "Editors",
+        href: "/editors",
+        icon: UserRoundPen,
+        allowedRoles: ['admin', 'manager']
+    },
+    {
         name: "Channels",
         href: "/channels",
         icon: Tv,
@@ -49,7 +57,7 @@ const mainNavItems: SidebarItem[] = [
     {
         name: "Reports",
         href: "/reports",
-        icon: FileText,
+        icon: BarChart3,
         allowedRoles: ['admin', 'manager', 'member']
     },
 ];

@@ -80,12 +80,19 @@ export interface Script {
     id: string;
     title: string;
     content: string;
-    status: ScriptStatus; // Sử dụng enum chữ thường
+    status: ScriptStatus;
     createdAt: Date;
     updatedAt?: Date;
     channelId: string;
-    userId: string; // Trước đây là authorId
+    channelDisplayName: string;
+    channelUsername: string;
+    userId: string;
+    userName: string;
     managerId: string;
+    managerName: string;
+    isFeedbacked: boolean;
+    isUserUpdated: boolean;
+    isStatusChanged: boolean;
 }
 
 /**
@@ -98,6 +105,7 @@ export interface Feedback {
     isReaded: boolean;
     scriptId: string;
     managerId: string;
+    isAccept: boolean;
 }
 
 export interface Token {
@@ -124,6 +132,17 @@ export interface Statistic {
     channelUsername: string;
     channelOwnerName: string;
     updatedAt: Date;
+    followerCount: number;
+    videoCount: number;
+    totalViews: number;
+    totalInteractions: number;
+}
+
+export interface MonthlyStatistic {
+    id: string;
+    channelId: string;
+    userId: string;
+    month: string; // Định dạng 'YYYY-MM'
     followerCount: number;
     videoCount: number;
     totalViews: number;

@@ -7,29 +7,34 @@ import { useAuth } from "@/context/AuthContext";
 import { Sidebar } from "@/components/Sidebar";
 import { Loader2, LayoutDashboard, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { collection, query, where, getDocs, Timestamp } from "firebase/firestore";
-import { db } from "@/lib/firebase";
-import { Channel, Statistic, Team } from "@/types";
+// Xóa các import Firestore cũ
+import { Channel, Statistic, Team, MonthlyStatistic } from "@/types";
 import { ChannelSpecificReport } from "@/components/ChannelSpecificReport";
 import Image from "next/image";
+// Import Server Action mới
+import { getManagerDashboardData } from "@/app/actions/dashboard";
 
 export default function Home() {
   const { user, loading } = useAuth();
   const router = useRouter();
 
+  // State dữ liệu
   const [team, setTeam] = useState<Team | null>(null);
   const [teamChannels, setTeamChannels] = useState<Channel[]>([]);
-  const [allStats, setAllStats] = useState<Statistic[]>([]);
+
+  // Thay allStats bằng 2 state riêng biệt rõ ràng hơn
+  const [latestStats, setLatestStats] = useState<Statistic[]>([]);
+  const [monthlyStats, setMonthlyStats] = useState<MonthlyStatistic[]>([]);
+
   const [isLoadingData, setIsLoadingData] = useState(true);
 
-  // --- State cho Tabs Chính (Overview vs Các kênh) ---
+  // --- State UI ---
   const [activeTab, setActiveTab] = useState("overview");
 
-  // --- State cho Tab Tổng quan (Overview) ---
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth() + 1;
   const [selectedYear, setSelectedYear] = useState(currentYear);
-  const [selectedMonthTab, setSelectedMonthTab] = useState(currentMonth); // State mới để chọn tháng hiển thị
+  const [selectedMonthTab, setSelectedMonthTab] = useState(currentMonth);
 
   const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
   const months = Array.from({ length: 12 }, (_, i) => i + 1);
@@ -45,136 +50,78 @@ export default function Home() {
     }
   }, [user, loading, router]);
 
-  // --- LOGIC FETCH DATA (Manager Only) ---
+  // --- LOGIC FETCH DATA (Dùng Server Action) ---
   useEffect(() => {
-    const fetchManagerData = async () => {
+    const fetchData = async () => {
       if (!user || user.role === 'member') return;
       setIsLoadingData(true);
 
       try {
-        // 1. Lấy Team do Manager quản lý
-        const qTeam = query(collection(db, "teams"), where("managerId", "==", user.id));
-        const teamSnap = await getDocs(qTeam);
+        // Gọi Server Action
+        const data = await getManagerDashboardData(user.id, selectedYear);
 
-        if (teamSnap.empty) {
-          setIsLoadingData(false);
-          return;
-        }
-
-        const myTeam = { id: teamSnap.docs[0].id, ...teamSnap.docs[0].data() } as Team;
-        setTeam(myTeam);
-
-        // 2. Lấy members
-        const memberIds = myTeam.members || [];
-        if (!memberIds.includes(user.id)) memberIds.push(user.id);
-
-        if (memberIds.length === 0) {
-          setIsLoadingData(false);
-          return;
-        }
-
-        // 3. Lấy Channels
-        const channelsRef = collection(db, "channels");
-        const channelChunks = [];
-        for (let i = 0; i < memberIds.length; i += 10) {
-          channelChunks.push(memberIds.slice(i, i + 10));
-        }
-
-        let allChannels: Channel[] = [];
-        for (const chunk of channelChunks) {
-          const qChannel = query(channelsRef, where("userId", "in", chunk));
-          const snap = await getDocs(qChannel);
-          const chunkChannels = snap.docs.map(d => ({ id: d.id, ...d.data() } as Channel));
-          allChannels = [...allChannels, ...chunkChannels];
-        }
-        setTeamChannels(allChannels);
-
-        // 4. Lấy Statistics
-        if (allChannels.length > 0) {
-          const statsRef = collection(db, "statistics");
-          const channelIds = allChannels.map(c => c.id);
-
-          const statChunks = [];
-          for (let i = 0; i < channelIds.length; i += 10) {
-            statChunks.push(channelIds.slice(i, i + 10));
-          }
-
-          let allStatsData: Statistic[] = [];
-          for (const chunk of statChunks) {
-            const qStat = query(statsRef, where("channelId", "in", chunk));
-            const snap = await getDocs(qStat);
-            const chunkStats = snap.docs.map(d => {
-              const data = d.data();
-              return {
-                id: d.id,
-                ...data,
-                date: data.date instanceof Timestamp ? data.date.toDate() : new Date(data.date)
-              } as Statistic;
-            });
-            allStatsData = [...allStatsData, ...chunkStats];
-          }
-          setAllStats(allStatsData);
-        }
+        setTeam(data.team);
+        setTeamChannels(data.channels);
+        setLatestStats(data.latestStats);
+        setMonthlyStats(data.monthlyStats);
 
       } catch (error) {
-        console.error("Error fetching dashboard data:", error);
+        console.error("Lỗi tải dữ liệu dashboard:", error);
       } finally {
         setIsLoadingData(false);
       }
     };
 
-    fetchManagerData();
-  }, [user]);
+    fetchData();
+  }, [user, selectedYear]); // Chạy lại khi User hoặc Năm thay đổi
 
-  // --- TÍNH TOÁN DỮ LIỆU TAB 1 (OVERVIEW) ---
+  // --- TÍNH TOÁN DỮ LIỆU HIỂN THỊ ---
 
-  // 1. Data Phần 1 (Snapshot mới nhất - Tích lũy)
+  // 1. Data Phần 1: Tổng hợp cố định (Snapshot mới nhất - Tích lũy)
+  // Lấy từ latestStats (Bảng statistics)
   const overviewFixedData = useMemo(() => {
     return teamChannels.map((channel, index) => {
-      const cStats = allStats.filter(s => s.channelId === channel.id);
-      cStats.sort((a, b) => b.date.getTime() - a.date.getTime());
-      const latestStat = cStats[0];
+      // Tìm stats mới nhất của channel này trong mảng latestStats
+      const stat = latestStats.find(s => s.channelId === channel.id);
 
       return {
         stt: index + 1,
         id: channel.id,
         name: channel.displayName,
         username: channel.username,
-        avatar: channel.avatar,
-        followers: channel.follower,
-        videos: channel.videoCount,
-        views: latestStat ? latestStat.totalViews : 0,
-        interactions: latestStat ? latestStat.totalInteractions : (channel.like),
+        avatar: channel.avatar, // Đảm bảo channel có field avatar hoặc image
+        followers: stat?.followerCount || channel.follower || 0,
+        videos: stat?.videoCount || 0,
+        views: stat?.totalViews || 0,
+        interactions: stat?.totalInteractions || 0,
       };
     });
-  }, [teamChannels, allStats]);
+  }, [teamChannels, latestStats]);
 
-  // 2. Data Phần 2 (Monthly - Chỉ tính toán cho tháng đang được chọn tab)
+  // 2. Data Phần 2: Chi tiết theo tháng
+  // Lấy từ monthlyStats (Bảng monthly_statistics)
   const monthlyDataForTab = useMemo(() => {
-    // Tìm stats cho các kênh trong tháng đang chọn (selectedMonthTab) của năm (selectedYear)
-    return teamChannels.map(channel => {
-      const stats = allStats.filter(s =>
-        s.channelId === channel.id &&
-        s.date.getFullYear() === selectedYear &&
-        (s.date.getMonth() + 1) === selectedMonthTab
-      );
+    // Tạo key tháng cần tìm: "YYYY-MM" (Lưu ý padStart số 0)
+    const targetMonthKey = `${selectedYear}-${selectedMonthTab.toString().padStart(2, '0')}`;
 
-      // Lấy snapshot cuối cùng của tháng đó
-      stats.sort((a, b) => b.date.getTime() - a.date.getTime());
-      const finalStat = stats[0];
+    return teamChannels.map(channel => {
+      // Tìm bản ghi trong monthlyStats khớp channelId và monthKey
+      const mStat = monthlyStats.find(s =>
+        s.channelId === channel.id &&
+        s.month === targetMonthKey
+      );
 
       return {
         channelId: channel.id,
         channelName: channel.displayName,
-        hasData: !!finalStat,
-        followers: finalStat?.followerCount || 0,
-        videos: finalStat?.videoCount || 0,
-        views: finalStat?.totalViews || 0,
-        interactions: finalStat?.totalInteractions || 0,
+        hasData: !!mStat, // Có dữ liệu tháng này hay không
+        followers: mStat?.followerCount || 0,
+        videos: mStat?.videoCount || 0,
+        views: mStat?.totalViews || 0,
+        interactions: mStat?.totalInteractions || 0,
       };
     });
-  }, [teamChannels, allStats, selectedYear, selectedMonthTab]);
-
+  }, [teamChannels, monthlyStats, selectedYear, selectedMonthTab]);
 
   if (loading) return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin" /></div>;
   if (!user || user.role === 'member') return null;
@@ -189,13 +136,13 @@ export default function Home() {
           <div>
             <h1 className="text-lg font-bold flex items-center gap-2">
               <LayoutDashboard className="h-5 w-5" />
-              Manager Dashboard
+              Dữ liệu các kênh
             </h1>
           </div>
           {team && <div className="text-sm font-medium text-zinc-500">Team: <span className="text-black dark:text-white">{team.name}</span></div>}
         </header>
 
-        {/* Main Tabs Navigation (Overview | Kênh A | Kênh B...) */}
+        {/* Main Tabs Navigation */}
         <div className="bg-white dark:bg-black border-b border-zinc-200 dark:border-zinc-800 px-6 pt-4 flex items-center gap-6 overflow-x-auto shrink-0 no-scrollbar">
           <button
             onClick={() => setActiveTab("overview")}
@@ -235,14 +182,11 @@ export default function Home() {
             <>
               {/* --- TAB 1: OVERVIEW --- */}
               {activeTab === "overview" && (
-                <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2">
+                <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2">
 
                   {/* Phần 1: Tổng hợp cố định (Snapshot mới nhất) */}
+                  <h3 className="font-bold text-lg">Thông số tổng</h3>
                   <div className="bg-white dark:bg-black rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
-                    <div className="px-6 py-4 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50">
-                      <h3 className="font-bold text-base">Tổng hợp Kênh (Tích lũy)</h3>
-                      <p className="text-xs text-zinc-500">Số liệu mới nhất được cập nhật từ hệ thống.</p>
-                    </div>
                     <div className="overflow-x-auto">
                       <table className="w-full text-left text-sm">
                         <thead className="bg-zinc-50 text-xs uppercase text-zinc-500 dark:bg-zinc-900">
@@ -282,17 +226,17 @@ export default function Home() {
                   </div>
 
                   {/* Phần 2: Chi tiết theo tháng (Dạng Tabs) */}
-                  <div className="space-y-4">
+                  <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <h3 className="font-bold text-lg">Chi tiết theo tháng</h3>
 
-                      {/* Chọn Năm */}
+                      {/* Chọn Năm - Khi đổi năm sẽ trigger useEffect fetch lại monthlyStats */}
                       <div className="flex items-center gap-2 bg-black px-3 py-1.5 rounded-lg border border-zinc-200 dark:bg-black dark:border-zinc-800 shadow-sm">
                         <Calendar className="h-4 w-4 text-zinc-500" />
                         <select
                           value={selectedYear}
                           onChange={(e) => setSelectedYear(Number(e.target.value))}
-                          className="bg-transparent outline-none text-sm font-bold cursor-pointer"
+                          className="bg-transparent outline-none text-sm font-bold cursor-pointer text-white"
                         >
                           {years.map(y => <option key={y} value={y} className="bg-zinc-900 text-white">Năm {y}</option>)}
                         </select>
@@ -301,16 +245,7 @@ export default function Home() {
 
                     <div className="bg-white dark:bg-black rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden shadow-sm">
                       {/* Tabs Tháng */}
-                      <div className="flex overflow-x-auto border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50
-                        [&::-webkit-scrollbar]:h-2
-                        [&::-webkit-scrollbar-track]:bg-zinc-100
-                        dark:[&::-webkit-scrollbar-track]:bg-zinc-950
-                        [&::-webkit-scrollbar-thumb]:bg-zinc-300
-                        dark:[&::-webkit-scrollbar-thumb]:bg-zinc-700
-                        [&::-webkit-scrollbar-thumb]:rounded-full
-                        hover:[&::-webkit-scrollbar-thumb]:bg-zinc-400
-                        dark:hover:[&::-webkit-scrollbar-thumb]:bg-zinc-600
-                      ">
+                      <div className="flex overflow-x-auto border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 custom-scrollbar">
                         {months.map((m) => (
                           <button
                             key={m}
@@ -374,7 +309,7 @@ export default function Home() {
                 </div>
               )}
 
-              {/* --- TAB CHI TIẾT TỪNG KÊNH (GIỮ NGUYÊN) --- */}
+              {/* --- TAB CHI TIẾT TỪNG KÊNH --- */}
               {teamChannels.map(channel => (
                 activeTab === channel.id && (
                   <div key={channel.id} className="animate-in fade-in slide-in-from-right-4">

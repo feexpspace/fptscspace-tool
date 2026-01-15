@@ -388,68 +388,73 @@ export default function TeamsPage() {
         <div className="flex h-screen w-full bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-sans">
             <Sidebar />
 
-            <main className="flex-1 flex flex-col h-screen overflow-hidden p-8 relative">
+            <main className="flex-1 flex flex-col h-screen overflow-hidden">
                 {/* HEADER */}
-                <div className="flex items-center justify-between mb-8">
+                <header className="h-16 flex items-center justify-between border-b border-zinc-800 px-6 bg-black shrink-0">
                     <div>
-                        <h1 className="text-2xl font-bold">Quản lý Team</h1>
-                        <p className="text-zinc-500">
-                            {user?.role === 'manager' ? "Danh sách các team bạn đang quản lý." : "Danh sách các team bạn tham gia."}
-                        </p>
+                        <h1 className="text-lg font-bold flex items-center gap-2">
+                            <Users className="h-5 w-5" />
+                            Quản lý Team
+                        </h1>
                     </div>
+                    <p className="text-zinc-500">
+                        {user?.role === 'manager' ? "Danh sách các team bạn đang quản lý." : "Danh sách các team bạn tham gia."}
+                    </p>
                     {(user?.role === 'manager' || user?.role === 'admin') && (
                         <button
                             onClick={() => setIsCreateModalOpen(true)}
-                            className="flex items-center gap-2 rounded-lg bg-black px-4 py-2 text-white hover:bg-zinc-800 dark:bg-white dark:text-black transition-all"
+                            className="flex items-center gap-2 bg-white text-black px-4 py-1.5 text-sm font-bold rounded-full hover:bg-zinc-200 transition-colors"
                         >
-                            <Plus className="h-4 w-4" /> Tạo Team Mới
+                            <Plus className="h-4 w-4" /> Thêm Team mới
                         </button>
                     )}
-                </div>
+                </header>
 
                 {/* TEAM LIST */}
                 {isLoadingTeams ? (
-                    <div className="flex justify-center mt-10"><Loader2 className="animate-spin text-zinc-400" /></div>
+                    <div className="flex justify-center mt-30"><Loader2 className="animate-spin text-zinc-400" /></div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 overflow-y-auto pb-20">
-                        {teams.length === 0 ? (
-                            <div className="col-span-full rounded-2xl border border-dashed border-zinc-300 p-12 flex flex-col items-center justify-center text-zinc-400">
-                                <Users className="h-10 w-10 mb-2 opacity-50" />
-                                <p>Chưa có dữ liệu team.</p>
-                            </div>
-                        ) : (
-                            teams.map((team) => (
-                                <div key={team.id} className="relative group rounded-2xl bg-white p-6 shadow-sm border border-zinc-100 dark:bg-black dark:border-zinc-800 hover:shadow-md transition-all">
-                                    <div className="flex justify-between items-start mb-4">
-                                        <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-lg dark:bg-blue-900/30">
-                                            {team.name.charAt(0).toUpperCase()}
-                                        </div>
-                                        <div className="px-2 py-1 rounded bg-zinc-100 text-[10px] font-semibold text-zinc-500 uppercase dark:bg-zinc-800">
-                                            {team.members.length} Members
-                                        </div>
-                                    </div>
-                                    <h3 className="text-lg font-bold mb-1 truncate">{team.name}</h3>
-                                    <div className="space-y-2 mt-4 text-sm text-zinc-500">
-                                        <div className="flex items-center gap-2">
-                                            <Users className="h-4 w-4" />
-                                            <span>Manager: <span className="text-zinc-900 dark:text-zinc-100 font-medium">{team.managerName}</span></span>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <Calendar className="h-4 w-4" />
-                                            <span>{new Date(team.createdAt).toLocaleDateString('vi-VN')}</span>
-                                        </div>
-                                    </div>
-
-                                    {/* NÚT XEM CHI TIẾT */}
-                                    <button
-                                        onClick={() => handleViewDetails(team)}
-                                        className="mt-6 w-full flex items-center justify-center gap-2 rounded-lg border border-zinc-200 py-2 text-sm font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800 transition-colors"
-                                    >
-                                        <Eye className="h-4 w-4" /> Xem chi tiết
-                                    </button>
+                    <div className="flex-1 overflow-y-auto p-6 bg-black">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 overflow-y-auto pb-20">
+                            {teams.length === 0 ? (
+                                <div className="col-span-full rounded-2xl border border-dashed border-zinc-300 p-12 flex flex-col items-center justify-center text-zinc-400">
+                                    <Users className="h-10 w-10 mb-2 opacity-50" />
+                                    <p>Chưa có dữ liệu team.</p>
                                 </div>
-                            ))
-                        )}
+                            ) : (
+                                teams.map((team) => (
+                                    <div key={team.id} className="relative group rounded-2xl bg-white p-6 shadow-sm border border-zinc-100 dark:bg-black dark:border-zinc-800 hover:shadow-md transition-all">
+                                        <div className="flex justify-between items-start mb-4">
+                                            <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-lg dark:bg-blue-900/30">
+                                                {team.name.charAt(0).toUpperCase()}
+                                            </div>
+                                            <div className="px-2 py-1 rounded bg-zinc-100 text-[10px] font-semibold text-zinc-500 uppercase dark:bg-zinc-800">
+                                                {team.members.length} Members
+                                            </div>
+                                        </div>
+                                        <h3 className="text-lg font-bold mb-1 truncate">{team.name}</h3>
+                                        <div className="space-y-2 mt-4 text-sm text-zinc-500">
+                                            <div className="flex items-center gap-2">
+                                                <Users className="h-4 w-4" />
+                                                <span>Manager: <span className="text-zinc-900 dark:text-zinc-100 font-medium">{team.managerName}</span></span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <Calendar className="h-4 w-4" />
+                                                <span>{new Date(team.createdAt).toLocaleDateString('vi-VN')}</span>
+                                            </div>
+                                        </div>
+
+                                        {/* NÚT XEM CHI TIẾT */}
+                                        <button
+                                            onClick={() => handleViewDetails(team)}
+                                            className="mt-6 w-full flex items-center justify-center gap-2 rounded-lg border border-zinc-200 py-2 text-sm font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800 transition-colors"
+                                        >
+                                            <Eye className="h-4 w-4" /> Xem chi tiết
+                                        </button>
+                                    </div>
+                                ))
+                            )}
+                        </div>
                     </div>
                 )}
 

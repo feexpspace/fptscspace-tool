@@ -6,7 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
 import { collection, query, where, onSnapshot, deleteDoc, doc, getDocs, writeBatch } from "firebase/firestore";
 import { Channel } from "@/types";
-import { Plus, RefreshCw, LogOut, X, AlertTriangle } from "lucide-react"; // Import thêm icon
+import { Plus, RefreshCw, LogOut, X, AlertTriangle, Tv } from "lucide-react"; // Import thêm icon
 import Image from "next/image";
 
 export default function ChannelsPage() {
@@ -90,80 +90,85 @@ export default function ChannelsPage() {
         <div className="flex h-screen w-full bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-sans">
             <Sidebar />
 
-            <main className="flex-1 flex flex-col h-screen overflow-hidden p-8 relative">
-                <div className="flex items-center justify-between mb-8">
+            <main className="flex-1 flex flex-col h-screen overflow-hidden">
+                <header className="h-16 flex items-center justify-between border-b border-zinc-800 px-6 bg-black shrink-0">
                     <div>
-                        <h1 className="text-2xl font-bold">Quản lý Kênh TikTok</h1>
-                        <p className="text-zinc-500">Kết nối và theo dõi chỉ số các kênh của bạn.</p>
+                        <h1 className="text-lg font-bold flex items-center gap-2">
+                            <Tv className="h-5 w-5" />
+                            Quản lý Kênh TikTok
+                        </h1>
                     </div>
+                    <p className="text-zinc-500">Kết nối và theo dõi chỉ số các kênh của bạn.</p>
                     <button
                         onClick={handleConnectTikTok}
                         disabled={isConnecting}
-                        className="flex items-center gap-2 rounded-lg bg-black px-4 py-2 text-white hover:bg-zinc-800 dark:bg-white dark:text-black transition-all"
+                        className="flex items-center gap-2 bg-white text-black px-4 py-1.5 text-sm font-bold rounded-full hover:bg-zinc-200 transition-colors"
                     >
                         {isConnecting ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                        Thêm Kênh Mới
+                        Thêm Channel Mới
                     </button>
-                </div>
+                </header>
 
                 {/* Danh sách kênh */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 overflow-y-auto pb-20">
-                    {channels.length === 0 ? (
-                        <div className="col-span-full flex flex-col items-center justify-center rounded-2xl border border-dashed border-zinc-300 p-12 text-zinc-500">
-                            <p>Chưa có kênh nào được kết nối.</p>
-                        </div>
-                    ) : (
-                        channels.map((channel) => (
-                            <div key={channel.id} className="relative group overflow-hidden rounded-2xl bg-white p-6 shadow-sm border border-zinc-100 dark:bg-black dark:border-zinc-800 transition-all hover:shadow-md">
-
-                                {/* --- NÚT ĐĂNG XUẤT (Góc trên bên phải) --- */}
-                                <button
-                                    onClick={() => setChannelToDelete(channel)}
-                                    className="absolute top-4 right-4 p-2 rounded-full bg-zinc-100 text-zinc-500 hover:bg-red-50 hover:text-red-600 dark:bg-zinc-800 dark:hover:bg-red-900/30 transition-colors z-10"
-                                    title="Đăng xuất kênh này"
-                                >
-                                    <LogOut className="h-4 w-4" />
-                                </button>
-                                {/* ----------------------------------------- */}
-
-                                <div className="flex items-start justify-between pr-8">
-                                    <div className="flex items-center gap-4">
-                                        <div className="h-16 w-16 relative rounded-full overflow-hidden border border-zinc-200 bg-zinc-100">
-                                            {channel.avatar ? (
-                                                <Image src={channel.avatar} alt={channel.displayName} fill className="object-cover" />
-                                            ) : (
-                                                <div className="h-full w-full bg-zinc-200" />
-                                            )}
-                                        </div>
-                                        <div>
-                                            <h3 className="font-bold text-lg line-clamp-1 pr-2">{channel.displayName}</h3>
-                                            <p className="text-sm text-zinc-500">@{channel.username}</p>
-                                            {channel.isVerified && (
-                                                <span className="mt-1 inline-block rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-600">
-                                                    Verified
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="mt-6 grid grid-cols-3 gap-2 border-t border-zinc-100 pt-4 dark:border-zinc-800">
-                                    <div className="text-center">
-                                        <div className="text-lg font-bold tabular-nums">{channel.follower.toLocaleString()}</div>
-                                        <div className="text-xs text-zinc-500 uppercase">Followers</div>
-                                    </div>
-                                    <div className="text-center border-l border-zinc-100 dark:border-zinc-800">
-                                        <div className="text-lg font-bold tabular-nums">{channel.like.toLocaleString()}</div>
-                                        <div className="text-xs text-zinc-500 uppercase">Likes</div>
-                                    </div>
-                                    <div className="text-center border-l border-zinc-100 dark:border-zinc-800">
-                                        <div className="text-lg font-bold tabular-nums">{channel.videoCount.toLocaleString()}</div>
-                                        <div className="text-xs text-zinc-500 uppercase">Videos</div>
-                                    </div>
-                                </div>
+                <div className="flex-1 overflow-y-auto p-6 bg-black">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 overflow-y-auto pb-20">
+                        {channels.length === 0 ? (
+                            <div className="col-span-full flex flex-col items-center justify-center rounded-2xl border border-dashed border-zinc-300 p-12 text-zinc-500">
+                                <p>Chưa có kênh nào được kết nối.</p>
                             </div>
-                        ))
-                    )}
+                        ) : (
+                            channels.map((channel) => (
+                                <div key={channel.id} className="relative group overflow-hidden rounded-2xl bg-white p-6 shadow-sm border border-zinc-100 dark:bg-black dark:border-zinc-800 transition-all hover:shadow-md">
+
+                                    {/* --- NÚT ĐĂNG XUẤT (Góc trên bên phải) --- */}
+                                    <button
+                                        onClick={() => setChannelToDelete(channel)}
+                                        className="absolute top-4 right-4 p-2 rounded-full bg-zinc-100 text-zinc-500 hover:bg-red-50 hover:text-red-600 dark:bg-zinc-800 dark:hover:bg-red-900/30 transition-colors z-10"
+                                        title="Đăng xuất kênh này"
+                                    >
+                                        <LogOut className="h-4 w-4" />
+                                    </button>
+                                    {/* ----------------------------------------- */}
+
+                                    <div className="flex items-start justify-between pr-8">
+                                        <div className="flex items-center gap-4">
+                                            <div className="h-16 w-16 relative rounded-full overflow-hidden border border-zinc-200 bg-zinc-100">
+                                                {channel.avatar ? (
+                                                    <Image src={channel.avatar} alt={channel.displayName} fill className="object-cover" />
+                                                ) : (
+                                                    <div className="h-full w-full bg-zinc-200" />
+                                                )}
+                                            </div>
+                                            <div>
+                                                <h3 className="font-bold text-lg line-clamp-1 pr-2">{channel.displayName}</h3>
+                                                <p className="text-sm text-zinc-500">@{channel.username}</p>
+                                                {channel.isVerified && (
+                                                    <span className="mt-1 inline-block rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-600">
+                                                        Verified
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-6 grid grid-cols-3 gap-2 border-t border-zinc-100 pt-4 dark:border-zinc-800">
+                                        <div className="text-center">
+                                            <div className="text-lg font-bold tabular-nums">{channel.follower.toLocaleString()}</div>
+                                            <div className="text-xs text-zinc-500 uppercase">Followers</div>
+                                        </div>
+                                        <div className="text-center border-l border-zinc-100 dark:border-zinc-800">
+                                            <div className="text-lg font-bold tabular-nums">{channel.like.toLocaleString()}</div>
+                                            <div className="text-xs text-zinc-500 uppercase">Likes</div>
+                                        </div>
+                                        <div className="text-center border-l border-zinc-100 dark:border-zinc-800">
+                                            <div className="text-lg font-bold tabular-nums">{channel.videoCount.toLocaleString()}</div>
+                                            <div className="text-xs text-zinc-500 uppercase">Videos</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
                 </div>
 
                 {/* --- MODAL XÁC NHẬN ĐĂNG XUẤT --- */}
