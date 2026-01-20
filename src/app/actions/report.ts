@@ -4,7 +4,7 @@
 
 import { adminDb } from "@/lib/firebase-admin"; // Dùng Admin SDK
 import { Timestamp } from "firebase-admin/firestore"; // Timestamp của Admin SDK
-import { MonthlyStatistic, Statistic, Video } from "@/types";
+import { Statistic, Video } from "@/types";
 import { getAccessToken } from "./tiktok-token";
 
 interface TikTokApiResponse {
@@ -19,6 +19,24 @@ interface TikTokApiResponse {
     };
 }
 
+interface TikTokUserInfoResponse {
+    data: {
+        user: {
+            avatar_url_100: string; // Ảnh đại diện
+            display_name: string;   // Tên hiển thị
+            username: string;       // TikTok ID (handle)
+            follower_count: number;
+            following_count: number;
+            likes_count: number;    // Tổng số lượt thích
+            video_count: number;    // Tổng số video
+            is_verified: boolean;   // Trạng thái tích xanh
+        }
+    };
+    error: {
+        code: string;
+        message: string;
+    };
+}
 function getMonthKey(date: Date): string {
     const year = date.getFullYear();
     const month = date.getMonth() + 1; // getMonth() trả về 0-11
@@ -30,19 +48,51 @@ export async function syncTikTokVideos(userId: string, channelId: string) {
         const accessToken = await getAccessToken(channelId);
         if (!accessToken) throw new Error("Không lấy được Access Token");
 
-        // 1. Lấy thông tin User
+        const userFields = "avatar_url_100,display_name,username,follower_count,following_count,likes_count,video_count,is_verified";
+        const userInfoUrl = `https://open.tiktokapis.com/v2/user/info/?fields=${userFields}`;
+
+        const userInfoResponse = await fetch(userInfoUrl, {
+            headers: {
+                "Authorization": `Bearer ${accessToken}`
+            }
+        });
+
+        const userInfoData: TikTokUserInfoResponse = await userInfoResponse.json();
+
+        if (userInfoData.error && userInfoData.error.code !== "ok") {
+            console.error("TikTok User Info API Error:", userInfoData.error);
+        }
+        const user = userInfoData.data?.user;
+
+        if (user) {
+            await adminDb.collection("channels").doc(channelId).update({
+                avatar: user.avatar_url_100,
+                displayName: user.display_name,
+                username: user.username,
+                follower: user.follower_count,
+                following: user.following_count,
+                like: user.likes_count,
+                videoCount: user.video_count,
+                isVerified: user.is_verified,
+                updatedAt: Timestamp.now()
+            });
+        }
+
         const userDocRef = adminDb.collection("users").doc(userId);
         const userDoc = await userDocRef.get();
         if (!userDoc.exists) throw new Error("Không tìm thấy User trong Database");
         const userData = userDoc.data();
 
-        // 2. Lấy thông tin Channel
+        // Lấy thông tin kênh (để fallback nếu API lỗi)
         const channelDoc = await adminDb.collection("channels").doc(channelId).get();
-        if (!channelDoc.exists) throw new Error("Không tìm thấy Channel trong Database");
         const channelData = channelDoc.data();
 
         const ownerName = userData?.name || "Unknown User";
-        const currentFollowers = channelData?.follower || 0;
+
+        // Ưu tiên dùng số liệu mới từ API
+        const currentFollowers = user?.follower_count ?? (channelData?.follower || 0);
+        const currentUsername = user?.username ?? (channelData?.username || "");
+        const currentDisplayName = user?.display_name ?? (channelData?.displayName || "");
 
         let cursor: number | null = 0;
         let hasMore = true;
@@ -122,8 +172,8 @@ export async function syncTikTokVideos(userId: string, channelId: string) {
                     link: v.share_url,
                     duration: v.duration || 0,
                     channelId: channelId,
-                    channelUsername: "",
-                    channelDisplayName: "",
+                    channelUsername: currentUsername,
+                    channelDisplayName: currentDisplayName,
                     stats: {
                         like: likeCount,
                         comment: commentCount,
@@ -155,16 +205,16 @@ export async function syncTikTokVideos(userId: string, channelId: string) {
 
         // --- GHI THỐNG KÊ (Statistic) ---
         const today = new Date();
-        const statId = `${channelId}_${today.toISOString().split('T')[0]}`;
+        const statId = channelId;
 
         const statisticData: Statistic = {
             id: statId,
             channelId: channelId,
             userId: userId,
-            channelUsername: channelData?.username || "",
+            channelUsername: currentUsername,
             channelOwnerName: ownerName,
             updatedAt: today,
-            followerCount: channelData?.follower || 0,
+            followerCount: currentFollowers,
             videoCount: totalSynced,
             totalViews: aggTotalViews,
             totalInteractions: aggTotalInteractions
@@ -207,7 +257,7 @@ export async function syncTikTokVideos(userId: string, channelId: string) {
                     month: monthKey,
                     videoCount: monthVideoCount,       // Số video TẠO TRONG tháng này
                     totalViews: monthViews,            // Tổng view của các video TẠO TRONG tháng này
-                    totalInteractions: monthInteractions // Tổng tương tác của các video TẠO TRONG tháng này
+                    totalInteractions: monthInteractions, // Tổng tương tác của các video TẠO TRONG tháng này
                 };
 
                 if (monthlySnap.exists) {
@@ -215,7 +265,9 @@ export async function syncTikTokVideos(userId: string, channelId: string) {
                 } else {
                     monthlyBatch.set(monthlyRef, {
                         ...baseMonthlyData,
-                        followerCount: currentFollowers // Khởi tạo nếu chưa có
+                        channelUsername: currentUsername,
+                        followerCount: currentFollowers
+
                     }, { merge: true });
                 }
 
@@ -263,5 +315,25 @@ export async function getVideosFromDB(channelId: string, year: number, month: nu
     } catch (error) {
         console.error("Get Videos Error:", error);
         return [];
+    }
+}
+
+export async function getMonthlyStatistics(channelId: string, year: number, month: number) {
+    try {
+        // Tạo ID theo định dạng đã lưu: CHANNEL_ID_YYYY-MM
+        const monthKey = `${year}-${month.toString().padStart(2, '0')}`;
+        const docId = `${channelId}_${monthKey}`;
+
+        const docRef = adminDb.collection("monthly_statistics").doc(docId);
+        const docSnap = await docRef.get();
+
+        if (docSnap.exists) {
+            return docSnap.data();
+        } else {
+            return null; // Không có dữ liệu tháng đó
+        }
+    } catch (error) {
+        console.error("Lỗi lấy thống kê tháng:", error);
+        return null;
     }
 }

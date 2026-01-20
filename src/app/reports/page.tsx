@@ -6,7 +6,7 @@ import { Sidebar } from "@/components/Sidebar";
 import { useAuth } from "@/context/AuthContext";
 import { Video, Channel, Editor } from "@/types";
 import { RefreshCw, ExternalLink, Calendar, ChevronDown, UserCog, BarChart3, Filter } from "lucide-react";
-import { getVideosFromDB, syncTikTokVideos } from "@/app/actions/report";
+import { getMonthlyStatistics, getVideosFromDB, syncTikTokVideos } from "@/app/actions/report";
 import { collection, query, where, getDocs, updateDoc, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { cn } from "@/lib/utils";
@@ -30,7 +30,13 @@ export default function ReportsPage() {
     // --- THAY ĐỔI: Quản lý danh sách kênh ---
     const [channels, setChannels] = useState<Channel[]>([]);
     const [selectedChannel, setSelectedChannel] = useState<Channel | null>(null);
-    // ----------------------------------------
+
+    const [statsData, setStatsData] = useState({
+        followers: 0,
+        videos: 0,
+        views: 0,
+        engagement: 0
+    });
 
     const [isSyncing, setIsSyncing] = useState(false);
     const [isLoadingData, setIsLoadingData] = useState(false);
@@ -82,41 +88,49 @@ export default function ReportsPage() {
         const fetchData = async () => {
             if (!selectedChannel) {
                 setVideos([]);
+                // Reset stats nếu không có kênh
+                setStatsData({ followers: 0, videos: 0, views: 0, engagement: 0 });
                 return;
             }
 
             setIsLoadingData(true);
-            // Gọi hàm server action lấy dữ liệu từ DB
-            const data = await getVideosFromDB(selectedChannel.id, selectedYear, selectedMonth);
-            setVideos(data);
+
+            // Gọi song song 2 API (Lấy list video VÀ Lấy thống kê tháng)
+            const [videosData, monthlyStats] = await Promise.all([
+                getVideosFromDB(selectedChannel.id, selectedYear, selectedMonth),
+                getMonthlyStatistics(selectedChannel.id, selectedYear, selectedMonth)
+            ]);
+
+            setVideos(videosData);
+
+            // Cập nhật StatsData từ dữ liệu bảng monthly_statistics
+            if (monthlyStats) {
+                setStatsData({
+                    followers: monthlyStats.followerCount || selectedChannel.follower || 0, // Ưu tiên số lưu trong tháng, fallback về hiện tại
+                    videos: monthlyStats.videoCount || 0,
+                    views: monthlyStats.totalViews || 0,
+                    engagement: monthlyStats.totalInteractions || 0
+                });
+            } else {
+                // Nếu chưa có bản ghi thống kê tháng (VD: chưa sync), tạm tính từ list video vừa tải về
+                // Đây là fallback để UI không bị trống
+                const totalViews = videosData.reduce((acc, curr) => acc + (curr.stats.view || 0), 0);
+                const totalEngagement = videosData.reduce((acc, curr) => {
+                    return acc + (curr.stats.like || 0) + (curr.stats.comment || 0) + (curr.stats.share || 0);
+                }, 0);
+
+                setStatsData({
+                    followers: selectedChannel.follower || 0,
+                    videos: videosData.length,
+                    views: totalViews,
+                    engagement: totalEngagement
+                });
+            }
+
             setIsLoadingData(false);
         };
         fetchData();
     }, [selectedChannel, selectedYear, selectedMonth]);
-
-    const statsData = useMemo(() => {
-        // Mặc định bằng 0 nếu chưa có dữ liệu
-        let totalViews = 0;
-        let totalEngagement = 0;
-
-        if (videos.length > 0) {
-            // Tính tổng View của tất cả video trong tháng
-            totalViews = videos.reduce((acc, curr) => acc + (curr.stats.view || 0), 0);
-
-            // Tính tổng Tương tác (Like + Comment + Share)
-            totalEngagement = videos.reduce((acc, curr) => {
-                const engagement = (curr.stats.like || 0) + (curr.stats.comment || 0) + (curr.stats.share || 0);
-                return acc + engagement;
-            }, 0);
-        }
-
-        return {
-            followers: selectedChannel?.follower || 0, // Lấy follower hiện tại của kênh
-            videos: videos.length,                    // Số lượng video trong tháng
-            views: totalViews,
-            engagement: totalEngagement
-        };
-    }, [videos, selectedChannel]);
 
     const handleAssignEditor = async (videoId: string, newEditorId: string) => {
         if (!videoId) {
@@ -154,13 +168,23 @@ export default function ReportsPage() {
     const handleSync = async () => {
         if (!user || !selectedChannel) return;
         setIsSyncing(true);
-
-        // Gọi API đồng bộ
         await syncTikTokVideos(user.id, selectedChannel.id);
 
-        // Load lại dữ liệu mới nhất
-        const data = await getVideosFromDB(selectedChannel.id, selectedYear, selectedMonth);
-        setVideos(data);
+        // Gọi lại logic fetch (đơn giản nhất là trigger useEffect, nhưng ở đây gọi tay cho chắc)
+        const [videosData, monthlyStats] = await Promise.all([
+            getVideosFromDB(selectedChannel.id, selectedYear, selectedMonth),
+            getMonthlyStatistics(selectedChannel.id, selectedYear, selectedMonth)
+        ]);
+
+        setVideos(videosData);
+        if (monthlyStats) {
+            setStatsData({
+                followers: monthlyStats.followerCount || selectedChannel.follower || 0,
+                videos: monthlyStats.videoCount || 0,
+                views: monthlyStats.totalViews || 0,
+                engagement: monthlyStats.totalInteractions || 0
+            });
+        }
 
         setIsSyncing(false);
     };

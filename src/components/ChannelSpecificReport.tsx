@@ -5,7 +5,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { Video, Channel } from "@/types";
 import { RefreshCw, ExternalLink, Calendar, Video as VideoIcon } from "lucide-react";
-import { getVideosFromDB, syncTikTokVideos } from "@/app/actions/report";
+import { getMonthlyStatistics, getVideosFromDB, syncTikTokVideos } from "@/app/actions/report";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import Image from "next/image";
@@ -22,6 +22,12 @@ export function ChannelSpecificReport({ channel, user }: ChannelSpecificReportPr
     const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth() + 1);
 
     const [videos, setVideos] = useState<Video[]>([]);
+    const [statsData, setStatsData] = useState({
+        followers: 0,
+        videos: 0,
+        views: 0,
+        engagement: 0
+    });
     const [isSyncing, setIsSyncing] = useState(false);
     const [isLoadingData, setIsLoadingData] = useState(false);
 
@@ -32,39 +38,80 @@ export function ChannelSpecificReport({ channel, user }: ChannelSpecificReportPr
         const fetchData = async () => {
             if (!channel) return;
             setIsLoadingData(true);
-            const data = await getVideosFromDB(channel.id, selectedYear, selectedMonth);
-            setVideos(data);
+
+            // Gọi song song 2 API
+            const [videosData, monthlyStats] = await Promise.all([
+                getVideosFromDB(channel.id, selectedYear, selectedMonth),
+                getMonthlyStatistics(channel.id, selectedYear, selectedMonth)
+            ]);
+
+            setVideos(videosData);
+
+            // Cập nhật StatsData
+            if (monthlyStats) {
+                // Ưu tiên dùng dữ liệu từ bảng thống kê tháng
+                setStatsData({
+                    followers: monthlyStats.followerCount || channel.follower || 0,
+                    videos: monthlyStats.videoCount || 0,
+                    views: monthlyStats.totalViews || 0,
+                    engagement: monthlyStats.totalInteractions || 0
+                });
+            } else {
+                // Fallback: Nếu chưa có record tháng, tính tạm từ list video (UX tốt hơn là hiện số 0)
+                const totalViews = videosData.reduce((acc, curr) => acc + (curr.stats.view || 0), 0);
+                const totalEngagement = videosData.reduce((acc, curr) => {
+                    return acc + (curr.stats.like || 0) + (curr.stats.comment || 0) + (curr.stats.share || 0);
+                }, 0);
+
+                setStatsData({
+                    followers: channel.follower || 0,
+                    videos: videosData.length,
+                    views: totalViews,
+                    engagement: totalEngagement
+                });
+            }
+
             setIsLoadingData(false);
         };
         fetchData();
     }, [channel, selectedYear, selectedMonth]);
 
-    const statsData = useMemo(() => {
-        let totalViews = 0;
-        let totalEngagement = 0;
-
-        if (videos.length > 0) {
-            totalViews = videos.reduce((acc, curr) => acc + (curr.stats.view || 0), 0);
-            totalEngagement = videos.reduce((acc, curr) => {
-                const engagement = (curr.stats.like || 0) + (curr.stats.comment || 0) + (curr.stats.share || 0);
-                return acc + engagement;
-            }, 0);
-        }
-
-        return {
-            followers: channel.follower || 0,
-            videos: videos.length,
-            views: totalViews,
-            engagement: totalEngagement
-        };
-    }, [videos, channel]);
-
     const handleSync = async () => {
         if (!user || !channel) return;
         setIsSyncing(true);
+
+        // 1. Đồng bộ TikTok
         await syncTikTokVideos(user.id, channel.id);
-        const data = await getVideosFromDB(channel.id, selectedYear, selectedMonth);
-        setVideos(data);
+
+        // 2. Load lại dữ liệu mới nhất (gọi lại giống useEffect)
+        const [videosData, monthlyStats] = await Promise.all([
+            getVideosFromDB(channel.id, selectedYear, selectedMonth),
+            getMonthlyStatistics(channel.id, selectedYear, selectedMonth)
+        ]);
+
+        setVideos(videosData);
+
+        if (monthlyStats) {
+            setStatsData({
+                followers: monthlyStats.followerCount || channel.follower || 0,
+                videos: monthlyStats.videoCount || 0,
+                views: monthlyStats.totalViews || 0,
+                engagement: monthlyStats.totalInteractions || 0
+            });
+        } else {
+            // Fallback logic giống trên
+            const totalViews = videosData.reduce((acc, curr) => acc + (curr.stats.view || 0), 0);
+            const totalEngagement = videosData.reduce((acc, curr) =>
+                acc + (curr.stats.like || 0) + (curr.stats.comment || 0) + (curr.stats.share || 0), 0);
+
+            setStatsData({
+                followers: channel.follower || 0,
+                videos: videosData.length,
+                views: totalViews,
+                engagement: totalEngagement
+            });
+        }
+
         setIsSyncing(false);
     };
 

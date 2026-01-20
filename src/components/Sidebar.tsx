@@ -13,11 +13,14 @@ import {
     Settings,
     UserRoundPen,
     BarChart3,
+    ChevronRight,
+    ChevronLeft,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
 import { logoutUser } from "@/lib/auth-service";
 import { UserRole } from "@/types/index"; // Import Type UserRole
+import { useEffect, useState } from "react";
 
 // 1. Định nghĩa kiểu dữ liệu cho Item Menu
 interface SidebarItem {
@@ -34,6 +37,12 @@ const mainNavItems: SidebarItem[] = [
         href: "/",
         icon: LayoutDashboard,
         allowedRoles: ['admin', 'manager']
+    },
+    {
+        name: "Statistics",
+        href: "/statistics-member",
+        icon: LayoutDashboard,
+        allowedRoles: ['member']
     },
     {
         name: "Teams",
@@ -66,7 +75,13 @@ const docNavItems: SidebarItem[] = [
         name: "Scripts",
         href: "/scripts",
         icon: ScrollText,
-        allowedRoles: ['admin', 'manager', 'member']
+        allowedRoles: ['admin', 'member']
+    },
+    {
+        name: "Scripts",
+        href: "/scripts-manager",
+        icon: ScrollText,
+        allowedRoles: ['admin', 'manager']
     },
 ];
 
@@ -75,6 +90,32 @@ export function Sidebar() {
     // 3. Lấy user và role từ Context
     const { user, role } = useAuth();
     const router = useRouter();
+
+    const [isCollapsed, setIsCollapsed] = useState(false);
+    const [isTransitionEnabled, setIsTransitionEnabled] = useState(false);
+
+    useEffect(() => {
+        // 1. Đọc trạng thái từ localStorage ngay lập tức
+        const savedState = localStorage.getItem("sidebar_collapsed");
+        if (savedState === "true") {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            setIsCollapsed(true);
+        }
+
+        // 2. Kích hoạt transition sau một khoảng thời gian ngắn
+        // Điều này đảm bảo lần render đầu tiên (khi set width từ false -> true) không có animation
+        const timer = setTimeout(() => {
+            setIsTransitionEnabled(true);
+        }, 100); // 100ms là đủ để render xong trạng thái ban đầu
+
+        return () => clearTimeout(timer);
+    }, []);
+
+    const toggleSidebar = () => {
+        const newState = !isCollapsed;
+        setIsCollapsed(newState);
+        localStorage.setItem("sidebar_collapsed", String(newState));
+    };
 
     const handleLogout = async () => {
         await logoutUser();
@@ -91,11 +132,25 @@ export function Sidebar() {
     const filteredDocNav = filterMenu(docNavItems);
 
     return (
-        <div className="flex h-screen w-64 flex-col justify-between border-r border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-black">
+        <div
+            className={cn(
+                "relative flex h-screen flex-col justify-between border-r border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-black",
+                isTransitionEnabled ? "transition-all duration-300" : "",
+                isCollapsed ? "w-20" : "w-64"
+            )}
+        >
+            {/* 5. Nút Toggle nằm ở cạnh phải sidebar */}
+            <button
+                onClick={toggleSidebar}
+                className="absolute -right-3 top-9 z-10 flex h-6 w-6 items-center justify-center rounded-full border border-zinc-200 bg-white shadow-sm hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 transition-colors"
+            >
+                {isCollapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronLeft className="h-3 w-3" />}
+            </button>
+
             <div>
                 {/* Logo Area */}
-                <div className="flex items-center gap-3 px-2">
-                    <div className="relative h-10 w-10 shrink-0">
+                <div className={cn("flex items-center gap-3 px-2 h-10 overflow-hidden", isCollapsed ? "justify-center" : "")}>
+                    <div className="relative h-8 w-8 shrink-0">
                         <Image
                             src="/logof6.png"
                             alt="Logo"
@@ -104,57 +159,73 @@ export function Sidebar() {
                             priority
                         />
                     </div>
-                    <div className="flex flex-col">
-                        <span className="text-sm font-bold">TikTok Key Members Manager</span>
+                    {/* Ẩn text logo khi thu nhỏ */}
+                    <div className={cn("flex flex-col transition-opacity duration-200", isCollapsed ? "opacity-0 w-0 hidden" : "opacity-100")}>
+                        <span className="text-sm font-bold whitespace-nowrap">TikTok Manager</span>
                         <span className="text-[10px] text-zinc-500">v1.0.0</span>
                     </div>
                 </div>
 
                 {/* Main Menu */}
                 <div className="mt-10">
-                    <div className="mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-zinc-400">
-                        Main
+                    <div className={cn(
+                        "mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-zinc-400 transition-all",
+                        isCollapsed ? "text-center text-[10px]" : ""
+                    )}>
+                        {isCollapsed ? "Main" : "Main"}
                     </div>
                     <nav className="space-y-1">
                         {filteredMainNav.map((item) => (
                             <Link
                                 key={item.name}
                                 href={item.href}
+                                title={isCollapsed ? item.name : ""} // Tooltip khi thu nhỏ
                                 className={cn(
-                                    "flex items-center gap-3 rounded-lg px-2 py-2.5 text-sm font-medium transition-colors",
+                                    "flex items-center rounded-lg py-2.5 text-sm font-medium transition-colors",
+                                    // Canh giữa icon khi thu nhỏ, canh trái khi mở rộng
+                                    isCollapsed ? "justify-center px-0" : "gap-3 px-2",
                                     pathname === item.href
                                         ? "bg-zinc-100 text-black dark:bg-zinc-800 dark:text-white"
                                         : "text-zinc-500 hover:bg-zinc-50 hover:text-black dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-white"
                                 )}
                             >
-                                <item.icon className="h-5 w-5" />
-                                {item.name}
+                                <item.icon className="h-5 w-5 shrink-0" />
+                                {/* Ẩn text menu item */}
+                                <span className={cn("transition-all duration-200 whitespace-nowrap overflow-hidden", isCollapsed ? "w-0 opacity-0 hidden" : "w-auto opacity-100")}>
+                                    {item.name}
+                                </span>
                             </Link>
                         ))}
                     </nav>
                 </div>
 
                 {/* Documentation Menu */}
-                {/* Chỉ hiện section này nếu có item bên trong sau khi lọc */}
                 {filteredDocNav.length > 0 && (
                     <div className="mt-8">
-                        <div className="mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-zinc-400">
-                            Documentation
+                        <div className={cn(
+                            "mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-zinc-400 transition-all",
+                            isCollapsed ? "text-center text-[10px]" : ""
+                        )}>
+                            {isCollapsed ? "Doc" : "Documentation"}
                         </div>
                         <nav className="space-y-1">
                             {filteredDocNav.map((item) => (
                                 <Link
                                     key={item.name}
                                     href={item.href}
+                                    title={isCollapsed ? item.name : ""}
                                     className={cn(
-                                        "flex items-center gap-3 rounded-lg px-2 py-2.5 text-sm font-medium transition-colors",
+                                        "flex items-center rounded-lg py-2.5 text-sm font-medium transition-colors",
+                                        isCollapsed ? "justify-center px-0" : "gap-3 px-2",
                                         pathname === item.href
                                             ? "bg-zinc-100 text-black dark:bg-zinc-800 dark:text-white"
                                             : "text-zinc-500 hover:bg-zinc-50 hover:text-black dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-white"
                                     )}
                                 >
-                                    <item.icon className="h-5 w-5" />
-                                    {item.name}
+                                    <item.icon className="h-5 w-5 shrink-0" />
+                                    <span className={cn("transition-all duration-200 whitespace-nowrap overflow-hidden", isCollapsed ? "w-0 opacity-0 hidden" : "w-auto opacity-100")}>
+                                        {item.name}
+                                    </span>
                                 </Link>
                             ))}
                         </nav>
@@ -164,25 +235,43 @@ export function Sidebar() {
 
             {/* Footer / User / Logout */}
             <div className="space-y-1">
-                <button className="flex w-full items-center gap-3 rounded-lg px-2 py-2.5 text-sm font-medium text-zinc-500 hover:bg-zinc-50 hover:text-black dark:text-zinc-400 dark:hover:bg-zinc-900">
-                    <Settings className="h-5 w-5" />
-                    Settings
+                <button
+                    title={isCollapsed ? "Settings" : ""}
+                    className={cn(
+                        "flex w-full items-center rounded-lg py-2.5 text-sm font-medium text-zinc-500 hover:bg-zinc-50 hover:text-black dark:text-zinc-400 dark:hover:bg-zinc-900",
+                        isCollapsed ? "justify-center px-0" : "gap-3 px-2"
+                    )}
+                >
+                    <Settings className="h-5 w-5 shrink-0" />
+                    <span className={cn("transition-all duration-200 whitespace-nowrap overflow-hidden", isCollapsed ? "w-0 opacity-0 hidden" : "w-auto opacity-100")}>
+                        Settings
+                    </span>
                 </button>
                 <button
                     onClick={handleLogout}
-                    className="flex w-full items-center gap-3 rounded-lg px-2 py-2.5 text-sm font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20"
+                    title={isCollapsed ? "Log Out" : ""}
+                    className={cn(
+                        "flex w-full items-center rounded-lg py-2.5 text-sm font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20",
+                        isCollapsed ? "justify-center px-0" : "gap-3 px-2"
+                    )}
                 >
-                    <LogOut className="h-5 w-5" />
-                    Log Out
+                    <LogOut className="h-5 w-5 shrink-0" />
+                    <span className={cn("transition-all duration-200 whitespace-nowrap overflow-hidden", isCollapsed ? "w-0 opacity-0 hidden" : "w-auto opacity-100")}>
+                        Log Out
+                    </span>
                 </button>
 
                 {/* User Mini Profile */}
-                <div className="mt-4 flex items-center gap-3 rounded-xl border border-zinc-200 p-3 dark:border-zinc-800">
-                    <div className="h-8 w-8 rounded-full bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-500">
-                        {/* Fallback avatar nếu không có ảnh */}
+                <div className={cn(
+                    "mt-4 flex items-center rounded-xl border border-zinc-200 p-2 dark:border-zinc-800 transition-all",
+                    isCollapsed ? "justify-center border-0 bg-transparent p-0" : "gap-3 p-3"
+                )}>
+                    <div className="h-8 w-8 shrink-0 rounded-full bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-500">
                         {user?.name?.charAt(0) || "U"}
                     </div>
-                    <div className="flex flex-col overflow-hidden">
+
+                    {/* Thông tin user sẽ ẩn đi khi collapse */}
+                    <div className={cn("flex flex-col overflow-hidden transition-all duration-200", isCollapsed ? "w-0 opacity-0 hidden" : "w-auto opacity-100")}>
                         <span className="truncate text-xs font-bold text-zinc-900 dark:text-white">
                             {user?.name || "User"}
                         </span>
@@ -190,10 +279,9 @@ export function Sidebar() {
                             <span className="truncate text-[10px] text-zinc-500 max-w-20">
                                 {user?.email}
                             </span>
-                            {/* Hiển thị Role Badge nhỏ */}
                             {role && (
                                 <span className={cn(
-                                    "px-1 py-0.5 rounded text-[9px] font-bold uppercase",
+                                    "px-1 py-0.5 rounded text-[9px] font-bold uppercase shrink-0",
                                     role === 'admin' ? "bg-red-100 text-red-600" :
                                         role === 'manager' ? "bg-blue-100 text-blue-600" :
                                             "bg-gray-100 text-gray-600"

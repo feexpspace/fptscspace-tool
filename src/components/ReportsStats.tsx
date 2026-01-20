@@ -38,7 +38,7 @@ export function ReportsStats({ stats }: ReportsStatsProps) {
             bg: "bg-green-500/10",
         },
         {
-            label: "Tương tác (Tim/Cmt)",
+            label: "Tương tác (Tim+Cmt+Share)",
             value: stats.engagement,
             icon: Heart, // Hoặc dùng icon Activity
             color: "text-red-500",

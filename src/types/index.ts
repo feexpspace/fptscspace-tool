@@ -1,6 +1,7 @@
 
 export type UserRole = 'admin' | 'manager' | 'member';
 export type ScriptStatus = 'draft' | 'pending' | 'approved' | 'rejected';
+export type FeedbackStatus = 'addressed' | 'unaddressed';
 
 /**
  * 1. User: Thông tin tài khoản hệ thống
@@ -20,10 +21,8 @@ export interface User {
 export interface Team {
     id: string;
     name: string;
-    createdAt: Date; // Timestamp bao gồm ngày giờ
-    managerId: string;
-    managerEmail: string;
-    managerName: string;
+    createdAt: Date;
+    managerIds: string[];
     members: string[];
 }
 
@@ -44,7 +43,7 @@ export interface Channel {
     following: number;
     like: number;
     videoCount: number;
-    userId: string; // Trước đây là ownerId
+    userId: string;
 }
 
 /**
@@ -83,16 +82,17 @@ export interface Script {
     status: ScriptStatus;
     createdAt: Date;
     updatedAt?: Date;
+    teamId: string;
     channelId: string;
     channelDisplayName: string;
     channelUsername: string;
     userId: string;
     userName: string;
-    managerId: string;
-    managerName: string;
+    managerIds: string[];
     isFeedbacked: boolean;
     isUserUpdated: boolean;
     isStatusChanged: boolean;
+    readBy: string[];
 }
 
 /**
@@ -100,12 +100,16 @@ export interface Script {
  */
 export interface Feedback {
     id: string;
+    highlightId?: string;
+    markedText: string;
     content: string;
     createdAt: Date;
-    isReaded: boolean;
     scriptId: string;
     managerId: string;
-    isAccept: boolean;
+    managerName: string;
+    userId: string;
+    userName: string;
+    status: FeedbackStatus;
 }
 
 export interface Token {

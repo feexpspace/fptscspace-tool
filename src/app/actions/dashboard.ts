@@ -4,18 +4,20 @@
 import { adminDb } from "@/lib/firebase-admin";
 import { Channel, Statistic, Team, MonthlyStatistic } from "@/types";
 
-export interface ManagerDashboardData {
-    team: Team | null;
-    channels: Channel[];
-    latestStats: Statistic[];
-    monthlyStats: MonthlyStatistic[];
+// Hàm chia nhỏ mảng để tránh giới hạn query 'in' của Firestore (max 30 items)
+function chunkArray<T>(array: T[], size: number): T[][] {
+    const chunked: T[][] = [];
+    for (let i = 0; i < array.length; i += size) {
+        chunked.push(array.slice(i, i + size));
+    }
+    return chunked;
 }
 
-export async function getManagerDashboardData(managerId: string, year: number): Promise<ManagerDashboardData> {
+export async function getManagerDashboardData(managerId: string, year: number) {
     try {
-        // 1. Lấy Team do Manager quản lý
+        // 1. Lấy thông tin Team mà Manager này thuộc về
         const teamSnap = await adminDb.collection("teams")
-            .where("managerId", "==", managerId)
+            .where("managerIds", "array-contains", managerId)
             .limit(1)
             .get();
 
@@ -26,93 +28,77 @@ export async function getManagerDashboardData(managerId: string, year: number): 
         const teamDoc = teamSnap.docs[0];
         const teamData = teamDoc.data();
 
-        // --- FIX LỖI SERIALIZATION CHO TEAM ---
-        // Convert Timestamp của Firestore sang Javascript Date
-        let teamCreatedAt = new Date();
-        if (teamData.createdAt && typeof teamData.createdAt.toDate === 'function') {
-            teamCreatedAt = teamData.createdAt.toDate();
-        } else if (teamData.createdAt) {
-            // Fallback nếu đã là string hoặc Date
-            teamCreatedAt = new Date(teamData.createdAt);
-        }
-
-        const team = {
+        const team: Team = {
             id: teamDoc.id,
             ...teamData,
-            createdAt: teamCreatedAt // Ghi đè bằng Date chuẩn
-        } as Team;
+            createdAt: teamData.createdAt?.toDate ? teamData.createdAt.toDate() : new Date(),
+        } as unknown as Team;
 
+        // 2. Gộp ID của tất cả Members và tất cả Managers
+        // Vì data đã chuẩn, ta lấy trực tiếp mảng managerIds
+        const memberIds: string[] = teamData.members || [];
+        const managerIds: string[] = teamData.managerIds || [];
 
-        // 2. Lấy danh sách Channels
-        const memberIds = team.members || [];
-        if (!memberIds.includes(managerId)) memberIds.push(managerId);
+        // Gộp lại và loại bỏ trùng lặp (nếu có user vừa là member vừa là manager - dù hiếm)
+        const allUserIds = Array.from(new Set([...memberIds, ...managerIds]));
 
-        if (memberIds.length === 0) {
+        if (allUserIds.length === 0) {
             return { team, channels: [], latestStats: [], monthlyStats: [] };
         }
 
-        const channelsSnap = await adminDb.collection("channels")
-            .where("userId", "in", memberIds.slice(0, 30))
-            .get();
+        // 3. Query Channels dựa trên danh sách tổng hợp (allUserIds)
+        const userChunks = chunkArray(allUserIds, 10);
+        const channelPromises = userChunks.map(chunk =>
+            adminDb.collection("channels").where("userId", "in", chunk).get()
+        );
+        const channelSnapshots = await Promise.all(channelPromises);
 
-        // --- FIX LỖI SERIALIZATION CHO CHANNELS (Nếu Channel có field ngày tháng) ---
-        const channels = channelsSnap.docs.map(doc => {
-            const cData = doc.data();
-            // Nếu channel có field createdAt/updatedAt là Timestamp, cần convert tương tự
-            // Ví dụ:
-            // const cCreatedAt = cData.createdAt?.toDate ? cData.createdAt.toDate() : new Date();
-            return {
-                id: doc.id,
-                ...cData
-                // createdAt: cCreatedAt 
-            } as Channel;
-        });
+        const channels: Channel[] = channelSnapshots.flatMap(snap =>
+            snap.docs.map(doc => {
+                const d = doc.data();
+                return {
+                    id: doc.id,
+                    ...d,
+                    createdAt: d.createdAt?.toDate ? d.createdAt.toDate() : undefined,
+                    updatedAt: d.updatedAt?.toDate ? d.updatedAt.toDate() : undefined,
+                } as unknown as Channel;
+            })
+        );
+
+        if (channels.length === 0) {
+            return { team, channels: [], latestStats: [], monthlyStats: [] };
+        }
 
         const channelIds = channels.map(c => c.id);
 
-        if (channelIds.length === 0) {
-            return { team, channels, latestStats: [], monthlyStats: [] };
-        }
+        // 4. Lấy Statistics mới nhất
+        const statsChunks = chunkArray(channelIds, 10);
+        const statsPromises = statsChunks.map(chunk =>
+            adminDb.collection("statistics").where("channelId", "in", chunk).get()
+        );
+        const statsSnapshots = await Promise.all(statsPromises);
 
-        // 3. Lấy Latest Statistics
-        const latestStatsPromises = channelIds.map(async (cid) => {
-            const snap = await adminDb.collection("statistics")
-                .where("channelId", "==", cid)
-                .orderBy("updatedAt", "desc")
-                .limit(1)
-                .get();
+        const latestStats: Statistic[] = statsSnapshots.flatMap(snap =>
+            snap.docs.map(doc => {
+                const d = doc.data();
+                return { id: doc.id, ...d, updatedAt: d.updatedAt?.toDate() } as unknown as Statistic;
+            })
+        );
 
-            if (!snap.empty) {
-                const data = snap.docs[0].data();
-                return {
-                    id: snap.docs[0].id,
-                    ...data,
-                    // --- FIX LỖI SERIALIZATION CHO STATISTIC ---
-                    updatedAt: data.updatedAt && typeof data.updatedAt.toDate === 'function'
-                        ? data.updatedAt.toDate()
-                        : new Date()
-                } as Statistic;
-            }
-            return null;
-        });
-
-        const latestStatsRaw = await Promise.all(latestStatsPromises);
-        const latestStats = latestStatsRaw.filter((s): s is Statistic => s !== null);
-
-        // 4. Lấy Monthly Statistics
-        const startOfYear = `${year}-01`;
-        const endOfYear = `${year}-12`;
-
-        const monthlySnap = await adminDb.collection("monthly_statistics")
-            .where("channelId", "in", channelIds.slice(0, 30))
-            .where("month", ">=", startOfYear)
-            .where("month", "<=", endOfYear)
-            .get();
-
-        const monthlyStats = monthlySnap.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-        } as MonthlyStatistic));
+        // 5. Lấy Monthly Stats theo Năm
+        const startMonth = `${year}-01`;
+        const endMonth = `${year}-12`;
+        const monthlyPromises = statsChunks.map(chunk =>
+            adminDb.collection("monthly_statistics")
+                .where("channelId", "in", chunk)
+                .where("month", ">=", startMonth)
+                .where("month", "<=", endMonth)
+                .get()
+        );
+        const monthlySnapshots = await Promise.all(monthlyPromises);
+        const monthlyStats: MonthlyStatistic[] = monthlySnapshots.flatMap(snap =>
+            snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as MonthlyStatistic))
+        );
 
         return {
             team,
@@ -122,7 +108,7 @@ export async function getManagerDashboardData(managerId: string, year: number): 
         };
 
     } catch (error) {
-        console.error("Error getting manager dashboard data:", error);
-        throw error;
+        console.error("Error fetching manager dashboard data:", error);
+        return { team: null, channels: [], latestStats: [], monthlyStats: [] };
     }
 }

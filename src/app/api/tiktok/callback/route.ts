@@ -1,13 +1,13 @@
 // src/app/api/tiktok/callback/route.ts
 import { NextResponse } from "next/server";
-import { db } from "@/lib/firebase";
-import { collection, addDoc, query, where, getDocs, updateDoc, Timestamp } from "firebase/firestore";
+import { adminDb } from "@/lib/firebase-admin"; // Use Admin SDK
 import { Channel } from "@/types";
+// No need to import Client SDK functions like addDoc, updateDoc, etc.
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const code = searchParams.get("code");
-    const state = searchParams.get("state");
+    const state = searchParams.get("state"); // This contains the userId
     const error = searchParams.get("error");
 
     const redirectUriEnv = process.env.TIKTOK_REDIRECT_URI!;
@@ -20,7 +20,7 @@ export async function GET(request: Request) {
     const userId = state;
 
     try {
-        // 1. Đổi Code lấy Access Token
+        // 1. Exchange Code for Access Token
         const tokenResponse = await fetch("https://open.tiktokapis.com/v2/oauth/token/", {
             method: "POST",
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -41,10 +41,11 @@ export async function GET(request: Request) {
 
         const accessToken = tokenData.access_token;
         const refreshToken = tokenData.refresh_token;
-        const expiresIn = tokenData.expires_in; // Giây
-        const refreshExpiresIn = tokenData.refresh_expires_in; // Giây
+        const expiresIn = tokenData.expires_in;
+        const refreshExpiresIn = tokenData.refresh_expires_in;
         const openId = tokenData.open_id;
 
+        // 2. Fetch User Info from TikTok
         const fields = "open_id,union_id,avatar_url_100,display_name,username,follower_count,following_count,likes_count,video_count,is_verified";
         const userResponse = await fetch(`https://open.tiktokapis.com/v2/user/info/?fields=${fields}`, {
             headers: {
@@ -61,13 +62,14 @@ export async function GET(request: Request) {
 
         const tiktokUser = userDataRes.data.user;
 
+        // 3. Prepare Channel Data
         const newChannelData: Omit<Channel, 'id'> = {
             openId: tiktokUser.open_id,
             unionId: tiktokUser.union_id || "",
             avatar: tiktokUser.avatar_url_100,
             displayName: tiktokUser.display_name,
             username: tiktokUser.username || tiktokUser.display_name.replace(/\s+/g, '').toLowerCase(),
-            email: "", // API thường không trả email
+            email: "",
             isVerified: tiktokUser.is_verified || false,
             follower: tiktokUser.follower_count || 0,
             following: tiktokUser.following_count || 0,
@@ -76,25 +78,30 @@ export async function GET(request: Request) {
             userId: userId,
         };
 
-        // 4. Lưu vào Firestore
-        // Kiểm tra xem kênh này đã tồn tại chưa (dựa vào openId) để update hoặc create
-        const channelsRef = collection(db, "channels");
-        const q = query(channelsRef, where("openId", "==", newChannelData.openId));
-        const querySnapshot = await getDocs(q);
+        // 4. Save/Update Channel in Firestore using Admin SDK
+        const channelsRef = adminDb.collection("channels");
+
+        // Check if channel exists by openId
+        const querySnapshot = await channelsRef.where("openId", "==", newChannelData.openId).get();
 
         let channelId = "";
 
         if (!querySnapshot.empty) {
-            // Đã tồn tại -> Update
+            // Update existing channel
             const docSnapshot = querySnapshot.docs[0];
             channelId = docSnapshot.id;
-            await updateDoc(querySnapshot.docs[0].ref, newChannelData);
+            await docSnapshot.ref.update(newChannelData);
         } else {
-            // Chưa tồn tại -> Create
-            const docRef = await addDoc(channelsRef, newChannelData);
+            // Create new channel
+            const docRef = await channelsRef.add({
+                ...newChannelData,
+                createdAt: new Date(), // Admin SDK handles native Date objects well
+                updatedAt: new Date()
+            });
             channelId = docRef.id;
         }
 
+        // 5. Save/Update Token
         const tokenPayload = {
             channelId: channelId,
             openId: openId,
@@ -102,27 +109,23 @@ export async function GET(request: Request) {
             refreshToken: refreshToken,
             expiresIn: expiresIn,
             refreshExpiresIn: refreshExpiresIn,
-            updatedAt: Timestamp.now() // Lưu thời gian để tính ngày hết hạn sau này
+            updatedAt: new Date() // Use simple Date object for Admin SDK
         };
 
-        const tokensRef = collection(db, "tokens");
-        // Kiểm tra xem token của channel này đã có chưa để update đè lên
-        const qToken = query(tokensRef, where("channelId", "==", channelId));
-        const tokenSnapshot = await getDocs(qToken);
+        const tokensRef = adminDb.collection("tokens");
+        const tokenQuerySnapshot = await tokensRef.where("channelId", "==", channelId).get();
 
-        if (!tokenSnapshot.empty) {
-            // Đã có token -> Update
-            await updateDoc(tokenSnapshot.docs[0].ref, tokenPayload);
+        if (!tokenQuerySnapshot.empty) {
+            await tokenQuerySnapshot.docs[0].ref.update(tokenPayload);
         } else {
-            // Chưa có -> Tạo mới
-            await addDoc(tokensRef, tokenPayload);
+            await tokensRef.add(tokenPayload);
         }
 
-        // 5. Thành công -> Quay về trang Channels
+        // 6. Success Redirect
         return NextResponse.redirect(`${baseUrl}/channels?success=true`);
 
     } catch (err) {
-        console.error(err);
+        console.error("TikTok Callback Error:", err);
         return NextResponse.redirect(`${baseUrl}/channels?error=processing_failed`);
     }
 }

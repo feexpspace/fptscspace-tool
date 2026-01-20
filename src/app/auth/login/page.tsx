@@ -10,7 +10,7 @@ import { useAuth } from "@/context/AuthContext";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { auth, db } from "@/lib/firebase";
 import { GoogleAuthProvider, sendPasswordResetEmail, signInWithPopup } from "firebase/auth";
-import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import { User } from "@/types";
 
 export default function LoginPage() {
@@ -27,7 +27,7 @@ export default function LoginPage() {
 
     const navigateBasedOnRole = (role: string) => {
         if (role === 'member') {
-            router.push("/teams");
+            router.push("/statistics-member");
         } else {
             // Manager hoặc Admin về trang Dashboard chính
             router.push("/");
