@@ -4,11 +4,10 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { getEditors, createEditor, deleteEditor, updateEditor, getEditorStats } from "@/app/actions/editor"; // Import thêm getEditorStats
+import { getEditors, createEditor, deleteEditor, updateEditor, getEditorStats } from "@/app/actions/editor";
 import { Editor, Video } from "@/types";
 import { Loader2, Plus, Pencil, Trash2, X, Mail, UserRoundPen, BarChart3, Calendar, ExternalLink, PlayCircle } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
-import { cn } from "@/lib/utils";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -101,71 +100,73 @@ export default function EditorsPage() {
         setSelectedEditor(null);
     };
 
-    if (loading || (!isAdmin && !isManager)) return <div className="flex h-screen items-center justify-center bg-black"><Loader2 className="animate-spin text-white" /></div>;
+    if (loading || (!isAdmin && !isManager)) return <div className="flex h-screen items-center justify-center bg-zinc-50 dark:bg-zinc-950"><Loader2 className="animate-spin text-zinc-500" /></div>;
 
     return (
-        <div className="flex h-screen w-full bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-sans">
+        <div className="flex h-screen w-full bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-sans transition-colors duration-300">
             <Sidebar />
 
             <main className="flex-1 flex flex-col h-screen overflow-hidden">
-                <header className="h-16 flex items-center justify-between border-b border-zinc-800 px-6 bg-black shrink-0">
+                {/* Header */}
+                <header className="h-16 flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 px-6 bg-white dark:bg-zinc-950 shrink-0 transition-colors">
                     <div>
-                        <h1 className="text-lg font-bold flex items-center gap-2 text-white">
+                        <h1 className="text-lg font-bold flex items-center gap-2 text-zinc-900 dark:text-zinc-50">
                             <UserRoundPen className="h-5 w-5" />
                             Quản lý Editors
                         </h1>
                     </div>
                     <button
                         onClick={openAddModal}
-                        className="flex items-center gap-2 bg-white text-black px-4 py-1.5 text-sm font-bold rounded-full hover:bg-zinc-200 transition-colors"
+                        className="flex items-center gap-2 bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200 px-4 py-2 text-sm font-bold rounded-full transition-all shadow-sm"
                     >
                         <Plus className="h-4 w-4" /> Thêm Editor
                     </button>
                 </header>
 
-                <div className="flex-1 overflow-y-auto p-6 bg-black">
-                    <div className="bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden max-w-6xl mx-auto">
+                {/* Main Content */}
+                <div className="flex-1 overflow-y-auto p-6 bg-zinc-50/50 dark:bg-zinc-950/50">
+                    <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden max-w-6xl mx-auto shadow-sm">
                         {isLoadingList ? (
-                            <div className="p-8 flex justify-center"><Loader2 className="animate-spin text-zinc-500" /></div>
+                            <div className="p-12 flex justify-center"><Loader2 className="animate-spin text-zinc-500" /></div>
                         ) : (
                             <table className="w-full text-left text-sm">
-                                <thead className="bg-zinc-950 text-xs uppercase text-zinc-500 border-b border-zinc-800">
+                                <thead className="bg-zinc-50 dark:bg-zinc-950 text-xs uppercase text-zinc-500 border-b border-zinc-200 dark:border-zinc-800">
                                     <tr>
                                         <th className="px-6 py-4 font-semibold">Tên Editor</th>
                                         <th className="px-6 py-4 font-semibold">Email</th>
                                         <th className="px-6 py-4 font-semibold text-right">Hành động</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-zinc-800">
+                                <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
                                     {editors.length > 0 ? editors.map((editor) => (
-                                        <tr key={editor.id} className="hover:bg-zinc-800/50 transition-colors group">
-                                            <td className="px-6 py-4 font-medium text-white">
+                                        <tr key={editor.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors group bg-white dark:bg-zinc-900">
+                                            <td className="px-6 py-4 font-medium text-zinc-900 dark:text-zinc-100">
                                                 {editor.name}
                                             </td>
-                                            <td className="px-6 py-4 text-zinc-400">
+                                            <td className="px-6 py-4 text-zinc-500 dark:text-zinc-400">
                                                 {editor.email ? (
-                                                    <span className="flex items-center gap-2"><Mail className="h-3 w-3" /> {editor.email}</span>
-                                                ) : <span className="text-zinc-600 italic">--</span>}
+                                                    <span className="flex items-center gap-2"><Mail className="h-3.5 w-3.5" /> {editor.email}</span>
+                                                ) : <span className="text-zinc-400 italic">--</span>}
                                             </td>
                                             <td className="px-6 py-4 text-right flex items-center justify-end gap-2">
                                                 {/* Nút Xem Thống Kê */}
                                                 <button
                                                     onClick={() => openStatsModal(editor)}
-                                                    className="flex items-center gap-1 px-3 py-1.5 bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white rounded-lg transition-all text-xs font-bold mr-2"
+                                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500/20 rounded-md transition-all text-xs font-bold mr-2"
                                                 >
                                                     <BarChart3 className="h-3.5 w-3.5" /> Thống kê
                                                 </button>
 
-                                                <button onClick={() => openEditModal(editor)} className="p-2 hover:bg-zinc-800 rounded-full text-zinc-400 hover:text-white transition-colors">
+                                                <button onClick={() => openEditModal(editor)} className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors">
                                                     <Pencil className="h-4 w-4" />
                                                 </button>
-                                                <button onClick={() => handleDelete(editor.id)} className="p-2 hover:bg-red-900/20 rounded-full text-red-500 hover:text-red-400 transition-colors">
+                                                <button onClick={() => handleDelete(editor.id)} className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full text-zinc-400 hover:text-red-500 dark:text-zinc-500 dark:hover:text-red-400 transition-colors">
                                                     <Trash2 className="h-4 w-4" />
                                                 </button>
                                             </td>
                                         </tr>
                                     )) : (
-                                        <tr><td colSpan={3} className="px-6 py-12 text-center text-zinc-500">Chưa có editor nào.</td></tr>
+                                        <tr><td colSpan={3} className="px-6 py-12 text-center text-zinc-500 italic">Chưa có editor nào.</td></tr>
                                     )}
                                 </tbody>
                             </table>
@@ -176,24 +177,35 @@ export default function EditorsPage() {
 
             {/* --- MODAL FORM THÊM/SỬA --- */}
             {isFormModalOpen && (
-                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl w-full max-w-sm p-6 relative animate-in zoom-in-95">
-                        <button onClick={closeFormModal} className="absolute top-4 right-4 text-zinc-500 hover:text-white"><X className="h-5 w-5" /></button>
-                        <h2 className="text-xl font-bold mb-6 text-white">{editingEditor ? "Cập nhật" : "Thêm mới"}</h2>
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-2xl w-full max-w-sm p-6 relative animate-in zoom-in-95">
+                        <button onClick={closeFormModal} className="absolute top-4 right-4 text-zinc-400 hover:text-black dark:hover:text-white transition-colors"><X className="h-5 w-5" /></button>
+                        <h2 className="text-xl font-bold mb-6 text-zinc-900 dark:text-zinc-50">{editingEditor ? "Cập nhật" : "Thêm mới"}</h2>
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div>
-                                <label className="block text-xs font-medium text-zinc-400 mb-1.5 uppercase">Tên Editor <span className="text-red-500">*</span></label>
-                                <input type="text" required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                    className="w-full px-3 py-2.5 bg-zinc-950 border border-zinc-800 rounded-lg text-white focus:outline-none focus:border-white/50" placeholder="Nhập tên..." />
+                                <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1.5 uppercase">Tên Editor <span className="text-red-500">*</span></label>
+                                <input
+                                    type="text"
+                                    required
+                                    value={formData.name}
+                                    onChange={e => setFormData({ ...formData, name: e.target.value })}
+                                    className="w-full px-3 py-2.5 bg-white border border-zinc-300 rounded-lg text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/10 focus:border-zinc-900 dark:bg-zinc-950 dark:border-zinc-700 dark:text-white dark:focus:border-zinc-500 dark:focus:ring-white/10 transition-all"
+                                    placeholder="Nhập tên..."
+                                />
                             </div>
                             <div>
-                                <label className="block text-xs font-medium text-zinc-400 mb-1.5 uppercase">Email</label>
-                                <input type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })}
-                                    className="w-full px-3 py-2.5 bg-zinc-950 border border-zinc-800 rounded-lg text-white focus:outline-none focus:border-white/50" placeholder="email@example.com" />
+                                <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1.5 uppercase">Email</label>
+                                <input
+                                    type="email"
+                                    value={formData.email}
+                                    onChange={e => setFormData({ ...formData, email: e.target.value })}
+                                    className="w-full px-3 py-2.5 bg-white border border-zinc-300 rounded-lg text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/10 focus:border-zinc-900 dark:bg-zinc-950 dark:border-zinc-700 dark:text-white dark:focus:border-zinc-500 dark:focus:ring-white/10 transition-all"
+                                    placeholder="email@example.com"
+                                />
                             </div>
                             <div className="pt-4 flex justify-end gap-3">
-                                <button type="button" onClick={closeFormModal} className="px-4 py-2 text-sm font-medium text-zinc-400 hover:text-white">Hủy</button>
-                                <button type="submit" disabled={isSubmitting} className="px-4 py-2 text-sm font-bold text-black bg-white hover:bg-zinc-200 rounded-lg flex items-center gap-2">
+                                <button type="button" onClick={closeFormModal} className="px-4 py-2.5 text-sm font-medium text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white transition-colors">Hủy</button>
+                                <button type="submit" disabled={isSubmitting} className="px-4 py-2.5 text-sm font-bold text-white bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200 rounded-lg flex items-center gap-2 transition-all shadow-sm">
                                     {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />} Lưu
                                 </button>
                             </div>
@@ -232,24 +244,24 @@ function EditorStatsModal({ editor, onClose }: { editor: Editor, onClose: () => 
     }, [editor.id, year]);
 
     return (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-zinc-950 border border-zinc-800 rounded-xl shadow-2xl w-full max-w-5xl h-[90vh] flex flex-col animate-in zoom-in-95">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+            <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-2xl w-full max-w-5xl h-[90vh] flex flex-col animate-in zoom-in-95 overflow-hidden">
 
                 {/* 1. Header Modal */}
-                <div className="flex items-center justify-between p-6 border-b border-zinc-800 shrink-0">
+                <div className="flex items-center justify-between p-6 border-b border-zinc-200 dark:border-zinc-800 shrink-0 bg-zinc-50 dark:bg-zinc-950">
                     <div>
-                        <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                            <BarChart3 className="h-5 w-5 text-blue-500" />
+                        <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-50 flex items-center gap-2">
+                            <BarChart3 className="h-5 w-5 text-blue-600 dark:text-blue-500" />
                             Thống kê: {editor.name}
                         </h2>
                     </div>
-                    <button onClick={onClose} className="p-2 hover:bg-zinc-800 rounded-full text-zinc-400 hover:text-white transition-colors">
+                    <button onClick={onClose} className="p-2 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-full text-zinc-500 hover:text-black dark:text-zinc-400 dark:hover:text-white transition-colors">
                         <X className="h-5 w-5" />
                     </button>
                 </div>
 
                 {/* 2. Content Scrollable */}
-                <div className="flex-1 overflow-y-auto p-6 bg-black custom-scrollbar">
+                <div className="flex-1 overflow-y-auto p-6 bg-zinc-50/50 dark:bg-zinc-950/50 custom-scrollbar">
                     {isLoading ? (
                         <div className="h-full flex items-center justify-center"><Loader2 className="animate-spin text-zinc-500 h-8 w-8" /></div>
                     ) : data ? (
@@ -258,41 +270,41 @@ function EditorStatsModal({ editor, onClose }: { editor: Editor, onClose: () => 
                             {/* --- SECTION 1: BỘ LỌC & TỔNG QUAN --- */}
                             <div className="space-y-4">
                                 <div className="flex items-center justify-between">
-                                    <h3 className="text-zinc-400 text-sm font-bold uppercase tracking-wider">Tổng quan Năm {year}</h3>
+                                    <h3 className="text-zinc-500 dark:text-zinc-400 text-sm font-bold uppercase tracking-wider">Tổng quan Năm {year}</h3>
 
                                     <div className="relative">
                                         <select
                                             value={year}
                                             onChange={(e) => setYear(Number(e.target.value))}
-                                            className="appearance-none bg-zinc-900 border border-zinc-800 text-white text-sm font-bold px-4 py-2 rounded-lg cursor-pointer hover:border-zinc-700 focus:outline-none pr-8"
+                                            className="appearance-none bg-white border border-zinc-300 text-zinc-900 dark:bg-zinc-900 dark:border-zinc-700 dark:text-zinc-100 text-sm font-bold px-4 py-2 rounded-lg cursor-pointer hover:border-zinc-400 dark:hover:border-zinc-600 focus:outline-none focus:ring-2 focus:ring-black/5 dark:focus:ring-white/10 pr-8 shadow-sm transition-all"
                                         >
-                                            {years.map(y => <option key={y} value={y} className="bg-zinc-900">Năm {y}</option>)}
+                                            {years.map(y => <option key={y} value={y}>Năm {y}</option>)}
                                         </select>
                                         <Calendar className="absolute right-2.5 top-2.5 h-4 w-4 text-zinc-500 pointer-events-none" />
                                     </div>
                                 </div>
 
-                                {/* 3 Card Thông số Tổng (Giữ nguyên) */}
+                                {/* 3 Card Thông số Tổng */}
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div className="bg-zinc-900 p-5 rounded-xl border border-zinc-800 flex flex-col items-center text-center">
-                                        <div className="p-3 bg-blue-500/10 rounded-full mb-3 text-blue-500"><PlayCircle className="h-6 w-6" /></div>
+                                    <div className="bg-white dark:bg-zinc-900 p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 flex flex-col items-center text-center shadow-sm">
+                                        <div className="p-3 bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-500 rounded-full mb-3"><PlayCircle className="h-6 w-6" /></div>
                                         <p className="text-zinc-500 text-xs uppercase font-bold mb-1">Tổng Video</p>
-                                        <p className="text-3xl font-bold text-white">{data.overview.totalVideos}</p>
+                                        <p className="text-3xl font-bold text-zinc-900 dark:text-white">{data.overview.totalVideos}</p>
                                     </div>
-                                    <div className="bg-zinc-900 p-5 rounded-xl border border-zinc-800 flex flex-col items-center text-center">
-                                        <div className="p-3 bg-yellow-500/10 rounded-full mb-3 text-yellow-500"><ExternalLink className="h-6 w-6" /></div>
+                                    <div className="bg-white dark:bg-zinc-900 p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 flex flex-col items-center text-center shadow-sm">
+                                        <div className="p-3 bg-yellow-100 text-yellow-600 dark:bg-yellow-500/10 dark:text-yellow-500 rounded-full mb-3"><ExternalLink className="h-6 w-6" /></div>
                                         <p className="text-zinc-500 text-xs uppercase font-bold mb-1">Tổng Views</p>
-                                        <p className="text-3xl font-bold text-yellow-500">{data.overview.totalViews.toLocaleString()}</p>
+                                        <p className="text-3xl font-bold text-yellow-600 dark:text-yellow-500">{data.overview.totalViews.toLocaleString()}</p>
                                     </div>
-                                    <div className="bg-zinc-900 p-5 rounded-xl border border-zinc-800 flex flex-col items-center text-center">
-                                        <div className="p-3 bg-green-500/10 rounded-full mb-3 text-green-500"><BarChart3 className="h-6 w-6" /></div>
+                                    <div className="bg-white dark:bg-zinc-900 p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 flex flex-col items-center text-center shadow-sm">
+                                        <div className="p-3 bg-green-100 text-green-600 dark:bg-green-500/10 dark:text-green-500 rounded-full mb-3"><BarChart3 className="h-6 w-6" /></div>
                                         <p className="text-zinc-500 text-xs uppercase font-bold mb-1">Tổng Tương tác</p>
-                                        <p className="text-3xl font-bold text-green-500">{data.overview.totalEngagement.toLocaleString()}</p>
+                                        <p className="text-3xl font-bold text-green-600 dark:text-green-500">{data.overview.totalEngagement.toLocaleString()}</p>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="w-full h-px bg-zinc-800 my-6"></div>
+                            <div className="w-full h-px bg-zinc-200 dark:bg-zinc-800 my-6"></div>
 
                             {/* --- SECTION 2: DANH SÁCH THEO THÁNG --- */}
                             <div className="space-y-8">
@@ -303,7 +315,7 @@ function EditorStatsModal({ editor, onClose }: { editor: Editor, onClose: () => 
                                         <div key={group.month} className="animate-in fade-in slide-in-from-bottom-4">
                                             {/* Header của Tháng */}
                                             <div className="flex items-center gap-3 mb-3">
-                                                <div className="bg-white text-black text-xs font-bold px-2 py-1 rounded">
+                                                <div className="bg-zinc-900 text-white dark:bg-zinc-100 dark:text-black text-xs font-bold px-2.5 py-1 rounded shadow-sm">
                                                     THÁNG {group.month}
                                                 </div>
                                                 <span className="text-zinc-500 text-xs font-medium">
@@ -312,9 +324,9 @@ function EditorStatsModal({ editor, onClose }: { editor: Editor, onClose: () => 
                                             </div>
 
                                             {/* Bảng Video của Tháng đó */}
-                                            <div className="bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden">
+                                            <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden shadow-sm">
                                                 <table className="w-full text-left text-sm">
-                                                    <thead className="bg-zinc-950 text-xs uppercase text-zinc-500 border-b border-zinc-800">
+                                                    <thead className="bg-zinc-50 dark:bg-zinc-950 text-xs uppercase text-zinc-500 border-b border-zinc-200 dark:border-zinc-800">
                                                         <tr>
                                                             <th className="px-4 py-3 w-10 text-center">#</th>
                                                             <th className="px-4 py-3">Video</th>
@@ -324,39 +336,38 @@ function EditorStatsModal({ editor, onClose }: { editor: Editor, onClose: () => 
                                                             <th className="px-4 py-3 text-center w-16">Link</th>
                                                         </tr>
                                                     </thead>
-                                                    <tbody className="divide-y divide-zinc-800">
+                                                    <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
                                                         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                                                         {group.videos.map((video: Video, idx: number) => {
                                                             // Tính tổng tương tác
                                                             const interactions = (video.stats.like || 0) + (video.stats.comment || 0) + (video.stats.share || 0);
 
                                                             return (
-                                                                <tr key={video.id} className="hover:bg-zinc-800/50 transition-colors">
-                                                                    <td className="px-4 py-3 text-center text-zinc-600 font-mono text-xs">{idx + 1}</td>
+                                                                <tr key={video.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors bg-white dark:bg-zinc-900">
+                                                                    <td className="px-4 py-3 text-center text-zinc-500 font-mono text-xs">{idx + 1}</td>
                                                                     <td className="px-4 py-3">
                                                                         <div className="flex items-center gap-3">
                                                                             {video.coverImage && (
-                                                                                <div className="h-9 w-7 relative rounded overflow-hidden bg-zinc-800 shrink-0 border border-zinc-700">
+                                                                                <div className="h-9 w-7 relative rounded overflow-hidden bg-zinc-200 dark:bg-zinc-800 shrink-0 border border-zinc-200 dark:border-zinc-700">
                                                                                     <Image src={video.coverImage} alt="" fill className="object-cover" />
                                                                                 </div>
                                                                             )}
-                                                                            <span className="font-medium text-zinc-300 line-clamp-1" title={video.title}>
+                                                                            <span className="font-medium text-zinc-900 dark:text-zinc-300 line-clamp-1" title={video.title}>
                                                                                 {video.title}
                                                                             </span>
                                                                         </div>
                                                                     </td>
-                                                                    <td className="px-4 py-3 text-right font-mono text-yellow-500 font-medium">
+                                                                    <td className="px-4 py-3 text-right font-mono text-yellow-600 dark:text-yellow-500 font-medium">
                                                                         {video.stats.view.toLocaleString()}
                                                                     </td>
-                                                                    {/* [CẬP NHẬT]: Hiển thị cột Tương tác */}
-                                                                    <td className="px-4 py-3 text-right font-mono text-green-500 font-medium">
+                                                                    <td className="px-4 py-3 text-right font-mono text-green-600 dark:text-green-500 font-medium">
                                                                         {interactions.toLocaleString()}
                                                                     </td>
                                                                     <td className="px-4 py-3 text-right text-zinc-500 text-xs">
                                                                         {new Date(video.createTime).toLocaleDateString('vi-VN')}
                                                                     </td>
                                                                     <td className="px-4 py-3 text-center">
-                                                                        <Link href={video.link} target="_blank" className="inline-flex p-1.5 bg-zinc-800 hover:bg-zinc-700 hover:text-blue-400 rounded-full text-zinc-400 transition-colors">
+                                                                        <Link href={video.link} target="_blank" className="inline-flex p-1.5 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 hover:text-blue-500 dark:hover:text-blue-400 rounded-full text-zinc-500 dark:text-zinc-400 transition-colors">
                                                                             <ExternalLink className="h-3.5 w-3.5" />
                                                                         </Link>
                                                                     </td>
@@ -369,7 +380,7 @@ function EditorStatsModal({ editor, onClose }: { editor: Editor, onClose: () => 
                                         </div>
                                     ))
                                 ) : (
-                                    <div className="text-center py-12 text-zinc-500 bg-zinc-900/50 rounded-xl border border-zinc-800 border-dashed">
+                                    <div className="text-center py-12 text-zinc-500 bg-white dark:bg-zinc-900/50 rounded-xl border border-zinc-200 dark:border-zinc-800 border-dashed">
                                         Không có video nào trong năm {year}.
                                     </div>
                                 )}

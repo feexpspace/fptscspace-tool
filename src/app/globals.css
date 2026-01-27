@@ -1,8 +1,18 @@
 @import "tailwindcss";
 
+@variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  /* --- Định nghĩa màu Scrollbar cho Light Mode --- */
+  --scrollbar-track: #ffffff;
+  /* Nền thanh cuộn trùng màu nền web */
+  --scrollbar-thumb: #d4d4d8;
+  /* Màu thanh kéo (zinc-300) */
+  --scrollbar-thumb-hover: #a1a1aa;
+  /* Màu khi hover (zinc-400) */
 }
 
 @plugin "@tailwindcss/typography";
@@ -14,11 +24,14 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+.dark {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+
+  /* Màu Scrollbar Dark */
+  --scrollbar-track: #0a0a0a;
+  --scrollbar-thumb: #3f3f46;
+  --scrollbar-thumb-hover: #71717a;
 }
 
 body {
@@ -29,74 +42,60 @@ body {
 
 @layer utilities {
 
-  /* Class tùy chỉnh thanh cuộn */
+  /* Class tùy chỉnh thanh cuộn - Dùng biến CSS */
   .custom-scrollbar {
-    /* Cho Firefox */
     scrollbar-width: thin;
-    scrollbar-color: #3f3f46 transparent;
-    /* (Màu thanh cuộn) (Màu nền) */
+    scrollbar-color: var(--scrollbar-thumb) transparent;
   }
 
-  /* Cho Chrome, Edge, Safari, Opera */
   .custom-scrollbar::-webkit-scrollbar {
     width: 8px;
-    /* Chiều rộng thanh cuộn dọc */
     height: 8px;
-    /* Chiều cao thanh cuộn ngang */
   }
 
   .custom-scrollbar::-webkit-scrollbar-track {
     background: transparent;
-    /* Nền trong suốt */
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    background-color: #3f3f46;
-    /* Màu xám tối (zinc-700) */
+    background-color: var(--scrollbar-thumb);
     border-radius: 9999px;
-    /* Bo tròn */
     border: 2px solid transparent;
-    /* Tạo khoảng hở giúp thanh cuộn đẹp hơn */
     background-clip: content-box;
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background-color: #71717a;
-    /* Màu sáng hơn khi di chuột (zinc-500) */
+    background-color: var(--scrollbar-thumb-hover);
   }
 }
 
 @layer base {
+  /* --- Global Scrollbar (Toàn trang) --- */
 
-  /* --- Cho Chrome, Edge, Safari --- */
+  /* Cho Chrome, Edge, Safari */
   ::-webkit-scrollbar {
     width: 10px;
-    /* Chiều rộng thanh dọc */
     height: 10px;
-    /* Chiều cao thanh ngang */
   }
 
   ::-webkit-scrollbar-track {
-    background: #000000;
-    /* Nền đen tệp với bg-black */
+    background: var(--scrollbar-track);
   }
 
   ::-webkit-scrollbar-thumb {
-    background-color: #3f3f46;
-    /* Màu xám đậm (zinc-700) */
+    background-color: var(--scrollbar-thumb);
     border-radius: 5px;
-    border: 2px solid #000000;
-    /* Viền đen để tạo khoảng cách với nội dung */
+    /* Mẹo: Dùng border màu trùng với background để tạo cảm giác thanh cuộn "nổi" và nhỏ hơn */
+    border: 2px solid var(--background);
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background-color: #71717a;
-    /* Sáng lên khi di chuột (zinc-500) */
+    background-color: var(--scrollbar-thumb-hover);
   }
 
-  /* --- Cho Firefox --- */
+  /* Cho Firefox */
   * {
     scrollbar-width: thin;
-    scrollbar-color: #3f3f46 #000000;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
   }
 }

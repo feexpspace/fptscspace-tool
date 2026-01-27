@@ -21,6 +21,7 @@ import { useAuth } from "@/context/AuthContext";
 import { logoutUser } from "@/lib/auth-service";
 import { UserRole } from "@/types/index"; // Import Type UserRole
 import { useEffect, useState } from "react";
+import { ModeToggle } from "./ModeToggle";
 
 // 1. Định nghĩa kiểu dữ liệu cho Item Menu
 interface SidebarItem {
@@ -150,18 +151,19 @@ export function Sidebar() {
             <div>
                 {/* Logo Area */}
                 <div className={cn("flex items-center gap-3 px-2 h-10 overflow-hidden", isCollapsed ? "justify-center" : "")}>
-                    <div className="relative h-8 w-8 shrink-0">
+                    <div className="relative h-10 w-10 shrink-0 rounded-full overflow-hidden shadow-sm border border-zinc-100 dark:border-zinc-800">
                         <Image
-                            src="/logof6.png"
+                            src="/logo.png"
                             alt="Logo"
                             fill
-                            className="object-contain"
+                            className="object-cover"
                             priority
+                            sizes="400px"
                         />
                     </div>
                     {/* Ẩn text logo khi thu nhỏ */}
                     <div className={cn("flex flex-col transition-opacity duration-200", isCollapsed ? "opacity-0 w-0 hidden" : "opacity-100")}>
-                        <span className="text-sm font-bold whitespace-nowrap">TikTok Manager</span>
+                        <span className="text-sm font-bold whitespace-nowrap">FPTscSpace Tool</span>
                         <span className="text-[10px] text-zinc-500">v1.0.0</span>
                     </div>
                 </div>
@@ -235,7 +237,7 @@ export function Sidebar() {
 
             {/* Footer / User / Logout */}
             <div className="space-y-1">
-                <button
+                {/* <button
                     title={isCollapsed ? "Settings" : ""}
                     className={cn(
                         "flex w-full items-center rounded-lg py-2.5 text-sm font-medium text-zinc-500 hover:bg-zinc-50 hover:text-black dark:text-zinc-400 dark:hover:bg-zinc-900",
@@ -246,7 +248,8 @@ export function Sidebar() {
                     <span className={cn("transition-all duration-200 whitespace-nowrap overflow-hidden", isCollapsed ? "w-0 opacity-0 hidden" : "w-auto opacity-100")}>
                         Settings
                     </span>
-                </button>
+                </button> */}
+                <ModeToggle isCollapsed={isCollapsed} />
                 <button
                     onClick={handleLogout}
                     title={isCollapsed ? "Log Out" : ""}

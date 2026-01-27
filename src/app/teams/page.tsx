@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Sidebar } from "@/components/Sidebar";
 import { useAuth } from "@/context/AuthContext";
 import { User, Team } from "@/types";
-import { Plus, Search, X, Users, Loader2, Calendar, Eye, Trash2, UserCog, UserPlus } from "lucide-react"; // Import thêm UserPlus
+import { Plus, Search, X, Users, Loader2, Calendar, Eye, Trash2, UserCog, UserPlus, ShieldCheck } from "lucide-react"; // Import thêm UserPlus
 import { db } from "@/lib/firebase";
 import {
     collection, query, where, getDocs, doc, getDoc // Bỏ writeBatch vì đã chuyển sang server
@@ -330,18 +330,27 @@ export default function TeamsPage() {
     if (loading) return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin" /></div>;
 
     return (
-        <div className="flex h-screen w-full bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-sans">
+        <div className="flex h-screen w-full bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-sans transition-colors duration-300">
             <Sidebar />
             <main className="flex-1 flex flex-col h-screen overflow-hidden">
                 {/* ... Header & List Teams (Giữ nguyên) ... */}
-                <header className="h-16 flex items-center justify-between border-b border-zinc-800 px-6 bg-black shrink-0">
-                    <div><h1 className="text-lg font-bold flex items-center gap-2"><Users className="h-5 w-5" /> Quản lý Team</h1></div>
+                <header className="h-16 flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 px-6 bg-white dark:bg-zinc-950 shrink-0 transition-colors duration-300">
+                    <div>
+                        <h1 className="text-lg font-bold flex items-center gap-2">
+                            <Users className="h-5 w-5" /> Quản lý Team
+                        </h1>
+                    </div>
                     {(user?.role === 'manager' || user?.role === 'admin') && (
-                        <button onClick={() => setIsCreateModalOpen(true)} className="flex items-center gap-2 bg-white text-black px-4 py-1.5 text-sm font-bold rounded-full hover:bg-zinc-200 transition-colors"><Plus className="h-4 w-4" /> Thêm Team mới</button>
+                        <button
+                            onClick={() => setIsCreateModalOpen(true)}
+                            className="flex items-center gap-2 bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200 px-4 py-2 text-sm font-bold rounded-full transition-all shadow-sm">
+                            <Plus className="h-4 w-4" /> Thêm Team mới
+                        </button>
                     )}
                 </header>
+
                 {isLoadingTeams ? <div className="flex justify-center mt-30"><Loader2 className="animate-spin text-zinc-400" /></div> : (
-                    <div className="flex-1 overflow-y-auto p-6 bg-black">
+                    <div className="flex-1 overflow-y-auto p-6 bg-zinc-50/50 dark:bg-zinc-950/50">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {teams.map((team) => (
                                 <div key={team.id} className="relative group rounded-2xl bg-white p-6 shadow-sm border border-zinc-100 dark:bg-black dark:border-zinc-800 hover:shadow-md transition-all">
@@ -394,7 +403,9 @@ export default function TeamsPage() {
                             <div className="flex-1 overflow-y-auto pr-2 space-y-6">
                                 {/* LIST MANAGERS */}
                                 <div>
-                                    <h3 className="text-sm font-bold uppercase text-zinc-500 mb-3 flex items-center gap-2"><UserCog className="h-4 w-4" /> Managers ({teamManagersDetails.length})</h3>
+                                    <h3 className="text-sm font-bold uppercase text-zinc-500 mb-3 flex items-center gap-2">
+                                        <ShieldCheck className="h-4 w-4" /> Managers ({teamManagersDetails.length})
+                                    </h3>
                                     <div className="space-y-2">
                                         {teamManagersDetails.map((mgr) => (
                                             <div key={mgr.id} className="flex items-center gap-3 rounded-xl border border-blue-100 p-3 bg-blue-50/30 dark:border-blue-900/50 dark:bg-blue-900/10">

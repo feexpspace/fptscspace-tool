@@ -1,7 +1,7 @@
 // src/app/reports/page.tsx
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Sidebar } from "@/components/Sidebar";
 import { useAuth } from "@/context/AuthContext";
 import { Video, Channel, Editor } from "@/types";
@@ -24,10 +24,9 @@ export default function ReportsPage() {
 
     // State dữ liệu
     const [videos, setVideos] = useState<Video[]>([]);
-
     const [editors, setEditors] = useState<Editor[]>([]);
 
-    // --- THAY ĐỔI: Quản lý danh sách kênh ---
+    // Quản lý danh sách kênh
     const [channels, setChannels] = useState<Channel[]>([]);
     const [selectedChannel, setSelectedChannel] = useState<Channel | null>(null);
 
@@ -65,8 +64,7 @@ export default function ReportsPage() {
                 setSelectedChannel(null);
             }
 
-            // b. MỚI: Lấy danh sách Editors (Giả sử collection tên là 'editors')
-            // Bạn có thể lọc theo teamId nếu cần thiết
+            // b. Lấy danh sách Editors
             try {
                 const qEditor = query(collection(db, "editors"));
                 const editorSnap = await getDocs(qEditor);
@@ -83,19 +81,17 @@ export default function ReportsPage() {
         fetchInitialData();
     }, [user]);
 
-    // 2. Fetch dữ liệu Video khi thay đổi Năm/Tháng/KÊNH ĐANG CHỌN
+    // 2. Fetch dữ liệu Video
     useEffect(() => {
         const fetchData = async () => {
             if (!selectedChannel) {
                 setVideos([]);
-                // Reset stats nếu không có kênh
                 setStatsData({ followers: 0, videos: 0, views: 0, engagement: 0 });
                 return;
             }
 
             setIsLoadingData(true);
 
-            // Gọi song song 2 API (Lấy list video VÀ Lấy thống kê tháng)
             const [videosData, monthlyStats] = await Promise.all([
                 getVideosFromDB(selectedChannel.id, selectedYear, selectedMonth),
                 getMonthlyStatistics(selectedChannel.id, selectedYear, selectedMonth)
@@ -103,17 +99,14 @@ export default function ReportsPage() {
 
             setVideos(videosData);
 
-            // Cập nhật StatsData từ dữ liệu bảng monthly_statistics
             if (monthlyStats) {
                 setStatsData({
-                    followers: monthlyStats.followerCount || selectedChannel.follower || 0, // Ưu tiên số lưu trong tháng, fallback về hiện tại
+                    followers: monthlyStats.followerCount || selectedChannel.follower || 0,
                     videos: monthlyStats.videoCount || 0,
                     views: monthlyStats.totalViews || 0,
                     engagement: monthlyStats.totalInteractions || 0
                 });
             } else {
-                // Nếu chưa có bản ghi thống kê tháng (VD: chưa sync), tạm tính từ list video vừa tải về
-                // Đây là fallback để UI không bị trống
                 const totalViews = videosData.reduce((acc, curr) => acc + (curr.stats.view || 0), 0);
                 const totalEngagement = videosData.reduce((acc, curr) => {
                     return acc + (curr.stats.like || 0) + (curr.stats.comment || 0) + (curr.stats.share || 0);
@@ -133,18 +126,13 @@ export default function ReportsPage() {
     }, [selectedChannel, selectedYear, selectedMonth]);
 
     const handleAssignEditor = async (videoId: string, newEditorId: string) => {
-        if (!videoId) {
-            console.error("Lỗi: Video ID bị thiếu (undefined/null)");
-            return;
-        }
+        if (!videoId) return;
 
         try {
-            // 1. Tìm thông tin editor từ list (để lấy tên)
             const selectedEditor = editors.find(e => e.id === newEditorId);
             const editorName = selectedEditor ? selectedEditor.name : null;
             const editorId = selectedEditor ? selectedEditor.id : null;
 
-            // 2. Cập nhật Optimistic UI (Cập nhật giao diện ngay lập tức)
             setVideos(prev => prev.map(v => {
                 if (v.id === videoId) {
                     return { ...v, editorId: editorId || undefined, editorName: editorName || undefined };
@@ -152,7 +140,6 @@ export default function ReportsPage() {
                 return v;
             }));
 
-            // 3. Cập nhật Firestore
             const videoRef = doc(db, "videos", videoId);
             await updateDoc(videoRef, {
                 editorId: editorId,
@@ -164,13 +151,11 @@ export default function ReportsPage() {
         }
     };
 
-    // Hàm xử lý đồng bộ cho kênh đang chọn
     const handleSync = async () => {
         if (!user || !selectedChannel) return;
         setIsSyncing(true);
         await syncTikTokVideos(user.id, selectedChannel.id);
 
-        // Gọi lại logic fetch (đơn giản nhất là trigger useEffect, nhưng ở đây gọi tay cho chắc)
         const [videosData, monthlyStats] = await Promise.all([
             getVideosFromDB(selectedChannel.id, selectedYear, selectedMonth),
             getMonthlyStatistics(selectedChannel.id, selectedYear, selectedMonth)
@@ -189,18 +174,18 @@ export default function ReportsPage() {
         setIsSyncing(false);
     };
 
-    if (loading) return <div>Loading...</div>;
+    if (loading) return <div className="flex h-screen items-center justify-center bg-zinc-50 dark:bg-zinc-950"><RefreshCw className="animate-spin text-zinc-500" /></div>;
 
     return (
-        <div className="flex h-screen w-full bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-sans">
+        <div className="flex h-screen w-full bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-sans transition-colors duration-300">
             <Sidebar />
 
             <main className="flex-1 flex flex-col h-screen overflow-hidden">
 
-                {/* Header & Controls */}
-                <header className="h-16 flex items-center justify-between border-b border-zinc-800 px-6 bg-black shrink-0">
+                {/* --- HEADER --- */}
+                <header className="h-16 flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 px-6 bg-white dark:bg-zinc-950 shrink-0 transition-colors">
                     <div>
-                        <h1 className="text-lg font-bold flex items-center gap-2">
+                        <h1 className="text-lg font-bold flex items-center gap-2 text-zinc-900 dark:text-zinc-50">
                             <BarChart3 className="h-5 w-5" />
                             Báo cáo Video
                         </h1>
@@ -208,7 +193,7 @@ export default function ReportsPage() {
                     <button
                         onClick={handleSync}
                         disabled={isSyncing || !selectedChannel}
-                        className="flex items-center gap-2 bg-white text-black px-4 py-1.5 text-sm font-bold rounded-full hover:bg-zinc-200 disabled:opacity-50 transition-colors"
+                        className="flex items-center gap-2 bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200 px-4 py-2 text-sm font-bold rounded-lg transition-all shadow-sm disabled:opacity-50"
                     >
                         <RefreshCw className={cn("h-4 w-4", isSyncing && "animate-spin")} />
                         {isSyncing ? "Đang đồng bộ..." : "Đồng bộ TikTok"}
@@ -216,11 +201,11 @@ export default function ReportsPage() {
                 </header>
 
                 {/* --- FILTER BAR --- */}
-                <div className="border-b border-zinc-800 bg-black px-6 py-3 flex flex-wrap items-center gap-4 shrink-0">
+                <div className="border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-6 py-3 flex flex-wrap items-center gap-4 shrink-0 transition-colors">
                     {/* Chọn Kênh */}
                     <div className="relative group">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <Filter className="h-4 w-4 text-zinc-500" />
+                            <Filter className="h-4 w-4 text-zinc-400" />
                         </div>
                         <select
                             value={selectedChannel?.id || ""}
@@ -228,7 +213,7 @@ export default function ReportsPage() {
                                 const ch = channels.find(c => c.id === e.target.value);
                                 if (ch) setSelectedChannel(ch);
                             }}
-                            className="appearance-none bg-zinc-900 border border-zinc-800 text-white text-sm rounded-lg pl-9 pr-8 py-2 focus:ring-2 focus:ring-zinc-700 focus:outline-none cursor-pointer min-w-50"
+                            className="appearance-none bg-zinc-50 border border-zinc-300 text-zinc-900 text-sm rounded-lg pl-9 pr-8 py-2 focus:ring-2 focus:ring-zinc-200 focus:border-zinc-400 focus:outline-none cursor-pointer min-w-50 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-100 dark:focus:ring-zinc-800 dark:focus:border-zinc-600 transition-all shadow-sm"
                         >
                             {channels.length > 0 ? (
                                 channels.map(c => (
@@ -240,22 +225,22 @@ export default function ReportsPage() {
                                 <option value="" disabled>Chưa có kênh nào</option>
                             )}
                         </select>
-                        <ChevronDown className="absolute right-3 top-2.5 h-4 w-4 text-zinc-500 pointer-events-none" />
+                        <ChevronDown className="absolute right-3 top-2.5 h-4 w-4 text-zinc-400 pointer-events-none" />
                     </div>
 
                     {/* Chọn Năm */}
                     <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <Calendar className="h-4 w-4 text-zinc-500" />
+                            <Calendar className="h-4 w-4 text-zinc-400" />
                         </div>
                         <select
                             value={selectedYear}
                             onChange={(e) => setSelectedYear(Number(e.target.value))}
-                            className="appearance-none bg-zinc-900 border border-zinc-800 text-white text-sm rounded-lg pl-9 pr-8 py-2 focus:ring-2 focus:ring-zinc-700 focus:outline-none cursor-pointer"
+                            className="appearance-none bg-zinc-50 border border-zinc-300 text-zinc-900 text-sm rounded-lg pl-9 pr-8 py-2 focus:ring-2 focus:ring-zinc-200 focus:border-zinc-400 focus:outline-none cursor-pointer dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-100 dark:focus:ring-zinc-800 dark:focus:border-zinc-600 transition-all shadow-sm"
                         >
                             {years.map(y => <option key={y} value={y}>Năm {y}</option>)}
                         </select>
-                        <ChevronDown className="absolute right-3 top-2.5 h-4 w-4 text-zinc-500 pointer-events-none" />
+                        <ChevronDown className="absolute right-3 top-2.5 h-4 w-4 text-zinc-400 pointer-events-none" />
                     </div>
 
                     {/* Chọn Tháng (Scroll ngang) */}
@@ -265,10 +250,10 @@ export default function ReportsPage() {
                                 key={m}
                                 onClick={() => setSelectedMonth(m)}
                                 className={cn(
-                                    "px-3 py-1.5 text-sm font-medium rounded-md whitespace-nowrap transition-colors",
+                                    "px-3 py-1.5 text-sm font-medium rounded-md whitespace-nowrap transition-all border",
                                     selectedMonth === m
-                                        ? "bg-white text-black"
-                                        : "text-zinc-400 hover:text-white hover:bg-zinc-900"
+                                        ? "bg-zinc-900 text-white border-zinc-900 dark:bg-zinc-100 dark:text-zinc-900 dark:border-zinc-100"
+                                        : "bg-transparent text-zinc-500 border-transparent hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
                                 )}
                             >
                                 T{m}
@@ -276,28 +261,29 @@ export default function ReportsPage() {
                         ))}
                     </div>
                 </div>
+
                 {/* --- CONTENT --- */}
-                <div className="flex-1 overflow-y-auto p-4 bg-black custom-scrollbar">
-                    <div className="mb-4">
+                <div className="flex-1 overflow-y-auto p-6 bg-zinc-50/50 dark:bg-zinc-950/50 custom-scrollbar">
+                    <div className="mb-6">
                         <ReportsStats stats={statsData} />
                     </div>
 
                     {/* Bảng Dữ liệu */}
-                    <div className="bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden shadow-sm min-h-100">
+                    <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden shadow-sm min-h-100">
                         {isLoadingData ? (
                             <div className="flex h-full min-h-100 items-center justify-center text-zinc-500">
                                 <RefreshCw className="h-6 w-6 animate-spin mr-2" />
                                 Đang tải dữ liệu...
                             </div>
                         ) : videos.length === 0 ? (
-                            <div className="flex h-full min-h-100 flex-col items-center justify-center text-zinc-500">
+                            <div className="flex h-full min-h-100 flex-col items-center justify-center text-zinc-500 dark:text-zinc-400">
                                 <p>Không có video nào trong tháng {selectedMonth}/{selectedYear}.</p>
-                                {selectedChannel && <p className="text-xs mt-2 text-zinc-600">Hãy nhấn Đồng bộ TikTok để cập nhật dữ liệu mới nhất.</p>}
+                                {selectedChannel && <p className="text-xs mt-2 text-zinc-400">Hãy nhấn Đồng bộ TikTok để cập nhật dữ liệu mới nhất.</p>}
                             </div>
                         ) : (
                             <div className="overflow-x-auto">
                                 <table className="w-full text-left text-sm">
-                                    <thead className="bg-zinc-50 text-xs uppercase text-zinc-500 dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800">
+                                    <thead className="bg-zinc-50 text-xs uppercase text-zinc-500 dark:bg-zinc-950 dark:text-zinc-400 border-b border-zinc-200 dark:border-zinc-800">
                                         <tr>
                                             <th className="px-6 py-4 font-semibold w-16">STT</th>
                                             <th className="px-6 py-4 font-semibold w-32">Thời gian</th>
@@ -313,16 +299,16 @@ export default function ReportsPage() {
                                             const interaction = (video.stats.like || 0) + (video.stats.comment || 0) + (video.stats.share || 0);
 
                                             return (
-                                                <tr key={video.id ? `${video.id}-${index}` : index} className="hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors">
-                                                    <td className="px-6 py-4 text-zinc-500">{index + 1}</td>
+                                                <tr key={video.id ? `${video.id}-${index}` : index} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors bg-white dark:bg-zinc-900">
+                                                    <td className="px-6 py-4 text-zinc-500 dark:text-zinc-400">{index + 1}</td>
                                                     <td className="px-6 py-4">
-                                                        <div className="font-medium">{video.createTime.toLocaleDateString('vi-VN')}</div>
-                                                        <div className="text-xs text-zinc-500">{video.createTime.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</div>
+                                                        <div className="font-medium text-zinc-900 dark:text-zinc-100">{video.createTime.toLocaleDateString('vi-VN')}</div>
+                                                        <div className="text-xs text-zinc-500 dark:text-zinc-400">{video.createTime.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</div>
                                                     </td>
                                                     <td className="px-6 py-4">
                                                         <div className="flex items-center gap-3">
                                                             {video.coverImage && (
-                                                                <div className="h-10 w-8 shrink-0 relative overflow-hidden rounded bg-zinc-200">
+                                                                <div className="h-10 w-8 shrink-0 relative overflow-hidden rounded bg-zinc-200 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700">
                                                                     <Image
                                                                         src={video.coverImage}
                                                                         alt="cover"
@@ -348,15 +334,13 @@ export default function ReportsPage() {
                                                                 onChange={(e) => {
                                                                     if (video.id) {
                                                                         handleAssignEditor(video.id, e.target.value);
-                                                                    } else {
-                                                                        console.warn("Video này chưa có ID, không thể cập nhật.");
                                                                     }
                                                                 }}
                                                                 className={cn(
                                                                     "w-full appearance-none rounded-md border py-1.5 pl-3 pr-8 text-sm outline-none transition-all cursor-pointer",
-                                                                    "border-zinc-200 bg-white hover:border-zinc-300 focus:border-black focus:ring-1 focus:ring-black",
-                                                                    "dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700 dark:focus:border-white dark:focus:ring-white",
-                                                                    !video.editorId && "text-zinc-400 italic" // Style chữ nhạt nếu chưa chọn
+                                                                    "border-zinc-300 bg-white text-zinc-900 hover:border-zinc-400 focus:border-black focus:ring-1 focus:ring-black",
+                                                                    "dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:border-zinc-600 dark:focus:border-white dark:focus:ring-white",
+                                                                    !video.editorId && "text-zinc-400 italic"
                                                                 )}
                                                             >
                                                                 <option value="">Bạn</option>
@@ -370,14 +354,14 @@ export default function ReportsPage() {
                                                         </div>
                                                     </td>
 
-                                                    <td className="px-6 py-4 text-right font-bold tabular-nums">
+                                                    <td className="px-6 py-4 text-right font-bold tabular-nums text-yellow-600 dark:text-yellow-500">
                                                         {video.stats.view.toLocaleString()}
                                                     </td>
                                                     <td className="px-6 py-4 text-right">
                                                         <div className="font-bold text-green-600 dark:text-green-400 tabular-nums">
                                                             {interaction.toLocaleString()}
                                                         </div>
-                                                        <div className="text-[10px] text-zinc-400 mt-1 flex items-center justify-end gap-2">
+                                                        <div className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1 flex items-center justify-end gap-2">
                                                             <span title="Likes">{video.stats.like} ❤</span>
                                                             <span title="Comments">{video.stats.comment} 💬</span>
                                                             <span title="Shares">{video.stats.share} ↗</span>
@@ -399,16 +383,14 @@ export default function ReportsPage() {
 
 function ExpandableVideoTitle({ title }: { title: string }) {
     const [isExpanded, setIsExpanded] = useState(false);
-
-    // Chỉ hiện nút "Xem thêm" nếu tiêu đề dài hơn 60 ký tự
     const isLongText = title.length > 60;
 
     return (
         <div className="flex flex-col items-start">
             <span
                 className={cn(
-                    "font-medium text-zinc-700 dark:text-zinc-300 transition-all wrap-break-word max-w-md",
-                    !isExpanded && isLongText ? "line-clamp-2" : "" // Nếu chưa mở rộng thì giới hạn 2 dòng
+                    "font-medium text-zinc-900 dark:text-zinc-100 transition-all wrap-break-word max-w-md",
+                    !isExpanded && isLongText ? "line-clamp-2" : ""
                 )}
                 title={title}
             >

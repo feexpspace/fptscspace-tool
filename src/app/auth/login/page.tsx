@@ -178,9 +178,9 @@ export default function LoginPage() {
 
                         {/* DIVIDER */}
                         <div className="relative flex items-center py-2">
-                            <div className="flex-grow border-t border-zinc-200 dark:border-zinc-700"></div>
-                            <span className="mx-4 flex-shrink-0 text-xs text-zinc-400 font-semibold uppercase">Hoặc đăng nhập với Email</span>
-                            <div className="flex-grow border-t border-zinc-200 dark:border-zinc-700"></div>
+                            <div className="grow border-t border-zinc-200 dark:border-zinc-700"></div>
+                            <span className="mx-4 shrink-0 text-xs text-zinc-400 font-semibold uppercase">Hoặc đăng nhập với Email</span>
+                            <div className="grow border-t border-zinc-200 dark:border-zinc-700"></div>
                         </div>
                     </>
                 )}

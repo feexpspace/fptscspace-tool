@@ -1,0 +1,46 @@
+# apphosting.yaml
+
+# Cấu hình tài nguyên Server (Cloud Run)
+runConfig:
+  cpu: 1
+  memoryMiB: 1024 # Tăng lên 1GB để chạy Next.js Server Actions ổn định
+  minInstances: 0 # 0 để tiết kiệm chi phí (tự tắt khi không ai dùng)
+  maxInstances: 10 # Giới hạn số lượng server tối đa để tránh bill tăng đột biến
+  concurrency: 80 # Số request xử lý đồng thời trên 1 instance
+
+# Các biến môi trường CÔNG KHAI (An toàn để public trên GitHub)
+env:
+  # 1. Firebase Client Configuration (Lấy trong Project Settings)
+  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+    value: "AIzaSyCgvzp1ugczQ-gdVmlGnm1UsjHd89Ww3ck" # <--- THAY BẰNG API KEY CỦA BẠN
+  - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    value: "tiktok-key-members.firebaseapp.com" # <--- THAY BẰNG AUTH DOMAIN
+  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    value: "tiktok-key-members" # <--- THAY BẰNG PROJECT ID
+  - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+    value: "tiktok-key-members.firebasestorage.app"
+  - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+    value: "469178611152"
+  - variable: NEXT_PUBLIC_FIREBASE_APP_ID
+    value: "1:469178611152:web:67f15076a3d5bf244d75d5"
+
+  # 2. TikTok Public Info
+  - variable: TIKTOK_CLIENT_KEY
+    value: "sbaw05yw5i9xfv2512" # <--- THAY BẰNG TIKTOK CLIENT KEY
+  # 3. Redirect URI
+  # Sau khi deploy lần đầu, bạn sẽ có domain thật, hãy quay lại đây sửa giá trị này
+  # Ví dụ: https://tiktok-manager-xyz.a.run.app/api/tiktok/callback
+  - variable: TIKTOK_REDIRECT_URI
+    value: "https://manager-tool--tiktok-key-members.asia-southeast1.hosted.app/api/tiktok/callback"
+
+# Các biến BÍ MẬT (Tuyệt đối không điền giá trị thật ở đây)
+# Bạn phải tạo secret bằng lệnh CLI trước: firebase apphosting:secrets:set <TÊN_SECRET>
+secrets:
+  - variable: TIKTOK_CLIENT_SECRET
+    secret: TIKTOK_CLIENT_SECRET
+
+  - variable: FIREBASE_CLIENT_EMAIL
+    secret: FIREBASE_CLIENT_EMAIL
+
+  - variable: FIREBASE_PRIVATE_KEY
+    secret: FIREBASE_PRIVATE_KEY
