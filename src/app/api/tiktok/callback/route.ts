@@ -4,6 +4,8 @@ import { adminDb } from "@/lib/firebase-admin"; // Use Admin SDK
 import { Channel } from "@/types";
 // No need to import Client SDK functions like addDoc, updateDoc, etc.
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const code = searchParams.get("code");
