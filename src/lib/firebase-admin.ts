@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import "server-only";
 import admin from "firebase-admin";
+import { Firestore } from "firebase-admin/firestore";
+import { Auth } from "firebase/auth";
 
 const privateKey = process.env.FIREBASE_PRIVATE_KEY;
 const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
@@ -27,5 +29,5 @@ if (!admin.apps.length) {
 }
 
 // Export an toàn: Nếu chưa init (lúc build), trả về null
-export const adminDb = admin.apps.length ? admin.firestore() : (null as any);
-export const adminAuth = admin.apps.length ? admin.auth() : (null as any);
+export const adminDb = (admin.apps.length ? admin.firestore() : {}) as Firestore;
+export const adminAuth = (admin.apps.length ? admin.auth() : {}) as Auth;

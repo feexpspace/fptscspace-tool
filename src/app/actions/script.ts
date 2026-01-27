@@ -267,7 +267,7 @@ export async function updateScriptStatus(scriptId: string, status: string) {
         });
         return { success: true };
     } catch (error) {
-        return { success: false, error: "Lỗi cập nhật trạng thái" };
+        return { success: false, error: "Lỗi cập nhật trạng thái: " + error };
     }
 }
 
