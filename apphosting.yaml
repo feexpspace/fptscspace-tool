@@ -11,8 +11,6 @@ runConfig:
 # Các biến môi trường CÔNG KHAI (An toàn để public trên GitHub)
 env:
   # 1. Firebase Client Configuration (Lấy trong Project Settings)
-  - variable: FORCE_UPDATE
-    value: "1"
   - variable: NEXT_PUBLIC_FIREBASE_API_KEY
     value: "AIzaSyCgvzp1ugczQ-gdVmlGnm1UsjHd89Ww3ck" # <--- THAY BẰNG API KEY CỦA BẠN
   - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
@@ -33,7 +31,7 @@ env:
   # Sau khi deploy lần đầu, bạn sẽ có domain thật, hãy quay lại đây sửa giá trị này
   # Ví dụ: https://tiktok-manager-xyz.a.run.app/api/tiktok/callback
   - variable: TIKTOK_REDIRECT_URI
-    value: "https://manager-tool--tiktok-key-members.asia-southeast1.hosted.app/api/tiktok/callback"
+    value: "https://fptscspace-tool--tiktok-key-members.asia-southeast1.hosted.app/api/tiktok/callback"
 
 # Các biến BÍ MẬT (Tuyệt đối không điền giá trị thật ở đây)
 # Bạn phải tạo secret bằng lệnh CLI trước: firebase apphosting:secrets:set <TÊN_SECRET>
