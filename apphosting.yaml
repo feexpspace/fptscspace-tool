@@ -11,6 +11,8 @@ runConfig:
 # Các biến môi trường CÔNG KHAI (An toàn để public trên GitHub)
 env:
   # 1. Firebase Client Configuration (Lấy trong Project Settings)
+  - variable: FORCE_UPDATE
+    value: "1"
   - variable: NEXT_PUBLIC_FIREBASE_API_KEY
     value: "AIzaSyCgvzp1ugczQ-gdVmlGnm1UsjHd89Ww3ck" # <--- THAY BẰNG API KEY CỦA BẠN
   - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN

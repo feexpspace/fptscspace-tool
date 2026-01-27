@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import "server-only";
 import admin from "firebase-admin";
 import { Firestore } from "firebase-admin/firestore";
