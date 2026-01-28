@@ -16,7 +16,6 @@ import {
     ChevronLeft,
     Shield,
     Lock,
-    MessageSquareText // Icon gợi ý cho Communication (hoặc dùng icon khác tùy bạn)
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";

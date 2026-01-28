@@ -24,7 +24,7 @@ env:
   - variable: TIKTOK_CLIENT_KEY
     value: "sbaw05yw5i9xfv2512"
   - variable: TIKTOK_REDIRECT_URI
-    value: "https://fptscspace-tool--tiktok-key-members.asia-southeast1.hosted.app/api/tiktok/callback"
+    value: "https://creative.fptsx.space/api/tiktok/callback"
   - variable: TIKTOK_CLIENT_SECRET
     secret: TIKTOK_CLIENT_SECRET
   - variable: FIREBASE_CLIENT_EMAIL
