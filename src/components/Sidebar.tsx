@@ -10,28 +10,29 @@ import {
     Tv,
     ScrollText,
     LogOut,
-    Settings,
     UserRoundPen,
     BarChart3,
     ChevronRight,
     ChevronLeft,
+    Shield,
+    Lock,
+    MessageSquareText // Icon gợi ý cho Communication (hoặc dùng icon khác tùy bạn)
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
 import { logoutUser } from "@/lib/auth-service";
-import { UserRole } from "@/types/index"; // Import Type UserRole
+import { UserRole } from "@/types/index";
 import { useEffect, useState } from "react";
 import { ModeToggle } from "./ModeToggle";
 
-// 1. Định nghĩa kiểu dữ liệu cho Item Menu
 interface SidebarItem {
     name: string;
     href: string;
     icon: React.ElementType;
-    allowedRoles: UserRole[]; // Mảng các role được phép xem
+    allowedRoles: UserRole[];
 }
 
-// 2. Cấu hình Menu và phân quyền
+// 1. MANAGEMENT (Cũ là Main)
 const mainNavItems: SidebarItem[] = [
     {
         name: "Statistics",
@@ -71,7 +72,8 @@ const mainNavItems: SidebarItem[] = [
     },
 ];
 
-const docNavItems: SidebarItem[] = [
+// 2. COMMUNICATION (Mới - Chứa Scripts)
+const commNavItems: SidebarItem[] = [
     {
         name: "Scripts",
         href: "/scripts",
@@ -79,16 +81,31 @@ const docNavItems: SidebarItem[] = [
         allowedRoles: ['admin', 'member']
     },
     {
-        name: "Scripts",
+        name: "Scripts Manager",
         href: "/scripts-manager",
         icon: ScrollText,
         allowedRoles: ['admin', 'manager']
     },
 ];
 
+// 3. DOCUMENTATION (Chứa Terms)
+const docNavItems: SidebarItem[] = [
+    {
+        name: "Terms of Service",
+        href: "/terms",
+        icon: Shield,
+        allowedRoles: ['admin', 'manager', 'member']
+    },
+    {
+        name: "Privacy Policy",
+        href: "/privacy",
+        icon: Lock,
+        allowedRoles: ['admin', 'manager', 'member']
+    },
+];
+
 export function Sidebar() {
     const pathname = usePathname();
-    // 3. Lấy user và role từ Context
     const { user, role } = useAuth();
     const router = useRouter();
 
@@ -96,19 +113,14 @@ export function Sidebar() {
     const [isTransitionEnabled, setIsTransitionEnabled] = useState(false);
 
     useEffect(() => {
-        // 1. Đọc trạng thái từ localStorage ngay lập tức
         const savedState = localStorage.getItem("sidebar_collapsed");
         if (savedState === "true") {
             // eslint-disable-next-line react-hooks/set-state-in-effect
             setIsCollapsed(true);
         }
-
-        // 2. Kích hoạt transition sau một khoảng thời gian ngắn
-        // Điều này đảm bảo lần render đầu tiên (khi set width từ false -> true) không có animation
         const timer = setTimeout(() => {
             setIsTransitionEnabled(true);
-        }, 100); // 100ms là đủ để render xong trạng thái ban đầu
-
+        }, 100);
         return () => clearTimeout(timer);
     }, []);
 
@@ -123,24 +135,60 @@ export function Sidebar() {
         router.push("/auth/login");
     };
 
-    // Hàm tiện ích để lọc menu
     const filterMenu = (items: SidebarItem[]) => {
-        if (!role) return []; // Chưa có role thì không hiện gì
+        if (!role) return [];
         return items.filter(item => item.allowedRoles.includes(role));
     };
 
     const filteredMainNav = filterMenu(mainNavItems);
-    const filteredDocNav = filterMenu(docNavItems);
+    const filteredCommNav = filterMenu(commNavItems); // Lọc Communication
+    const filteredDocNav = filterMenu(docNavItems);   // Lọc Documentation
+
+    // Helper render menu group để code gọn hơn
+    const renderMenuGroup = (title: string, shortTitle: string, items: SidebarItem[]) => {
+        if (items.length === 0) return null;
+        return (
+            <div className="mb-6">
+                <div className={cn(
+                    "mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-zinc-400 transition-all",
+                    isCollapsed ? "text-center text-[10px]" : ""
+                )}>
+                    {isCollapsed ? shortTitle : title}
+                </div>
+                <nav className="space-y-1">
+                    {items.map((item) => (
+                        <Link
+                            key={item.href} // Dùng href làm key cho chắc chắn
+                            href={item.href}
+                            title={isCollapsed ? item.name : ""}
+                            className={cn(
+                                "flex items-center rounded-lg py-2.5 text-sm font-medium transition-colors",
+                                isCollapsed ? "px-3" : "gap-3 px-2",
+                                pathname === item.href
+                                    ? "bg-zinc-100 text-black dark:bg-zinc-800 dark:text-white"
+                                    : "text-zinc-500 hover:bg-zinc-50 hover:text-black dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-white"
+                            )}
+                        >
+                            <item.icon className="h-5 w-5 shrink-0" />
+                            <span className={cn("transition-all duration-200 whitespace-nowrap overflow-hidden", isCollapsed ? "w-0 opacity-0 hidden" : "w-auto opacity-100")}>
+                                {item.name}
+                            </span>
+                        </Link>
+                    ))}
+                </nav>
+            </div>
+        );
+    };
 
     return (
         <div
             className={cn(
                 "relative flex h-screen flex-col justify-between border-r border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-black",
-                isTransitionEnabled ? "transition-all duration-300" : "",
+                isTransitionEnabled ? "transition-[width] duration-300 ease-in-out" : "",
                 isCollapsed ? "w-20" : "w-64"
             )}
         >
-            {/* 5. Nút Toggle nằm ở cạnh phải sidebar */}
+            {/* Toggle Button */}
             <button
                 onClick={toggleSidebar}
                 className="absolute -right-3 top-9 z-10 flex h-6 w-6 items-center justify-center rounded-full border border-zinc-200 bg-white shadow-sm hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 transition-colors"
@@ -148,9 +196,11 @@ export function Sidebar() {
                 {isCollapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronLeft className="h-3 w-3" />}
             </button>
 
-            <div>
+            {/* TOP SECTION */}
+            <div className="flex-1 overflow-y-auto no-scrollbar"> {/* Thêm overflow để scroll nếu menu dài */}
+
                 {/* Logo Area */}
-                <div className={cn("flex items-center gap-3 px-2 h-10 overflow-hidden", isCollapsed ? "justify-center" : "")}>
+                <div className={cn("flex items-center gap-3 px-2 h-10 overflow-hidden mb-8", isCollapsed ? "justify-center" : "")}>
                     <div className="relative h-10 w-10 shrink-0 rounded-full overflow-hidden shadow-sm border border-zinc-100 dark:border-zinc-800">
                         <Image
                             src="/logo.png"
@@ -158,113 +208,48 @@ export function Sidebar() {
                             fill
                             className="object-cover"
                             priority
-                            sizes="400px"
+                            sizes="100px"
                         />
                     </div>
-                    {/* Ẩn text logo khi thu nhỏ */}
                     <div className={cn("flex flex-col transition-opacity duration-200", isCollapsed ? "opacity-0 w-0 hidden" : "opacity-100")}>
                         <span className="text-sm font-bold whitespace-nowrap">FPTscSpace Tool</span>
                         <span className="text-[10px] text-zinc-500">v1.0.0</span>
                     </div>
                 </div>
 
-                {/* Main Menu */}
-                <div className="mt-10">
-                    <div className={cn(
-                        "mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-zinc-400 transition-all",
-                        isCollapsed ? "text-center text-[10px]" : ""
-                    )}>
-                        {isCollapsed ? "Main" : "Main"}
-                    </div>
-                    <nav className="space-y-1">
-                        {filteredMainNav.map((item) => (
-                            <Link
-                                key={item.name}
-                                href={item.href}
-                                title={isCollapsed ? item.name : ""} // Tooltip khi thu nhỏ
-                                className={cn(
-                                    "flex items-center rounded-lg py-2.5 text-sm font-medium transition-colors",
-                                    // Canh giữa icon khi thu nhỏ, canh trái khi mở rộng
-                                    isCollapsed ? "justify-center px-0" : "gap-3 px-2",
-                                    pathname === item.href
-                                        ? "bg-zinc-100 text-black dark:bg-zinc-800 dark:text-white"
-                                        : "text-zinc-500 hover:bg-zinc-50 hover:text-black dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-white"
-                                )}
-                            >
-                                <item.icon className="h-5 w-5 shrink-0" />
-                                {/* Ẩn text menu item */}
-                                <span className={cn("transition-all duration-200 whitespace-nowrap overflow-hidden", isCollapsed ? "w-0 opacity-0 hidden" : "w-auto opacity-100")}>
-                                    {item.name}
-                                </span>
-                            </Link>
-                        ))}
-                    </nav>
-                </div>
+                {/* --- 1. MANAGEMENT --- */}
+                {renderMenuGroup("Management", "Mng", filteredMainNav)}
 
-                {/* Documentation Menu */}
-                {filteredDocNav.length > 0 && (
-                    <div className="mt-8">
-                        <div className={cn(
-                            "mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-zinc-400 transition-all",
-                            isCollapsed ? "text-center text-[10px]" : ""
-                        )}>
-                            {isCollapsed ? "Doc" : "Documentation"}
-                        </div>
-                        <nav className="space-y-1">
-                            {filteredDocNav.map((item) => (
-                                <Link
-                                    key={item.name}
-                                    href={item.href}
-                                    title={isCollapsed ? item.name : ""}
-                                    className={cn(
-                                        "flex items-center rounded-lg py-2.5 text-sm font-medium transition-colors",
-                                        isCollapsed ? "justify-center px-0" : "gap-3 px-2",
-                                        pathname === item.href
-                                            ? "bg-zinc-100 text-black dark:bg-zinc-800 dark:text-white"
-                                            : "text-zinc-500 hover:bg-zinc-50 hover:text-black dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-white"
-                                    )}
-                                >
-                                    <item.icon className="h-5 w-5 shrink-0" />
-                                    <span className={cn("transition-all duration-200 whitespace-nowrap overflow-hidden", isCollapsed ? "w-0 opacity-0 hidden" : "w-auto opacity-100")}>
-                                        {item.name}
-                                    </span>
-                                </Link>
-                            ))}
-                        </nav>
-                    </div>
-                )}
+                {/* --- 2. COMMUNICATION --- */}
+                {renderMenuGroup("Communication", "Com", filteredCommNav)}
+
+                {/* --- 3. DOCUMENTATION --- */}
+                {renderMenuGroup("Documentation", "Doc", filteredDocNav)}
+
             </div>
 
-            {/* Footer / User / Logout */}
-            <div className="space-y-1">
-                {/* <button
-                    title={isCollapsed ? "Settings" : ""}
-                    className={cn(
-                        "flex w-full items-center rounded-lg py-2.5 text-sm font-medium text-zinc-500 hover:bg-zinc-50 hover:text-black dark:text-zinc-400 dark:hover:bg-zinc-900",
-                        isCollapsed ? "justify-center px-0" : "gap-3 px-2"
-                    )}
-                >
-                    <Settings className="h-5 w-5 shrink-0" />
-                    <span className={cn("transition-all duration-200 whitespace-nowrap overflow-hidden", isCollapsed ? "w-0 opacity-0 hidden" : "w-auto opacity-100")}>
-                        Settings
-                    </span>
-                </button> */}
-                <ModeToggle isCollapsed={isCollapsed} />
-                <button
-                    onClick={handleLogout}
-                    title={isCollapsed ? "Log Out" : ""}
-                    className={cn(
-                        "flex w-full items-center rounded-lg py-2.5 text-sm font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20",
-                        isCollapsed ? "justify-center px-0" : "gap-3 px-2"
-                    )}
-                >
-                    <LogOut className="h-5 w-5 shrink-0" />
-                    <span className={cn("transition-all duration-200 whitespace-nowrap overflow-hidden", isCollapsed ? "w-0 opacity-0 hidden" : "w-auto opacity-100")}>
-                        Log Out
-                    </span>
-                </button>
+            {/* BOTTOM SECTION: Settings / Logout / User */}
+            <div className="mt-auto pt-4 border-t border-zinc-100 dark:border-zinc-800">
+                <div className="space-y-1">
+                    <ModeToggle isCollapsed={isCollapsed} />
 
-                {/* User Mini Profile */}
+                    <button
+                        onClick={handleLogout}
+                        title={isCollapsed ? "Log Out" : ""}
+                        className={cn(
+                            "flex w-full items-center rounded-lg py-2.5 text-sm font-medium transition-colors",
+                            "text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20",
+                            isCollapsed ? "justify-center px-0" : "gap-3 px-2"
+                        )}
+                    >
+                        <LogOut className="h-5 w-5 shrink-0" />
+                        <span className={cn("transition-all duration-200 whitespace-nowrap overflow-hidden", isCollapsed ? "w-0 opacity-0 hidden" : "w-auto opacity-100")}>
+                            Log Out
+                        </span>
+                    </button>
+                </div>
+
+                {/* User Profile */}
                 <div className={cn(
                     "mt-4 flex items-center rounded-xl border border-zinc-200 p-2 dark:border-zinc-800 transition-all",
                     isCollapsed ? "justify-center border-0 bg-transparent p-0" : "gap-3 p-3"
@@ -273,7 +258,6 @@ export function Sidebar() {
                         {user?.name?.charAt(0) || "U"}
                     </div>
 
-                    {/* Thông tin user sẽ ẩn đi khi collapse */}
                     <div className={cn("flex flex-col overflow-hidden transition-all duration-200", isCollapsed ? "w-0 opacity-0 hidden" : "w-auto opacity-100")}>
                         <span className="truncate text-xs font-bold text-zinc-900 dark:text-white">
                             {user?.name || "User"}
