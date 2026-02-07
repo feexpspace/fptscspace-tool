@@ -2,18 +2,38 @@
 "use client";
 
 import { Sidebar } from "@/components/Sidebar";
-import { Shield, CheckCircle2, AlertTriangle, FileText, XCircle } from "lucide-react";
+import { Shield, CheckCircle2, AlertTriangle, FileText, XCircle, ArrowLeft } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 
 export default function TermsPage() {
+    const router = useRouter();
+    const { user } = useAuth(); // Kiểm tra trạng thái đăng nhập
+
     return (
         <div className="flex h-screen w-full bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-sans transition-colors duration-300">
-            <Sidebar />
+
+            {/* Chỉ hiển thị Sidebar nếu đã đăng nhập */}
+            {user && <Sidebar />}
 
             <main className="flex-1 flex flex-col h-screen overflow-hidden">
-                <header className="h-16 flex items-center border-b border-zinc-200 dark:border-zinc-800 px-6 bg-white dark:bg-zinc-950 shrink-0 transition-colors">
+
+                {/* Header: Centered Title + Back Button */}
+                <header className="relative h-16 flex items-center justify-center border-b border-zinc-200 dark:border-zinc-800 px-6 bg-white dark:bg-zinc-950 shrink-0 transition-colors">
+
+                    {/* Nút Quay lại (Absolute Left) */}
+                    <button
+                        onClick={() => router.back()}
+                        className="absolute left-6 p-2 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition-all flex items-center gap-2 group"
+                    >
+                        <ArrowLeft className="h-5 w-5 group-hover:-translate-x-1 transition-transform" />
+                        <span className="text-sm font-medium hidden sm:inline">Quay lại</span>
+                    </button>
+
+                    {/* Title (Centered) */}
                     <h1 className="text-lg font-bold flex items-center gap-2 text-zinc-900 dark:text-zinc-50">
                         <Shield className="h-5 w-5" />
-                        Terms of Service (Quy định sử dụng)
+                        Điều khoản dịch vụ
                     </h1>
                 </header>
 
@@ -21,9 +41,9 @@ export default function TermsPage() {
                     <div className="max-w-4xl mx-auto space-y-8 pb-10">
 
                         {/* Intro */}
-                        <div className="bg-white dark:bg-zinc-900 p-8 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800">
-                            <h2 className="text-2xl font-bold mb-4">Tổng quan</h2>
-                            <p className="text-zinc-600 dark:text-zinc-300 leading-relaxed">
+                        <div className="bg-white dark:bg-zinc-900 p-8 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800 text-center">
+                            <h2 className="text-xl font-bold mb-4">Tổng quan</h2>
+                            <p className="text-zinc-600 dark:text-zinc-300 leading-relaxed max-w-2xl mx-auto">
                                 FPTscSpace Tool là nền tảng quản lý nội bộ. Bằng việc đăng nhập và sử dụng hệ thống, bạn xác nhận là thành viên chính thức của team và đồng ý tuân thủ các quy định dưới đây nhằm đảm bảo tính bảo mật và hiệu quả công việc.
                             </p>
                         </div>
@@ -31,7 +51,7 @@ export default function TermsPage() {
                         <div className="grid grid-cols-1 gap-6">
 
                             {/* 1. Tài khoản */}
-                            <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-zinc-200 dark:border-zinc-800">
+                            <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:shadow-md transition-shadow">
                                 <h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-blue-600 dark:text-blue-400">
                                     <FileText className="h-5 w-5" /> 1. Quy định về Tài khoản
                                 </h3>
@@ -48,7 +68,7 @@ export default function TermsPage() {
                             </div>
 
                             {/* 2. Sử dụng Hệ thống */}
-                            <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-zinc-200 dark:border-zinc-800">
+                            <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:shadow-md transition-shadow">
                                 <h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-blue-600 dark:text-blue-400">
                                     <FileText className="h-5 w-5" /> 2. Phạm vi sử dụng
                                 </h3>
@@ -69,7 +89,7 @@ export default function TermsPage() {
                             </div>
 
                             {/* 3. Chấm dứt quyền truy cập */}
-                            <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-zinc-200 dark:border-zinc-800">
+                            <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:shadow-md transition-shadow">
                                 <h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-orange-600 dark:text-orange-400">
                                     <AlertTriangle className="h-5 w-5" /> 3. Xử lý vi phạm & Chấm dứt
                                 </h3>
@@ -83,6 +103,12 @@ export default function TermsPage() {
                                 </ul>
                             </div>
 
+                        </div>
+
+                        <div className="text-center pt-8 border-t border-zinc-200 dark:border-zinc-800">
+                            <p className="text-xs text-zinc-500">
+                                Phiên bản 1.0.0 — Cập nhật lần cuối: {new Date().toLocaleDateString('vi-VN')}
+                            </p>
                         </div>
                     </div>
                 </div>
