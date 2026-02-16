@@ -5,7 +5,7 @@ import StarterKit from "@tiptap/starter-kit";
 import TextAlign from "@tiptap/extension-text-align";
 import { TextStyle } from "@tiptap/extension-text-style";
 import { Color } from "@tiptap/extension-color";
-import LinkExtension from "@tiptap/extension-link"; // Import Link
+import LinkExtension from "@tiptap/extension-link";
 import Highlight from "@tiptap/extension-highlight";
 import { Extension } from "@tiptap/core";
 import { useState } from "react";
@@ -13,7 +13,7 @@ import { useState } from "react";
 import {
     Bold,
     Italic,
-    Strikethrough, // Icon gạch giữa
+    Strikethrough,
     List,
     ListOrdered,
     Heading2,
@@ -26,8 +26,8 @@ import {
     AlignJustify,
     Type,
     Palette,
-    Link as LinkIcon, // Icon Link
-    Unlink, // Icon Unlink
+    Link as LinkIcon,
+    Unlink,
     Check,
     Plus,
     Baseline,
@@ -125,23 +125,19 @@ const MenuBar = ({ editor }: { editor: Editor | null }) => {
 
     const fontSizes = ["12px", "14px", "16px", "18px", "20px", "24px", "30px"];
 
-    // Hàm xử lý Link
     const setLink = () => {
         const previousUrl = editor.getAttributes('link').href;
         const url = window.prompt('URL:', previousUrl);
 
-        // cancelled
         if (url === null) {
             return;
         }
 
-        // empty
         if (url === '') {
             editor.chain().focus().extendMarkRange('link').unsetLink().run();
             return;
         }
 
-        // update
         editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
     };
 
@@ -172,7 +168,6 @@ const MenuBar = ({ editor }: { editor: Editor | null }) => {
                 >
                     <Italic className="h-4 w-4" />
                 </button>
-                {/* [YÊU CẦU 1]: Giữ lại Strikethrough */}
                 <button
                     onClick={() => editor.chain().focus().toggleStrike().run()}
                     disabled={!editor.can().chain().focus().toggleStrike().run()}
@@ -232,7 +227,6 @@ const MenuBar = ({ editor }: { editor: Editor | null }) => {
                             <div className="fixed inset-0 z-20" onClick={() => setIsColorOpen(false)} />
                             <div className="absolute top-full left-0 mt-2 z-30 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-xl p-3 w-[260px] animate-in zoom-in-95 origin-top-left">
 
-                                {/* Grid 10 cột cho 80 màu */}
                                 <div className="grid grid-cols-10 gap-1.5 mb-3">
                                     {COLOR_PALETTE.map((color) => (
                                         <button

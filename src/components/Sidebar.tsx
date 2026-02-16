@@ -31,7 +31,6 @@ interface SidebarItem {
     allowedRoles: UserRole[];
 }
 
-// 1. MANAGEMENT (Cũ là Main)
 const mainNavItems: SidebarItem[] = [
     {
         name: "Statistics",
@@ -71,7 +70,6 @@ const mainNavItems: SidebarItem[] = [
     },
 ];
 
-// 2. COMMUNICATION (Mới - Chứa Scripts)
 const commNavItems: SidebarItem[] = [
     {
         name: "Scripts",
@@ -87,7 +85,6 @@ const commNavItems: SidebarItem[] = [
     },
 ];
 
-// 3. DOCUMENTATION (Chứa Terms)
 const docNavItems: SidebarItem[] = [
     {
         name: "Terms of Service",
@@ -140,10 +137,9 @@ export function Sidebar() {
     };
 
     const filteredMainNav = filterMenu(mainNavItems);
-    const filteredCommNav = filterMenu(commNavItems); // Lọc Communication
-    const filteredDocNav = filterMenu(docNavItems);   // Lọc Documentation
+    const filteredCommNav = filterMenu(commNavItems);
+    const filteredDocNav = filterMenu(docNavItems);
 
-    // Helper render menu group để code gọn hơn
     const renderMenuGroup = (title: string, shortTitle: string, items: SidebarItem[]) => {
         if (items.length === 0) return null;
         return (
@@ -157,7 +153,7 @@ export function Sidebar() {
                 <nav className="space-y-1">
                     {items.map((item) => (
                         <Link
-                            key={item.href} // Dùng href làm key cho chắc chắn
+                            key={item.href}
                             href={item.href}
                             title={isCollapsed ? item.name : ""}
                             className={cn(

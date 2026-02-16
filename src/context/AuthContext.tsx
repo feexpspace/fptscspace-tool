@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { doc, onSnapshot, Unsubscribe } from 'firebase/firestore'; // Import thêm Unsubscribe type
+import { doc, onSnapshot, Unsubscribe } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { User, UserRole } from '@/types/index';
 import { getValidTikTokToken } from '@/app/actions/tiktok-token';
@@ -50,7 +50,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     useEffect(() => {
-        // Biến để giữ hàm hủy đăng ký Firestore (nếu có)
         let unsubscribeFirestore: Unsubscribe | null = null;
 
         const unsubscribeAuth = onAuthStateChanged(auth, (fUser) => {
@@ -63,8 +62,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             }
 
             if (fUser) {
-                // Có user -> Bắt đầu loading và lắng nghe Firestore
-                setLoading(true); // Ở đây OK vì nó nằm trong callback bất đồng bộ của Auth
+                setLoading(true);
 
                 unsubscribeFirestore = onSnapshot(
                     doc(db, "users", fUser.uid),
@@ -72,25 +70,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                         if (docSnapshot.exists()) {
                             const userData = docSnapshot.data() as User;
                             setUser(userData);
-                            // Gọi action lấy token
                             fetchTikTokToken(userData.id);
                         } else {
-                            // User có trong Auth nhưng chưa có trong Firestore (hoặc bị xóa)
                             setUser(null);
                             setTiktokToken(null);
                         }
-                        // Dữ liệu đã về -> Tắt loading
                         setLoading(false);
                     },
                     (error) => {
                         console.error("Firestore error:", error);
-                        // Nếu lỗi permission (do logout nhanh), reset data
                         setUser(null);
                         setLoading(false);
                     }
                 );
             } else {
-                // Không có user (Logout)
                 setUser(null);
                 setTiktokToken(null);
                 setLoading(false);
