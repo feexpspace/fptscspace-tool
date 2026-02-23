@@ -5,7 +5,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { Sidebar } from "@/components/Sidebar";
-import { Loader2, LayoutDashboard, Calendar, ChevronDown, Users, RefreshCw } from "lucide-react"; // Bỏ icon Filter thừa
+import { Loader2, LayoutDashboard, Calendar, ChevronDown, Users, RefreshCw, Trash2 } from "lucide-react"; // Bỏ icon Filter thừa
 import { cn } from "@/lib/utils";
 import { Channel, Statistic, Team, MonthlyStatistic } from "@/types";
 import { ChannelSpecificReport } from "@/components/ChannelSpecificReport";
@@ -13,6 +13,7 @@ import Image from "next/image";
 // Import Server Action
 import { getDashboardData, getTeamsList, syncAllChannels } from "@/app/actions/dashboard";
 import { ConfirmModal } from "@/components/ConfirmModal";
+import { cleanupVideosWithoutHashtag } from "./actions/report";
 
 export default function Home() {
   const { user, isAdmin, isManager, loading } = useAuth();
@@ -154,6 +155,28 @@ export default function Home() {
     });
   };
 
+  const [isCleaning, setIsCleaning] = useState(false);
+
+  const handleCleanup = async () => {
+    if (!confirm("Hành động này sẽ quét và xóa TOÀN BỘ video trong Database không có hashtag #fptstudentcreativespace. Bạn có chắc chắn không?")) return;
+
+    setIsCleaning(true);
+    try {
+      const res = await cleanupVideosWithoutHashtag();
+      if (res.success) {
+        alert(`Hoàn tất! Đã xóa ${res.deletedCount} video rác.`);
+        // NÊN GỌI LẠI FETCH DATA Ở ĐÂY HOẶC YÊU CẦU ĐỒNG BỘ LẠI
+        fetchDashboardData();
+      } else {
+        alert("Lỗi: " + res.error);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsCleaning(false);
+    }
+  };
+
   // --- TÍNH TOÁN DỮ LIỆU HIỂN THỊ ---
   const overviewFixedData = useMemo(() => {
     return teamChannels.map((channel, index) => {
@@ -212,6 +235,16 @@ export default function Home() {
 
           {/* Bên phải: Bộ lọc (Đã di chuyển lên đây) */}
           <div className="flex items-center gap-3">
+            {isAdmin && (
+              <button
+                onClick={handleCleanup}
+                disabled={isCleaning}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-full transition-all border bg-red-50 text-red-600 border-red-100 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:border-red-900/50 dark:hover:bg-red-900/40"
+              >
+                <Trash2 className={cn("h-3.5 w-3.5", isCleaning && "animate-pulse")} />
+                {isCleaning ? "Đang dọn dẹp..." : "Dọn rác Video"}
+              </button>
+            )}
             <button
               onClick={handleSyncAllClick}
               disabled={isSyncingAll}

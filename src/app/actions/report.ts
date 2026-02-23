@@ -111,6 +111,9 @@ export async function syncTikTokVideos(userId: string, channelId: string) {
         const url = "https://open.tiktokapis.com/v2/video/list/";
         const fields = "id,create_time,cover_image_url,video_description,title,duration,share_url,like_count,comment_count,share_count,view_count";
 
+        //Hashtag mục tiêu để lọc video
+        const targetHashtag = "#fptstudentcreativespace";
+
         while (hasMore) {
             const response: Response = await fetch(`${url}?fields=${fields}`, {
                 method: "POST",
@@ -131,12 +134,18 @@ export async function syncTikTokVideos(userId: string, channelId: string) {
                 break;
             }
 
-            const videos = res.data.videos || [];
+            const rawVideos = res.data.videos || [];
 
-            // --- TỐI ƯU HÓA: KHÔNG CẦN Promise.all Ở ĐÂY ---
+            // LỌC VIDEO CÓ CHỨA HASHTAG #fptstudentcreativespace
+            const filteredVideos = rawVideos.filter((v: any) => {
+                const textContent = (v.title || v.video_description || "").toLowerCase();
+                return textContent.includes(targetHashtag.toLowerCase());
+            });
+
             const batch = adminDb.batch();
 
-            for (const v of videos) {
+            // Chuyển sang lặp qua mảng đã lọc (filteredVideos) thay vì rawVideos
+            for (const v of filteredVideos) {
                 const createTime = new Date(v.create_time * 1000);
 
                 if (!earliestDate || createTime < earliestDate) {
@@ -149,7 +158,7 @@ export async function syncTikTokVideos(userId: string, channelId: string) {
                 const shareCount = Number(v.share_count) || 0;
                 const interactions = likeCount + commentCount + shareCount;
 
-                // Cộng dồn chỉ số tổng
+                // Cộng dồn chỉ số tổng (chỉ của video hợp lệ)
                 aggTotalViews += viewCount;
                 aggTotalInteractions += interactions;
 
@@ -184,7 +193,6 @@ export async function syncTikTokVideos(userId: string, channelId: string) {
 
                 const videoRef = adminDb.collection("videos").doc(v.id);
 
-                // batch.set là thao tác đồng bộ (queueing), không cần await
                 batch.set(videoRef, {
                     ...videoData,
                     createTime: Timestamp.fromDate(createTime)
@@ -194,7 +202,10 @@ export async function syncTikTokVideos(userId: string, channelId: string) {
             // Ghi batch xuống DB
             await batch.commit();
 
-            totalSynced += videos.length;
+            // Chỉ đếm những video đã lọt qua vòng filter
+            totalSynced += filteredVideos.length;
+
+            // Cursor và hasMore vẫn dựa trên raw data trả về từ API để duy trì phân trang chính xác
             hasMore = res.data.has_more;
             cursor = res.data.cursor;
 
@@ -335,5 +346,52 @@ export async function getMonthlyStatistics(channelId: string, year: number, mont
     } catch (error) {
         console.error("Lỗi lấy thống kê tháng:", error);
         return null;
+    }
+}
+
+export async function cleanupVideosWithoutHashtag() {
+    try {
+        const targetHashtag = "#fptstudentcreativespace";
+        const videosSnapshot = await adminDb.collection("videos").get();
+
+        if (videosSnapshot.empty) {
+            return { success: true, deletedCount: 0, message: "Không có video nào trong DB." };
+        }
+
+        let deletedCount = 0;
+        let batch = adminDb.batch();
+        let batchCount = 0;
+
+        for (const doc of videosSnapshot.docs) {
+            const data = doc.data();
+            // Gộp title và description lại để kiểm tra
+            const textContent = `${data.title || ""} ${data.description || ""}`.toLowerCase();
+
+            // Nếu KHÔNG chứa hashtag -> Xóa
+            if (!textContent.includes(targetHashtag.toLowerCase())) {
+                batch.delete(doc.ref);
+                deletedCount++;
+                batchCount++;
+
+                // Firestore giới hạn tối đa 500 thao tác cho mỗi Batch
+                if (batchCount === 500) {
+                    await batch.commit();
+                    batch = adminDb.batch(); // Khởi tạo batch mới
+                    batchCount = 0;
+                }
+            }
+        }
+
+        // Commit những thao tác còn sót lại (nhỏ hơn 500)
+        if (batchCount > 0) {
+            await batch.commit();
+        }
+
+        console.log(`Đã dọn dẹp xong. Xóa thành công ${deletedCount} video không hợp lệ.`);
+        return { success: true, deletedCount };
+
+    } catch (error) {
+        console.error("Lỗi khi dọn dẹp video:", error);
+        return { success: false, error: "Đã xảy ra lỗi khi quét và xóa video." };
     }
 }
