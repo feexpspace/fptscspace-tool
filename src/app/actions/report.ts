@@ -112,7 +112,7 @@ export async function syncTikTokVideos(userId: string, channelId: string) {
         const fields = "id,create_time,cover_image_url,video_description,title,duration,share_url,like_count,comment_count,share_count,view_count";
 
         //Hashtag mục tiêu để lọc video
-        const targetHashtag = "#fptstudentcreativespace";
+        const targetHashtags = ["#fptstudentcreativespace", "#fpteducreativespace"];
 
         while (hasMore) {
             const response: Response = await fetch(`${url}?fields=${fields}`, {
@@ -136,10 +136,11 @@ export async function syncTikTokVideos(userId: string, channelId: string) {
 
             const rawVideos = res.data.videos || [];
 
-            // LỌC VIDEO CÓ CHỨA HASHTAG #fptstudentcreativespace
+            // LỌC VIDEO CÓ CHỨA 1 TRONG CÁC HASHTAG YÊU CẦU
             const filteredVideos = rawVideos.filter((v: any) => {
                 const textContent = (v.title || v.video_description || "").toLowerCase();
-                return textContent.includes(targetHashtag.toLowerCase());
+                // .some() trả về true nếu textContent chứa ít nhất 1 hashtag trong mảng
+                return targetHashtags.some(hashtag => textContent.includes(hashtag));
             });
 
             const batch = adminDb.batch();
@@ -351,7 +352,9 @@ export async function getMonthlyStatistics(channelId: string, year: number, mont
 
 export async function cleanupVideosWithoutHashtag() {
     try {
-        const targetHashtag = "#fptstudentcreativespace";
+        // Mảng các hashtag hợp lệ
+        const targetHashtags = ["#fptstudentcreativespace", "#fpteducreativespace"];
+
         const videosSnapshot = await adminDb.collection("videos").get();
 
         if (videosSnapshot.empty) {
@@ -364,11 +367,14 @@ export async function cleanupVideosWithoutHashtag() {
 
         for (const doc of videosSnapshot.docs) {
             const data = doc.data();
-            // Gộp title và description lại để kiểm tra
+            // Gộp title và description lại để kiểm tra, đưa về chữ thường
             const textContent = `${data.title || ""} ${data.description || ""}`.toLowerCase();
 
-            // Nếu KHÔNG chứa hashtag -> Xóa
-            if (!textContent.includes(targetHashtag.toLowerCase())) {
+            // Kiểm tra xem text có chứa ít nhất 1 hashtag hợp lệ không
+            const hasValidHashtag = targetHashtags.some(hashtag => textContent.includes(hashtag));
+
+            // Nếu KHÔNG chứa bất kỳ hashtag hợp lệ nào -> Xóa
+            if (!hasValidHashtag) {
                 batch.delete(doc.ref);
                 deletedCount++;
                 batchCount++;
