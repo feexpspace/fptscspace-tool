@@ -22,7 +22,7 @@ env:
   - variable: NEXT_PUBLIC_FIREBASE_APP_ID
     value: "1:469178611152:web:67f15076a3d5bf244d75d5"
   - variable: TIKTOK_CLIENT_KEY
-    value: "sbaw05yw5i9xfv2512"
+    value: "awj1dkm0qacbepyk"
   - variable: TIKTOK_REDIRECT_URI
     value: "https://creative.fptsx.space/api/tiktok/callback"
   - variable: TIKTOK_CLIENT_SECRET
