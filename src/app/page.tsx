@@ -1,11 +1,11 @@
 // src/app/page.tsx
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, Activity } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { Sidebar } from "@/components/Sidebar";
-import { Loader2, LayoutDashboard, Calendar, ChevronDown, Users, RefreshCw, Trash2 } from "lucide-react"; // Bỏ icon Filter thừa
+import { Loader2, LayoutDashboard, Calendar, ChevronDown, Users, RefreshCw, Trash2, UsersRound, PlayCircle, Eye, Heart } from "lucide-react"; // Bỏ icon Filter thừa
 import { cn } from "@/lib/utils";
 import { Channel, Statistic, Team, MonthlyStatistic } from "@/types";
 import { ChannelSpecificReport } from "@/components/ChannelSpecificReport";
@@ -214,6 +214,39 @@ export default function Home() {
     });
   }, [teamChannels, monthlyStats, selectedYear, selectedMonthTab]);
 
+  // --- TÍNH TỔNG SỐ LIỆU ---
+  const totalFixedStats = useMemo(() => {
+    return overviewFixedData.reduce((acc, curr) => ({
+      followers: acc.followers + curr.followers,
+      videos: acc.videos + curr.videos,
+      views: acc.views + curr.views,
+      interactions: acc.interactions + curr.interactions,
+    }), { followers: 0, videos: 0, views: 0, interactions: 0 });
+  }, [overviewFixedData]);
+
+  const totalMonthlyStats = useMemo(() => {
+    return monthlyDataForTab.reduce((acc, curr) => ({
+      followers: acc.followers + (curr.hasData ? curr.followers : 0),
+      videos: acc.videos + (curr.hasData ? curr.videos : 0),
+      views: acc.views + (curr.hasData ? curr.views : 0),
+      interactions: acc.interactions + (curr.hasData ? curr.interactions : 0),
+    }), { followers: 0, videos: 0, views: 0, interactions: 0 });
+  }, [monthlyDataForTab]);
+
+  // Component Thẻ thông số
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const StatCard = ({ title, value, icon: Icon, colorClass }: { title: string, value: number, icon: any, colorClass: string }) => (
+    <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-4 shadow-sm flex items-center gap-4">
+      <div className={cn("p-3 rounded-lg", colorClass)}>
+        <Icon className="h-5 w-5" />
+      </div>
+      <div>
+        <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium uppercase tracking-wide">{title}</p>
+        <h4 className="text-xl font-bold text-zinc-900 dark:text-zinc-50 leading-none mt-1">{value.toLocaleString()}</h4>
+      </div>
+    </div>
+  );
+
   if (loading) return <div className="flex h-screen items-center justify-center bg-zinc-50 dark:bg-zinc-950"><Loader2 className="animate-spin text-zinc-500" /></div>;
   if (!user || (!isAdmin && !isManager)) return null;
 
@@ -337,11 +370,22 @@ export default function Home() {
             <>
               {/* TAB 1: OVERVIEW */}
               {activeTab === "overview" && (
-                <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2">
+                <div className="space-y-10 animate-in fade-in slide-in-from-bottom-2">
 
-                  {/* Bảng Tổng hợp */}
-                  <div>
-                    <h3 className="font-bold text-lg mb-4 text-zinc-900 dark:text-zinc-100">Thống kê Kênh (Tích lũy)</h3>
+                  {/* BẢNG TỔNG HỢP TÍCH LŨY */}
+                  <div className="space-y-4">
+                    <h3 className="font-bold text-lg mb-2 text-zinc-900 dark:text-zinc-100 border-l-4 border-black dark:border-white pl-3">
+                      Thống kê Kênh (Tích lũy toàn thời gian)
+                    </h3>
+
+                    {/* Thanh thông số tổng */}
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                      <StatCard title="Tổng Followers" value={totalFixedStats.followers} icon={UsersRound} colorClass="bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400" />
+                      <StatCard title="Tổng Videos" value={totalFixedStats.videos} icon={PlayCircle} colorClass="bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400" />
+                      <StatCard title="Tổng Views" value={totalFixedStats.views} icon={Eye} colorClass="bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400" />
+                      <StatCard title="Tổng Tương tác" value={totalFixedStats.interactions} icon={Heart} colorClass="bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400" />
+                    </div>
+
                     <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
                       <div className="overflow-x-auto">
                         <table className="w-full text-left text-sm">
@@ -386,30 +430,41 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* Chi tiết theo tháng */}
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-bold text-lg text-zinc-900 dark:text-zinc-100">Chi tiết theo tháng ({selectedYear})</h3>
-                    </div>
+                  {/* BẢNG CHI TIẾT THEO THÁNG */}
+                  <div className="space-y-4 pt-4 border-t border-zinc-200 dark:border-zinc-800">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      <h3 className="font-bold text-lg text-zinc-900 dark:text-zinc-100 border-l-4 border-black dark:border-white pl-3">
+                        Chi tiết theo tháng ({selectedYear})
+                      </h3>
 
-                    <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden shadow-sm">
-                      <div className="flex overflow-x-auto border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 custom-scrollbar">
+                      {/* Tabs Tháng */}
+                      <div className="flex overflow-x-auto bg-zinc-100 dark:bg-zinc-900 p-1 rounded-lg custom-scrollbar">
                         {months.map((m) => (
                           <button
                             key={m}
                             onClick={() => setSelectedMonthTab(m)}
                             className={cn(
-                              "px-5 py-3 text-sm font-medium border-b-2 transition-all whitespace-nowrap",
+                              "px-4 py-1.5 text-sm font-medium rounded-md transition-all whitespace-nowrap",
                               selectedMonthTab === m
-                                ? "border-zinc-900 text-zinc-900 bg-white dark:bg-zinc-800 dark:border-zinc-100 dark:text-zinc-100"
-                                : "border-transparent text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-zinc-900"
+                                ? "bg-white text-black shadow-sm dark:bg-zinc-800 dark:text-white"
+                                : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200"
                             )}
                           >
-                            Tháng {m}
+                            T{m}
                           </button>
                         ))}
                       </div>
+                    </div>
 
+                    {/* Thanh thông số tổng (Theo Tháng) */}
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                      <StatCard title="Followers (Cuối tháng)" value={totalMonthlyStats.followers} icon={UsersRound} colorClass="bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400" />
+                      <StatCard title="Videos (Đăng trong tháng)" value={totalMonthlyStats.videos} icon={PlayCircle} colorClass="bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400" />
+                      <StatCard title="Views (Đạt trong tháng)" value={totalMonthlyStats.views} icon={Eye} colorClass="bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400" />
+                      <StatCard title="Tương tác (Trong tháng)" value={totalMonthlyStats.interactions} icon={Heart} colorClass="bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400" />
+                    </div>
+
+                    <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden shadow-sm mt-4">
                       <div className="overflow-x-auto p-0">
                         <table className="w-full text-left text-sm">
                           <thead className="bg-zinc-50 text-xs uppercase text-zinc-500 dark:bg-zinc-950 dark:text-zinc-400">
@@ -433,10 +488,10 @@ export default function Home() {
                                 <td className="px-6 py-4 text-right text-zinc-500 dark:text-zinc-400 tabular-nums">
                                   {c.hasData ? c.videos.toLocaleString() : "-"}
                                 </td>
-                                <td className="px-6 py-4 text-right font-medium text-blue-600 dark:text-blue-400 tabular-nums">
+                                <td className="px-6 py-4 text-right font-medium text-emerald-600 dark:text-emerald-400 tabular-nums">
                                   {c.hasData ? c.views.toLocaleString() : "-"}
                                 </td>
-                                <td className="px-6 py-4 text-right font-medium text-green-600 dark:text-green-400 tabular-nums">
+                                <td className="px-6 py-4 text-right font-medium text-orange-600 dark:text-orange-500 tabular-nums">
                                   {c.hasData ? c.interactions.toLocaleString() : "-"}
                                 </td>
                               </tr>
