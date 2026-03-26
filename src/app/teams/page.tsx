@@ -5,26 +5,26 @@ import { useState, useEffect, useCallback } from "react";
 import { Sidebar } from "@/components/Sidebar";
 import { useAuth } from "@/context/AuthContext";
 import { User, Team } from "@/types";
-import { Plus, Search, X, Users, Loader2, Calendar, Eye, Trash2, UserCog, UserPlus, ShieldCheck } from "lucide-react"; // Import thêm UserPlus
+import { Plus, Search, X, Users, Loader2, Calendar, Eye, Trash2, UserCog, UserPlus, ShieldCheck, Pencil, Check } from "lucide-react";
 import { db } from "@/lib/firebase";
 import {
-    collection, query, where, getDocs, doc, getDoc // Bỏ writeBatch vì đã chuyển sang server
+    collection, query, where, getDocs, doc, getDoc
 } from "firebase/firestore";
 import { ConfirmModal } from "@/components/ConfirmModal";
-// [IMPORT MỚI]
 import {
     addMemberToTeam,
     createNewTeam,
     removeMemberFromTeam,
     deleteTeam,
     addManagerToTeam,
-    searchManagers
+    removeManagerFromTeam,
+    searchManagers,
+    updateTeamName
 } from "@/app/actions/team";
 
 export default function TeamsPage() {
     const { user, loading } = useAuth();
 
-    // ... (Giữ nguyên các state cũ: teams, modals...)
     const [teams, setTeams] = useState<Team[]>([]);
     const [isLoadingTeams, setIsLoadingTeams] = useState(true);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -41,7 +41,7 @@ export default function TeamsPage() {
     const [searchResults, setSearchResults] = useState<User[]>([]);
     const [isSearching, setIsSearching] = useState(false);
 
-    // [STATE MỚI CHO VIỆC THÊM MANAGER]
+    // Add Manager state
     const [addManagerQuery, setAddManagerQuery] = useState("");
     const [addManagerResults, setAddManagerResults] = useState<User[]>([]);
     const [isAddingManager, setIsAddingManager] = useState(false);
@@ -49,8 +49,13 @@ export default function TeamsPage() {
     // Loading actions
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isDeletingMember, setIsDeletingMember] = useState(false);
+    const [isDeletingManager, setIsDeletingManager] = useState(false);
     const [isDeletingTeam, setIsDeletingTeam] = useState(false);
     const [isAddingMember, setIsAddingMember] = useState(false);
+
+    const [isEditingTeamName, setIsEditingTeamName] = useState(false);
+    const [editTeamNameValue, setEditTeamNameValue] = useState("");
+    const [isUpdatingTeamName, setIsUpdatingTeamName] = useState(false);
 
     const [confirmConfig, setConfirmConfig] = useState<{
         isOpen: boolean;
@@ -68,7 +73,6 @@ export default function TeamsPage() {
         onConfirm: async () => { },
     });
 
-    // ... (Giữ nguyên fetchTeams) ...
     const fetchTeams = useCallback(async () => {
         if (!user) return;
         setIsLoadingTeams(true);
@@ -105,7 +109,6 @@ export default function TeamsPage() {
 
     useEffect(() => { fetchTeams(); }, [fetchTeams]);
 
-    // ... (Giữ nguyên searchAvailableUsers) ...
     const searchAvailableUsers = async (term: string) => {
         try {
             const usersRef = collection(db, "users");
@@ -126,7 +129,6 @@ export default function TeamsPage() {
         }
     };
 
-    // ... (Giữ nguyên handleCreateTeam, handleViewDetails, handleRemoveMemberFromTeam) ...
     const handleCreateTeam = async () => {
         if (!user || !teamName.trim()) return;
         setIsSubmitting(true);
@@ -186,7 +188,42 @@ export default function TeamsPage() {
         });
     };
 
-    // --- [SỬA LẠI]: LOGIC GIẢI TÁN TEAM (Dùng Server Action) ---
+    // LOGIC XÓA MANAGER ---
+    const handleRemoveManagerFromTeam = async (managerId: string, managerName: string) => {
+        if (!selectedTeam) return;
+
+        // Hiển thị cảnh báo riêng nếu Manager tự xóa chính mình
+        const isSelf = user?.id === managerId;
+        const warningMessage = isSelf
+            ? <span>Bạn có chắc chắn muốn <b>RỜI KHỎI</b> vị trí quản lý của team này?<br />Bạn sẽ mất quyền truy cập vào team.</span>
+            : <span>Bạn có chắc chắn muốn xóa quản lý <b>{managerName}</b> khỏi team này không?</span>;
+
+        setConfirmConfig({
+            isOpen: true,
+            title: isSelf ? "Rời Team" : "Xóa Quản lý",
+            message: warningMessage,
+            variant: 'danger',
+            confirmText: isSelf ? "Rời Team" : "Xóa Quản lý",
+            onConfirm: async () => {
+                setIsDeletingManager(true);
+                try {
+                    const res = await removeManagerFromTeam(selectedTeam.id, managerId);
+                    if (res.success) {
+                        setTeamManagersDetails(prev => prev.filter(m => m.id !== managerId));
+                        setTeams(prev => prev.map(t => t.id === selectedTeam.id ? { ...t, managerIds: (t.managerIds || []).filter(id => id !== managerId) } : t));
+                        setSelectedTeam(prev => prev ? ({ ...prev, managerIds: (prev.managerIds || []).filter(id => id !== managerId) }) : null);
+
+                        // Nếu tự xóa chính mình, đóng modal và tải lại danh sách team (vì đã mất quyền truy cập)
+                        if (isSelf) {
+                            setIsDetailModalOpen(false);
+                            fetchTeams();
+                        }
+                    } else { alert(res.error); }
+                } catch (error) { console.error("Lỗi client:", error); } finally { setIsDeletingManager(false); }
+            }
+        });
+    };
+
     const handleDisbandTeam = async () => {
         if (!selectedTeam || !user) return;
         if (!selectedTeam.managerIds.includes(user.id)) return;
@@ -200,9 +237,7 @@ export default function TeamsPage() {
             onConfirm: async () => {
                 setIsDeletingTeam(true);
                 try {
-                    // Gọi Server Action deleteTeam
                     const res = await deleteTeam(selectedTeam.id);
-
                     if (res.success) {
                         setTeams((prev) => prev.filter((t) => t.id !== selectedTeam!.id));
                         setIsDetailModalOpen(false);
@@ -219,7 +254,6 @@ export default function TeamsPage() {
         });
     };
 
-    // --- [THÊM MỚI]: LOGIC THÊM MANAGER ---
     const handleAddManagerToTeam = async (userToAdd: User) => {
         if (!selectedTeam || !user) return;
         setConfirmConfig({
@@ -228,7 +262,6 @@ export default function TeamsPage() {
             message: (
                 <span>
                     Bạn có muốn thêm <b>{userToAdd.name}</b> làm Manager của team này?<br />
-                    <i>Lưu ý: Role của người dùng này sẽ chuyển thành Manager.</i>
                 </span>
             ),
             variant: 'info',
@@ -238,8 +271,7 @@ export default function TeamsPage() {
                 try {
                     const res = await addManagerToTeam(selectedTeam.id, userToAdd.id);
                     if (res.success) {
-                        // Update UI
-                        const updatedUser = { ...userToAdd, role: 'manager' as const };
+                        const updatedUser = { ...userToAdd };
                         setTeamManagersDetails(prev => [...prev, updatedUser]);
                         setAddManagerResults(prev => prev.filter(u => u.id !== userToAdd.id));
                         setAddManagerQuery("");
@@ -258,7 +290,6 @@ export default function TeamsPage() {
         });
     };
 
-    // --- [GIỮ NGUYÊN]: LOGIC THÊM MEMBER ---
     const handleAddMemberToExistingTeam = async (userToAdd: User) => {
         if (!selectedTeam || !user) return;
         setConfirmConfig({
@@ -283,7 +314,30 @@ export default function TeamsPage() {
         });
     };
 
-    // --- EFFECT SEARCH MEMBER ---
+    const handleUpdateTeamName = async () => {
+        if (!selectedTeam || !editTeamNameValue.trim() || editTeamNameValue === selectedTeam.name) {
+            setIsEditingTeamName(false);
+            return;
+        }
+
+        setIsUpdatingTeamName(true);
+        try {
+            const res = await updateTeamName(selectedTeam.id, editTeamNameValue);
+            if (res.success) {
+                const newName = editTeamNameValue.trim();
+                setSelectedTeam(prev => prev ? { ...prev, name: newName } : null);
+                setTeams(prev => prev.map(t => t.id === selectedTeam.id ? { ...t, name: newName } : t));
+                setIsEditingTeamName(false);
+            } else {
+                alert(res.error);
+            }
+        } catch (error) {
+            console.error("Lỗi đổi tên:", error);
+        } finally {
+            setIsUpdatingTeamName(false);
+        }
+    };
+
     useEffect(() => {
         const timer = setTimeout(async () => {
             if (searchQuery.trim().length > 0 && (isCreateModalOpen || isDetailModalOpen)) {
@@ -302,23 +356,15 @@ export default function TeamsPage() {
         return () => clearTimeout(timer);
     }, [searchQuery, isCreateModalOpen, isDetailModalOpen, createSelectedMembers, teamMembersDetails, teamManagersDetails]);
 
-    // --- [THÊM MỚI]: EFFECT SEARCH MANAGER ---
     useEffect(() => {
         const timer = setTimeout(async () => {
             if (addManagerQuery.trim().length > 0 && isDetailModalOpen) {
-                // setIsSearching(true); // Bạn có thể dùng state loading riêng nếu muốn (ví dụ isSearchingManager)
-
-                // [THAY ĐỔI]: Gọi hàm searchManagers chuyên biệt
                 const results = await searchManagers(addManagerQuery);
-
                 const filtered = results.filter(r => {
-                    // Loại bỏ những người ĐÃ là Manager của team này rồi
                     const isAlreadyManager = teamManagersDetails.some(existing => existing.id === r.id);
                     return !isAlreadyManager;
                 });
-
                 setAddManagerResults(filtered);
-                // setIsSearching(false);
             } else {
                 setAddManagerResults([]);
             }
@@ -333,7 +379,6 @@ export default function TeamsPage() {
         <div className="flex h-screen w-full bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-sans transition-colors duration-300">
             <Sidebar />
             <main className="flex-1 flex flex-col h-screen overflow-hidden">
-                {/* ... Header & List Teams (Giữ nguyên) ... */}
                 <header className="h-16 flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 px-6 bg-white dark:bg-zinc-950 shrink-0 transition-colors duration-300">
                     <div>
                         <h1 className="text-lg font-bold flex items-center gap-2">
@@ -370,7 +415,7 @@ export default function TeamsPage() {
                     </div>
                 )}
 
-                {/* --- MODAL 1: TẠO TEAM (Giữ nguyên) --- */}
+                {/* --- MODAL 1: TẠO TEAM --- */}
                 {isCreateModalOpen && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
                         <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-xl w-full max-w-lg p-6 relative">
@@ -398,7 +443,40 @@ export default function TeamsPage() {
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
                         <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-xl w-full max-w-2xl p-6 relative flex flex-col max-h-[90vh]">
                             <button onClick={() => setIsDetailModalOpen(false)} className="absolute top-4 right-4 text-zinc-400 hover:text-black dark:hover:text-white"><X className="h-5 w-5" /></button>
-                            <div className="mb-6 border-b border-zinc-100 pb-4 dark:border-zinc-800"><h2 className="text-xl font-bold">{selectedTeam.name}</h2></div>
+                            <div className="mb-6 border-b border-zinc-100 pb-4 dark:border-zinc-800 pr-10">
+                                {isEditingTeamName ? (
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="text"
+                                            value={editTeamNameValue}
+                                            onChange={(e) => setEditTeamNameValue(e.target.value)}
+                                            className="flex-1 rounded-lg border p-1.5 text-lg font-bold outline-none focus:ring-2 border-zinc-300 focus:ring-black bg-white dark:bg-zinc-800 dark:border-zinc-700"
+                                            autoFocus
+                                            onKeyDown={(e) => e.key === 'Enter' && handleUpdateTeamName()}
+                                        />
+                                        <button onClick={handleUpdateTeamName} disabled={isUpdatingTeamName} className="p-2 bg-black text-white rounded-md hover:bg-zinc-800 dark:bg-white dark:text-black transition-colors">
+                                            {isUpdatingTeamName ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                                        </button>
+                                        <button onClick={() => setIsEditingTeamName(false)} disabled={isUpdatingTeamName} className="p-2 border border-zinc-300 rounded-md hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800 text-zinc-500 transition-colors">
+                                            <X className="h-4 w-4" />
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center gap-3">
+                                        <h2 className="text-xl font-bold">{selectedTeam.name}</h2>
+                                        {/* Chỉ Admin hoặc Manager của team này mới có quyền đổi tên */}
+                                        {(user?.role === 'admin' || (user?.role === 'manager' && selectedTeam.managerIds.includes(user.id))) && (
+                                            <button
+                                                onClick={() => { setIsEditingTeamName(true); setEditTeamNameValue(selectedTeam.name); }}
+                                                className="p-1.5 text-zinc-400 hover:text-black hover:bg-zinc-100 rounded-md transition-colors dark:hover:text-white dark:hover:bg-zinc-800"
+                                                title="Đổi tên Team"
+                                            >
+                                                <Pencil className="h-4 w-4" />
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
 
                             <div className="flex-1 overflow-y-auto pr-2 space-y-6">
                                 {/* LIST MANAGERS */}
@@ -411,12 +489,27 @@ export default function TeamsPage() {
                                             <div key={mgr.id} className="flex items-center gap-3 rounded-xl border border-blue-100 p-3 bg-blue-50/30 dark:border-blue-900/50 dark:bg-blue-900/10">
                                                 <div className="h-10 w-10 rounded-full bg-blue-200 flex items-center justify-center font-bold text-blue-700">{mgr.name.charAt(0)}</div>
                                                 <div><div className="font-medium text-sm">{mgr.name}</div><div className="text-xs text-zinc-500">{mgr.email}</div></div>
-                                                <span className="ml-auto text-[10px] uppercase font-bold bg-blue-100 px-2 py-1 rounded text-blue-600">Manager</span>
+
+                                                <div className="ml-auto flex items-center gap-2">
+                                                    <span className="text-[10px] uppercase font-bold bg-blue-100 px-2 py-1 rounded text-blue-600">Manager</span>
+
+                                                    {/* [THÊM MỚI]: NÚT XÓA MANAGER */}
+                                                    {(user?.role === 'manager' || user?.role === 'admin') && (
+                                                        <button
+                                                            onClick={() => handleRemoveManagerFromTeam(mgr.id, mgr.name)}
+                                                            disabled={isDeletingManager}
+                                                            className="h-8 w-8 flex items-center justify-center rounded-full text-blue-400 hover:bg-red-50 hover:text-red-500 transition-colors dark:hover:bg-red-900/30"
+                                                            title={user.id === mgr.id ? "Rời khỏi Team" : "Xóa Manager"}
+                                                        >
+                                                            {isDeletingManager ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </div>
                                         ))}
                                     </div>
 
-                                    {/* [THÊM MỚI]: UI THÊM MANAGER */}
+                                    {/* UI THÊM MANAGER */}
                                     {(user?.role === 'manager' || user?.role === 'admin') && (
                                         <div className="mt-3 bg-blue-50/50 p-3 rounded-xl border border-blue-100 dark:bg-blue-900/10 dark:border-blue-800">
                                             <h4 className="text-xs font-bold text-blue-700 dark:text-blue-300 mb-2 flex items-center gap-2"><UserPlus className="h-3.5 w-3.5" /> Thêm Manager khác</h4>
@@ -485,7 +578,7 @@ export default function TeamsPage() {
                             </div>
 
                             {/* Footer: Giải tán Team */}
-                            {(user?.role === 'manager' && selectedTeam.managerIds.includes(user.id)) && (
+                            {(user?.role === 'admin' || (user?.role === 'manager' && selectedTeam.managerIds.includes(user.id))) && (
                                 <div className="mt-6 border-t border-zinc-100 pt-4 dark:border-zinc-800">
                                     <button onClick={handleDisbandTeam} disabled={isDeletingTeam} className="w-full rounded-lg bg-white border border-red-200 py-2 text-sm font-bold text-red-600 hover:bg-red-600 hover:text-white dark:bg-transparent dark:border-red-800 dark:hover:bg-red-900/50 transition-all flex items-center justify-center gap-2">
                                         {isDeletingTeam ? <Loader2 className="h-4 w-4 animate-spin" /> : "Giải tán Team"}

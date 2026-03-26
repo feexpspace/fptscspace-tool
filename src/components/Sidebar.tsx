@@ -16,6 +16,7 @@ import {
     ChevronLeft,
     Shield,
     Lock,
+    UserCog,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
@@ -37,6 +38,12 @@ const mainNavItems: SidebarItem[] = [
         href: "/",
         icon: LayoutDashboard,
         allowedRoles: ['admin', 'manager']
+    },
+    {
+        name: "Accounts",
+        href: "/accounts",
+        icon: UserCog,
+        allowedRoles: ['admin']
     },
     {
         name: "Statistics",
@@ -75,7 +82,7 @@ const commNavItems: SidebarItem[] = [
         name: "Scripts",
         href: "/scripts",
         icon: ScrollText,
-        allowedRoles: ['admin', 'member']
+        allowedRoles: ['member']
     },
     {
         name: "Scripts Manager",
@@ -192,7 +199,7 @@ export function Sidebar() {
             </button>
 
             {/* TOP SECTION */}
-            <div className="flex-1 overflow-y-auto no-scrollbar"> {/* Thêm overflow để scroll nếu menu dài */}
+            <div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"> {/* Thêm overflow để scroll nếu menu dài */}
 
                 {/* Logo Area */}
                 <div className={cn("flex items-center gap-3 px-2 h-10 overflow-hidden mb-8", isCollapsed ? "justify-center" : "")}>

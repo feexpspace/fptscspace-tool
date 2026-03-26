@@ -267,3 +267,82 @@ export async function syncAllChannels(userId: string, teamId?: string, role?: st
         return { success: false, error: "Có lỗi xảy ra khi đồng bộ." };
     }
 }
+
+export async function getCustomReportData(channelIds: string[], year: number) {
+    try {
+        if (!channelIds || channelIds.length === 0) {
+            return { channels: [], latestStats: [], monthlyStats: [] };
+        }
+
+        // Chia nhỏ mảng để tránh lỗi giới hạn 'in' của Firestore (max 30 items)
+        const chunks = chunkArray(channelIds, 10);
+
+        // 1. Fetch Channels
+        const channelPromises = chunks.map(chunk =>
+            adminDb.collection("channels").where("__name__", "in", chunk).get()
+        );
+        const channelSnaps = await Promise.all(channelPromises);
+        const channels = channelSnaps.flatMap(snap =>
+            snap.docs.map(doc => {
+                const d = doc.data();
+                return {
+                    id: doc.id,
+                    ...d,
+                    // [QUAN TRỌNG] Convert Timestamp sang Date object
+                    createdAt: d.createdAt?.toDate ? d.createdAt.toDate() : null,
+                    updatedAt: d.updatedAt?.toDate ? d.updatedAt.toDate() : null,
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                } as any;
+            })
+        );
+
+        // 2. Fetch Latest Stats
+        const statsPromises = chunks.map(chunk =>
+            adminDb.collection("statistics").where("channelId", "in", chunk).get()
+        );
+        const statsSnaps = await Promise.all(statsPromises);
+        const latestStats = statsSnaps.flatMap(snap =>
+            snap.docs.map(doc => {
+                const d = doc.data();
+                return {
+                    id: doc.id,
+                    ...d,
+                    // [QUAN TRỌNG] Convert Timestamp sang Date object
+                    createdAt: d.createdAt?.toDate ? d.createdAt.toDate() : null,
+                    updatedAt: d.updatedAt?.toDate ? d.updatedAt.toDate() : null,
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                } as any;
+            })
+        );
+
+        // 3. Fetch Monthly Stats
+        const startMonth = `${year}-01`;
+        const endMonth = `${year}-12`;
+        const monthlyPromises = chunks.map(chunk =>
+            adminDb.collection("monthly_statistics")
+                .where("channelId", "in", chunk)
+                .where("month", ">=", startMonth)
+                .where("month", "<=", endMonth)
+                .get()
+        );
+        const monthlySnaps = await Promise.all(monthlyPromises);
+        const monthlyStats = monthlySnaps.flatMap(snap =>
+            snap.docs.map(doc => {
+                const d = doc.data();
+                return {
+                    id: doc.id,
+                    ...d,
+                    // [QUAN TRỌNG] Convert Timestamp sang Date object
+                    createdAt: d.createdAt?.toDate ? d.createdAt.toDate() : null,
+                    updatedAt: d.updatedAt?.toDate ? d.updatedAt.toDate() : null,
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                } as any;
+            })
+        );
+
+        return { channels, latestStats, monthlyStats };
+    } catch (error) {
+        console.error("Error fetching custom report:", error);
+        return { channels: [], latestStats: [], monthlyStats: [] };
+    }
+}

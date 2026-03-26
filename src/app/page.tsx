@@ -1,19 +1,25 @@
 // src/app/page.tsx
 "use client";
 
-import { useEffect, useState, useMemo, Activity } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { Sidebar } from "@/components/Sidebar";
-import { Loader2, LayoutDashboard, Calendar, ChevronDown, Users, RefreshCw, Trash2, UsersRound, PlayCircle, Eye, Heart } from "lucide-react"; // Bỏ icon Filter thừa
+import { Loader2, LayoutDashboard, Calendar, ChevronDown, Users, RefreshCw, Trash2, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Channel, Statistic, Team, MonthlyStatistic } from "@/types";
 import { ChannelSpecificReport } from "@/components/ChannelSpecificReport";
 import Image from "next/image";
+
 // Import Server Action
 import { getDashboardData, getTeamsList, syncAllChannels } from "@/app/actions/dashboard";
 import { ConfirmModal } from "@/components/ConfirmModal";
 import { cleanupVideosWithoutHashtag } from "./actions/report";
+
+// Import các Component
+import { OverviewCards } from "@/components/OverviewCards";
+import { PerformanceChart } from "@/components/PerformanceChart";
+import { CustomReportModal } from "@/components/CustomReportModal";
 
 export default function Home() {
   const { user, isAdmin, isManager, loading } = useAuth();
@@ -37,6 +43,8 @@ export default function Home() {
   const currentMonth = new Date().getMonth() + 1;
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [selectedMonthTab, setSelectedMonthTab] = useState(currentMonth);
+
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
   const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
   const months = Array.from({ length: 12 }, (_, i) => i + 1);
@@ -98,7 +106,6 @@ export default function Home() {
     }
   };
 
-  // useEffect gọi fetch lần đầu và khi filter thay đổi
   useEffect(() => {
     fetchDashboardData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -123,16 +130,15 @@ export default function Home() {
         try {
           const res = await syncAllChannels(user.id, selectedTeamId, user.role);
 
-          // Sau khi chạy xong, mở modal thông báo kết quả
           if (res.success) {
-            await fetchDashboardData(); // Refresh data
+            await fetchDashboardData();
             setConfirmConfig({
               isOpen: true,
               title: "Thành công",
               message: `Đã hoàn tất đồng bộ ${res.count} kênh.`,
               variant: 'info',
               confirmText: "Đóng",
-              cancelText: "", // Ẩn nút hủy để thành modal thông báo đơn
+              cancelText: "",
               onConfirm: async () => { setConfirmConfig(prev => ({ ...prev, isOpen: false })) }
             });
           } else {
@@ -165,7 +171,6 @@ export default function Home() {
       const res = await cleanupVideosWithoutHashtag();
       if (res.success) {
         alert(`Hoàn tất! Đã xóa ${res.deletedCount} video rác.`);
-        // NÊN GỌI LẠI FETCH DATA Ở ĐÂY HOẶC YÊU CẦU ĐỒNG BỘ LẠI
         fetchDashboardData();
       } else {
         alert("Lỗi: " + res.error);
@@ -233,19 +238,6 @@ export default function Home() {
     }), { followers: 0, videos: 0, views: 0, interactions: 0 });
   }, [monthlyDataForTab]);
 
-  // Component Thẻ thông số
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const StatCard = ({ title, value, icon: Icon, colorClass }: { title: string, value: number, icon: any, colorClass: string }) => (
-    <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-4 shadow-sm flex items-center gap-4">
-      <div className={cn("p-3 rounded-lg", colorClass)}>
-        <Icon className="h-5 w-5" />
-      </div>
-      <div>
-        <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium uppercase tracking-wide">{title}</p>
-        <h4 className="text-xl font-bold text-zinc-900 dark:text-zinc-50 leading-none mt-1">{value.toLocaleString()}</h4>
-      </div>
-    </div>
-  );
 
   if (loading) return <div className="flex h-screen items-center justify-center bg-zinc-50 dark:bg-zinc-950"><Loader2 className="animate-spin text-zinc-500" /></div>;
   if (!user || (!isAdmin && !isManager)) return null;
@@ -256,9 +248,8 @@ export default function Home() {
 
       <main className="flex-1 flex flex-col h-screen overflow-hidden">
 
-        {/* --- HEADER (ĐÃ CHỈNH SỬA) --- */}
+        {/* --- HEADER --- */}
         <header className="h-16 flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 px-6 bg-white dark:bg-zinc-950 shrink-0 transition-colors">
-          {/* Bên trái: Tiêu đề */}
           <div>
             <h1 className="text-lg font-bold flex items-center gap-2 text-zinc-900 dark:text-zinc-50">
               <LayoutDashboard className="h-5 w-5" />
@@ -266,7 +257,6 @@ export default function Home() {
             </h1>
           </div>
 
-          {/* Bên phải: Bộ lọc (Đã di chuyển lên đây) */}
           <div className="flex items-center gap-3">
             {isAdmin && (
               <button
@@ -278,6 +268,14 @@ export default function Home() {
                 {isCleaning ? "Đang dọn dẹp..." : "Dọn rác Video"}
               </button>
             )}
+
+            <button
+              onClick={() => setIsReportModalOpen(true)}
+              className="flex items-center gap-2 border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-zinc-900 dark:text-zinc-100 px-4 py-2 text-sm font-bold rounded-lg transition-all shadow-sm"
+            >
+              <FileText className="h-4 w-4" /> Tạo Báo Cáo
+            </button>
+
             <button
               onClick={handleSyncAllClick}
               disabled={isSyncingAll}
@@ -328,7 +326,7 @@ export default function Home() {
           </div>
         </header>
 
-        {/* --- TABS NAVIGATION (Giữ nguyên) --- */}
+        {/* --- TABS NAVIGATION --- */}
         <div className="bg-zinc-50/50 dark:bg-zinc-950/50 border-b border-zinc-200 dark:border-zinc-800 px-6 pt-2 flex items-center gap-6 overflow-x-auto shrink-0 no-scrollbar custom-scrollbar">
           <button
             onClick={() => setActiveTab("overview")}
@@ -360,7 +358,7 @@ export default function Home() {
           ))}
         </div>
 
-        {/* --- CONTENT AREA (Giữ nguyên) --- */}
+        {/* --- CONTENT AREA --- */}
         <div className="flex-1 overflow-y-auto p-6 bg-zinc-50 dark:bg-zinc-950 custom-scrollbar">
           {isLoadingData ? (
             <div className="flex h-60 justify-center items-center">
@@ -372,20 +370,11 @@ export default function Home() {
               {activeTab === "overview" && (
                 <div className="space-y-10 animate-in fade-in slide-in-from-bottom-2">
 
-                  {/* BẢNG TỔNG HỢP TÍCH LŨY */}
                   <div className="space-y-4">
-                    <h3 className="font-bold text-lg mb-2 text-zinc-900 dark:text-zinc-100 border-l-4 border-black dark:border-white pl-3">
-                      Thống kê Kênh (Tích lũy toàn thời gian)
-                    </h3>
+                    {/* [COMPONENT 1] CÁC THẺ THỐNG KÊ */}
+                    <OverviewCards stats={totalFixedStats} title="Thống kê Kênh (Tích lũy toàn thời gian)" />
 
-                    {/* Thanh thông số tổng */}
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                      <StatCard title="Tổng Followers" value={totalFixedStats.followers} icon={UsersRound} colorClass="bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400" />
-                      <StatCard title="Tổng Videos" value={totalFixedStats.videos} icon={PlayCircle} colorClass="bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400" />
-                      <StatCard title="Tổng Views" value={totalFixedStats.views} icon={Eye} colorClass="bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400" />
-                      <StatCard title="Tổng Tương tác" value={totalFixedStats.interactions} icon={Heart} colorClass="bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400" />
-                    </div>
-
+                    {/* BẢNG TỔNG HỢP (HTML) */}
                     <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
                       <div className="overflow-x-auto">
                         <table className="w-full text-left text-sm">
@@ -430,86 +419,18 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* BẢNG CHI TIẾT THEO THÁNG */}
-                  <div className="space-y-4 pt-4 border-t border-zinc-200 dark:border-zinc-800">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                      <h3 className="font-bold text-lg text-zinc-900 dark:text-zinc-100 border-l-4 border-black dark:border-white pl-3">
-                        Chi tiết theo tháng ({selectedYear})
-                      </h3>
+                  {/* [COMPONENT 2] BẢNG CHI TIẾT THEO THÁNG */}
+                  <PerformanceChart
+                    selectedYear={selectedYear}
+                    setSelectedYear={setSelectedYear}
+                    years={years}
+                    months={months}
+                    selectedMonthTab={selectedMonthTab}
+                    setSelectedMonthTab={setSelectedMonthTab}
+                    totalMonthlyStats={totalMonthlyStats}
+                    monthlyDataForTab={monthlyDataForTab}
+                  />
 
-                      {/* Tabs Tháng */}
-                      <div className="flex overflow-x-auto bg-zinc-100 dark:bg-zinc-900 p-1 rounded-lg custom-scrollbar">
-                        {months.map((m) => (
-                          <button
-                            key={m}
-                            onClick={() => setSelectedMonthTab(m)}
-                            className={cn(
-                              "px-4 py-1.5 text-sm font-medium rounded-md transition-all whitespace-nowrap",
-                              selectedMonthTab === m
-                                ? "bg-white text-black shadow-sm dark:bg-zinc-800 dark:text-white"
-                                : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200"
-                            )}
-                          >
-                            T{m}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Thanh thông số tổng (Theo Tháng) */}
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                      <StatCard title="Followers (Cuối tháng)" value={totalMonthlyStats.followers} icon={UsersRound} colorClass="bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400" />
-                      <StatCard title="Videos (Đăng trong tháng)" value={totalMonthlyStats.videos} icon={PlayCircle} colorClass="bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400" />
-                      <StatCard title="Views (Đạt trong tháng)" value={totalMonthlyStats.views} icon={Eye} colorClass="bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400" />
-                      <StatCard title="Tương tác (Trong tháng)" value={totalMonthlyStats.interactions} icon={Heart} colorClass="bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400" />
-                    </div>
-
-                    <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden shadow-sm mt-4">
-                      <div className="overflow-x-auto p-0">
-                        <table className="w-full text-left text-sm">
-                          <thead className="bg-zinc-50 text-xs uppercase text-zinc-500 dark:bg-zinc-950 dark:text-zinc-400">
-                            <tr>
-                              <th className="px-6 py-3 font-semibold w-16 text-center">#</th>
-                              <th className="px-6 py-3 font-semibold">Tên Kênh</th>
-                              <th className="px-6 py-3 font-semibold text-right">Followers</th>
-                              <th className="px-6 py-3 font-semibold text-right">Videos (Tháng)</th>
-                              <th className="px-6 py-3 font-semibold text-right">Views (Tháng)</th>
-                              <th className="px-6 py-3 font-semibold text-right">Tương tác (Tháng)</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
-                            {monthlyDataForTab.length > 0 ? monthlyDataForTab.map((c, idx) => (
-                              <tr key={c.channelId} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
-                                <td className="px-6 py-4 text-zinc-400 text-center">{idx + 1}</td>
-                                <td className="px-6 py-4 font-medium text-zinc-900 dark:text-zinc-100">{c.channelName}</td>
-                                <td className="px-6 py-4 text-right text-zinc-500 dark:text-zinc-400 tabular-nums">
-                                  {c.hasData ? c.followers.toLocaleString() : "-"}
-                                </td>
-                                <td className="px-6 py-4 text-right text-zinc-500 dark:text-zinc-400 tabular-nums">
-                                  {c.hasData ? c.videos.toLocaleString() : "-"}
-                                </td>
-                                <td className="px-6 py-4 text-right font-medium text-emerald-600 dark:text-emerald-400 tabular-nums">
-                                  {c.hasData ? c.views.toLocaleString() : "-"}
-                                </td>
-                                <td className="px-6 py-4 text-right font-medium text-orange-600 dark:text-orange-500 tabular-nums">
-                                  {c.hasData ? c.interactions.toLocaleString() : "-"}
-                                </td>
-                              </tr>
-                            )) : (
-                              <tr><td colSpan={6} className="p-8 text-center text-zinc-500">Chưa có kênh nào.</td></tr>
-                            )}
-                            {monthlyDataForTab.length > 0 && monthlyDataForTab.every(d => !d.hasData) && (
-                              <tr>
-                                <td colSpan={6} className="px-6 py-8 text-center text-zinc-400 italic bg-zinc-50/50 dark:bg-zinc-900/50">
-                                  Chưa có dữ liệu thống kê cho Tháng {selectedMonthTab}/{selectedYear}
-                                </td>
-                              </tr>
-                            )}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  </div>
                 </div>
               )}
 
@@ -525,6 +446,8 @@ export default function Home() {
           )}
         </div>
       </main>
+
+      {/* COMPONENT MODAL XÁC NHẬN */}
       <ConfirmModal
         isOpen={confirmConfig.isOpen}
         onClose={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}
@@ -535,6 +458,15 @@ export default function Home() {
         confirmText={confirmConfig.confirmText}
         cancelText={confirmConfig.cancelText}
       />
+
+      {/* [COMPONENT 3] MODAL TẠO BÁO CÁO TÙY CHỈNH */}
+      <CustomReportModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        channels={teamChannels}
+        selectedYear={selectedYear}
+      />
+
     </div>
   );
 }
