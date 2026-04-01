@@ -4,7 +4,7 @@
 
 import { adminDb } from "@/lib/firebase-admin"; // Dùng Admin SDK
 import { Timestamp } from "firebase-admin/firestore"; // Timestamp của Admin SDK
-import { Statistic, Video } from "@/types";
+import { Video } from "@/types";
 import { getAccessToken } from "./tiktok-token";
 
 interface TikTokApiResponse {
@@ -98,12 +98,16 @@ export async function syncTikTokVideos(userId: string, channelId: string) {
         let hasMore = true;
         let totalSynced = 0;
         let aggTotalViews = 0;
-        let aggTotalInteractions = 0;
+        let aggTotalLikes = 0;
+        let aggTotalComments = 0;
+        let aggTotalShares = 0;
 
         const monthlyBuckets = new Map<string, {
             newVideoCount: number;
             newViews: number;
-            newInteractions: number;
+            newLikes: number;
+            newComments: number;
+            newShares: number;
         }>();
 
         let earliestDate: Date | null = null;
@@ -157,21 +161,23 @@ export async function syncTikTokVideos(userId: string, channelId: string) {
                 const likeCount = Number(v.like_count) || 0;
                 const commentCount = Number(v.comment_count) || 0;
                 const shareCount = Number(v.share_count) || 0;
-                const interactions = likeCount + commentCount + shareCount;
 
-                // Cộng dồn chỉ số tổng (chỉ của video hợp lệ)
                 aggTotalViews += viewCount;
-                aggTotalInteractions += interactions;
+                aggTotalLikes += likeCount;
+                aggTotalComments += commentCount;
+                aggTotalShares += shareCount;
 
                 const monthKey = createTime.toISOString().slice(0, 7); // "YYYY-MM"
 
                 if (!monthlyBuckets.has(monthKey)) {
-                    monthlyBuckets.set(monthKey, { newVideoCount: 0, newViews: 0, newInteractions: 0 });
+                    monthlyBuckets.set(monthKey, { newVideoCount: 0, newViews: 0, newLikes: 0, newComments: 0, newShares: 0 });
                 }
                 const bucket = monthlyBuckets.get(monthKey)!;
                 bucket.newVideoCount += 1;
                 bucket.newViews += viewCount;
-                bucket.newInteractions += interactions;
+                bucket.newLikes += likeCount;
+                bucket.newComments += commentCount;
+                bucket.newShares += shareCount;
 
                 const videoData: Omit<Video, 'id'> = {
                     videoId: v.id,
@@ -219,7 +225,7 @@ export async function syncTikTokVideos(userId: string, channelId: string) {
         const today = new Date();
         const statId = channelId;
 
-        const statisticData: Statistic = {
+        const statisticData = {
             id: statId,
             channelId: channelId,
             userId: userId,
@@ -229,7 +235,9 @@ export async function syncTikTokVideos(userId: string, channelId: string) {
             followerCount: currentFollowers,
             videoCount: totalSynced,
             totalViews: aggTotalViews,
-            totalInteractions: aggTotalInteractions
+            totalLikes: aggTotalLikes,
+            totalComments: aggTotalComments,
+            totalShares: aggTotalShares,
         };
 
         await adminDb.collection("statistics").doc(statId).set({
@@ -250,11 +258,11 @@ export async function syncTikTokVideos(userId: string, channelId: string) {
                 // Lấy dữ liệu bucket của tháng đó
                 const bucket = monthlyBuckets.get(monthKey);
 
-                // --- THAY ĐỔI: KHÔNG CỘNG DỒN NỮA ---
-                // Chỉ lấy số liệu của bucket tháng này, nếu không có video thì là 0
                 const monthVideoCount = bucket ? bucket.newVideoCount : 0;
                 const monthViews = bucket ? bucket.newViews : 0;
-                const monthInteractions = bucket ? bucket.newInteractions : 0;
+                const monthLikes = bucket ? bucket.newLikes : 0;
+                const monthComments = bucket ? bucket.newComments : 0;
+                const monthShares = bucket ? bucket.newShares : 0;
 
                 const monthlyId = `${channelId}_${monthKey}`;
                 const monthlyRef = adminDb.collection("monthly_statistics").doc(monthlyId);
@@ -267,9 +275,11 @@ export async function syncTikTokVideos(userId: string, channelId: string) {
                     channelId,
                     userId,
                     month: monthKey,
-                    videoCount: monthVideoCount,       // Số video TẠO TRONG tháng này
-                    totalViews: monthViews,            // Tổng view của các video TẠO TRONG tháng này
-                    totalInteractions: monthInteractions, // Tổng tương tác của các video TẠO TRONG tháng này
+                    videoCount: monthVideoCount,
+                    totalViews: monthViews,
+                    totalLikes: monthLikes,
+                    totalComments: monthComments,
+                    totalShares: monthShares,
                 };
 
                 if (monthlySnap.exists) {
@@ -347,57 +357,5 @@ export async function getMonthlyStatistics(channelId: string, year: number, mont
     } catch (error) {
         console.error("Lỗi lấy thống kê tháng:", error);
         return null;
-    }
-}
-
-export async function cleanupVideosWithoutHashtag() {
-    try {
-        // Mảng các hashtag hợp lệ
-        const targetHashtags = ["#fptstudentcreativespace", "#fpteducreativespace"];
-
-        const videosSnapshot = await adminDb.collection("videos").get();
-
-        if (videosSnapshot.empty) {
-            return { success: true, deletedCount: 0, message: "Không có video nào trong DB." };
-        }
-
-        let deletedCount = 0;
-        let batch = adminDb.batch();
-        let batchCount = 0;
-
-        for (const doc of videosSnapshot.docs) {
-            const data = doc.data();
-            // Gộp title và description lại để kiểm tra, đưa về chữ thường
-            const textContent = `${data.title || ""} ${data.description || ""}`.toLowerCase();
-
-            // Kiểm tra xem text có chứa ít nhất 1 hashtag hợp lệ không
-            const hasValidHashtag = targetHashtags.some(hashtag => textContent.includes(hashtag));
-
-            // Nếu KHÔNG chứa bất kỳ hashtag hợp lệ nào -> Xóa
-            if (!hasValidHashtag) {
-                batch.delete(doc.ref);
-                deletedCount++;
-                batchCount++;
-
-                // Firestore giới hạn tối đa 500 thao tác cho mỗi Batch
-                if (batchCount === 500) {
-                    await batch.commit();
-                    batch = adminDb.batch(); // Khởi tạo batch mới
-                    batchCount = 0;
-                }
-            }
-        }
-
-        // Commit những thao tác còn sót lại (nhỏ hơn 500)
-        if (batchCount > 0) {
-            await batch.commit();
-        }
-
-        console.log(`Đã dọn dẹp xong. Xóa thành công ${deletedCount} video không hợp lệ.`);
-        return { success: true, deletedCount };
-
-    } catch (error) {
-        console.error("Lỗi khi dọn dẹp video:", error);
-        return { success: false, error: "Đã xảy ra lỗi khi quét và xóa video." };
     }
 }

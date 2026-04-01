@@ -1,20 +1,14 @@
 // src/app/privacy/page.tsx
 "use client";
 
-import { Sidebar } from "@/components/Sidebar";
 import { Lock, Eye, Server, Key, Database, ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/context/AuthContext";
 
 export default function PrivacyPage() {
     const router = useRouter();
-    const { user } = useAuth(); // Kiểm tra trạng thái đăng nhập
 
     return (
         <div className="flex h-screen w-full bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-sans transition-colors duration-300">
-
-            {/* Chỉ hiển thị Sidebar nếu đã đăng nhập */}
-            {user && <Sidebar />}
 
             <main className="flex-1 flex flex-col h-screen overflow-hidden">
 
