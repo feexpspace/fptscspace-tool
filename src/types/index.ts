@@ -1,7 +1,5 @@
 
 export type UserRole = 'admin' | 'manager' | 'member';
-export type ScriptStatus = 'draft' | 'pending' | 'approved' | 'rejected';
-export type FeedbackStatus = 'addressed' | 'unaddressed';
 
 /**
  * 1. User: Thông tin tài khoản hệ thống
@@ -72,46 +70,6 @@ export interface Video {
     editorName?: string;
 }
 
-/**
- * 5. Script: Kịch bản
- */
-export interface Script {
-    id: string;
-    title: string;
-    content: string;
-    status: ScriptStatus;
-    createdAt: Date;
-    updatedAt?: Date;
-    teamId: string;
-    channelId: string;
-    channelDisplayName: string;
-    channelUsername: string;
-    userId: string;
-    userName: string;
-    managerIds: string[];
-    isFeedbacked: boolean;
-    isUserUpdated: boolean;
-    isStatusChanged: boolean;
-    readBy: string[];
-}
-
-/**
- * 6. Feedback: Phản hồi
- */
-export interface Feedback {
-    id: string;
-    highlightId?: string;
-    markedText: string;
-    content: string;
-    createdAt: Date;
-    scriptId: string;
-    managerId: string;
-    managerName: string;
-    userId: string;
-    userName: string;
-    status: FeedbackStatus;
-}
-
 export interface Token {
     id: string;
     channelId: string;
@@ -139,7 +97,9 @@ export interface Statistic {
     followerCount: number;
     videoCount: number;
     totalViews: number;
-    totalInteractions: number;
+    totalLikes: number;
+    totalComments: number;
+    totalShares: number;
 }
 
 export interface MonthlyStatistic {
@@ -150,5 +110,7 @@ export interface MonthlyStatistic {
     followerCount: number;
     videoCount: number;
     totalViews: number;
-    totalInteractions: number;
+    totalLikes: number;
+    totalComments: number;
+    totalShares: number;
 }
