@@ -140,9 +140,9 @@ export async function GET(request: Request) {
                 updated_at: new Date().toISOString(),
             }, { onConflict: 'channel_id' });
 
-        return NextResponse.redirect(`${baseUrl}/channels?success=true`);
+        return NextResponse.redirect(`${baseUrl}/?tiktok=connected`);
     } catch (err) {
         console.error("TikTok Callback Error:", err);
-        return NextResponse.redirect(`${baseUrl}/channels?error=processing_failed`);
+        return NextResponse.redirect(`${baseUrl}/?tiktok=error`);
     }
 }
