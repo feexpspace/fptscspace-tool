@@ -110,10 +110,18 @@ export function QuanTriTab() {
                         <CustomSelect
                             value={filterTeamId}
                             onChange={v => setFilterTeamId(v)}
-                            options={[{ value: "", label: "Tất cả Mảng" }, ...teams.map(t => ({ value: t.id, label: t.name }))]}
-                            placeholder="Lọc theo mảng..."
+                            options={[{ value: "", label: "Tất cả mảng" }, ...teams.map(t => ({ value: t.id, label: t.name }))]}
                             className="bg-white dark:bg-[#121212] w-48 shadow-none"
                         />
+                        {!loading && (
+                            <span className="text-xs font-bold text-zinc-500 bg-zinc-100 dark:bg-zinc-800 dark:text-zinc-400 px-3 py-1.5 rounded-lg">
+                                {users.filter(u => u.status === 'approved').filter(u => {
+                                    if (!filterTeamId) return true;
+                                    const currentTeamId = teams.find(t => t.members?.includes(u.id))?.id || "";
+                                    return currentTeamId === filterTeamId;
+                                }).reduce((sum, u) => sum + u.channels.length, 0)} kênh
+                            </span>
+                        )}
                     </div>
                 </div>
                 <div className="overflow-x-auto rounded-xl border border-zinc-100/50 bg-white shadow-[0_4px_24px_rgba(0,0,0,0.03)] dark:border-zinc-800/50 dark:bg-[#121212]">
