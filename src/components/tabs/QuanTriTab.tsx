@@ -22,46 +22,46 @@ export function QuanTriTab() {
     const [actionLoading, setActionLoading] = useState(false);
     const [filterTeamId, setFilterTeamId] = useState<string>("");
 
-    const refresh = async () => {
+    const refresh = async (showSpinner = true) => {
         if (!user) return;
-        setLoading(true);
+        if (showSpinner) setLoading(true);
         const [teamsData, usersResult] = await Promise.all([
             getTeamsList(user.id, "admin"),
             getAllUsersWithChannels(),
         ]);
         setTeams(teamsData);
         if (usersResult.success && usersResult.data) setUsers(usersResult.data);
-        setLoading(false);
+        if (showSpinner) setLoading(false);
     };
 
-    useEffect(() => { refresh(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [user]);
+    useEffect(() => { refresh(true); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [user]);
 
     const handleCreateTeam = async () => {
         if (!newTeamName.trim()) return;
         setActionLoading(true);
         await createNewTeam(newTeamName.trim(), []);
         setNewTeamName(""); setShowCreateTeam(false);
-        await refresh(); setActionLoading(false);
+        await refresh(false); setActionLoading(false);
     };
 
     const handleDeleteTeam = async (teamId: string) => {
         if (!confirm("Bạn có chắc muốn xóa Mảng này?")) return;
         setActionLoading(true);
         await deleteTeam(teamId); setExpandedTeam(null);
-        await refresh(); setActionLoading(false);
+        await refresh(false); setActionLoading(false);
     };
 
     const handleRenameTeam = async (teamId: string) => {
         if (!editTeamName.trim()) return;
         setActionLoading(true);
         await updateTeamName(teamId, editTeamName.trim());
-        setEditingTeamId(null); await refresh(); setActionLoading(false);
+        setEditingTeamId(null); await refresh(false); setActionLoading(false);
     };
 
     const handleAssignTeam = async (userId: string, teamId: string) => {
         setActionLoading(true);
         await assignUserToTeam(userId, teamId || null);
-        await refresh(); setActionLoading(false);
+        await refresh(false); setActionLoading(false);
     };
 
     const getUserName = (userId: string) => users.find(u => u.id === userId)?.name || userId;
@@ -93,7 +93,7 @@ export function QuanTriTab() {
                                     <p className="text-xs font-medium text-zinc-500">{u.email}</p>
                                 </div>
                                 <button disabled={actionLoading}
-                                    onClick={async () => { setActionLoading(true); await approveUser(u.id); await refresh(); setActionLoading(false); }}
+                                    onClick={async () => { setActionLoading(true); await approveUser(u.id); await refresh(false); setActionLoading(false); }}
                                     className="flex items-center gap-2 rounded-xl bg-yellow-500 px-4 py-2.5 text-sm font-bold text-white shadow-[0_4px_14px_rgba(234,179,8,0.25)] hover:bg-yellow-600 active:scale-[0.98] disabled:opacity-50 transition-all">
                                     <ShieldCheck className="h-4 w-4 stroke-[2]" /> Duyệt
                                 </button>
@@ -191,7 +191,7 @@ export function QuanTriTab() {
                                                         if (!confirm(`Xóa tài khoản ${u.name}?`)) return;
                                                         setActionLoading(true);
                                                         await deleteUserAccount(u.id);
-                                                        await refresh(); setActionLoading(false);
+                                                        await refresh(false); setActionLoading(false);
                                                     }}
                                                     className="p-2 text-zinc-400 hover:bg-red-50 hover:text-red-500 rounded-lg dark:hover:bg-red-900/20 disabled:opacity-50 transition-colors">
                                                     <Trash2 className="h-4 w-4" />

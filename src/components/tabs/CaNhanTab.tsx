@@ -222,24 +222,24 @@ export function CaNhanTab() {
                         <table className="w-full text-sm">
                             <thead>
                                 <tr className="border-b border-zinc-100 dark:border-zinc-800/80">
-                                    <th className="px-6 py-5 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50 w-12" />
-                                    <th className="px-6 py-5 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50 w-28 cursor-pointer group hover:bg-zinc-100 dark:hover:bg-zinc-800" onClick={() => handleSort('date')}>
+                                    <th className="px-3 py-4 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50 min-w-[40px]" />
+                                    <th className="px-3 py-4 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50 w-24 cursor-pointer group hover:bg-zinc-100 dark:hover:bg-zinc-800" onClick={() => handleSort('date')}>
                                         <div className="flex items-center gap-1.5">Thời gian <SortIcon sortKey="date" /></div>
                                     </th>
-                                    {isAdmin && <th className="px-6 py-5 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50">Kênh</th>}
-                                    <th className="px-6 py-5 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50">Caption</th>
-                                    <th className="px-6 py-5 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50">Hashtag</th>
-                                    <th className="px-6 py-5 text-center text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50 w-10">Link</th>
-                                    <th className="px-6 py-5 text-right text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50 cursor-pointer group hover:bg-zinc-100 dark:hover:bg-zinc-800" onClick={() => handleSort('view')}>
+                                    {isAdmin && <th className="px-3 py-4 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50">Kênh</th>}
+                                    <th className="px-3 py-4 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50">Caption</th>
+                                    <th className="px-3 py-4 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50">Hashtag</th>
+                                    <th className="px-3 py-4 text-center text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50 w-10">Link</th>
+                                    <th className="px-3 py-4 text-right text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50 cursor-pointer group hover:bg-zinc-100 dark:hover:bg-zinc-800" onClick={() => handleSort('view')}>
                                         <div className="flex items-center justify-end gap-1.5"><SortIcon sortKey="view" /> Lượt xem</div>
                                     </th>
-                                    <th className="px-6 py-5 text-right text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50 cursor-pointer group hover:bg-zinc-100 dark:hover:bg-zinc-800" onClick={() => handleSort('like')}>
+                                    <th className="px-3 py-4 text-right text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50 cursor-pointer group hover:bg-zinc-100 dark:hover:bg-zinc-800" onClick={() => handleSort('like')}>
                                         <div className="flex items-center justify-end gap-1.5"><SortIcon sortKey="like" /> Like</div>
                                     </th>
-                                    <th className="px-6 py-5 text-right text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50 cursor-pointer group hover:bg-zinc-100 dark:hover:bg-zinc-800" onClick={() => handleSort('comment')}>
+                                    <th className="px-3 py-4 text-right text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50 cursor-pointer group hover:bg-zinc-100 dark:hover:bg-zinc-800" onClick={() => handleSort('comment')}>
                                         <div className="flex items-center justify-end gap-1.5"><SortIcon sortKey="comment" /> Comment</div>
                                     </th>
-                                    <th className="px-6 py-5 text-right text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50 cursor-pointer group hover:bg-zinc-100 dark:hover:bg-zinc-800" onClick={() => handleSort('share')}>
+                                    <th className="px-3 py-4 text-right text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50 cursor-pointer group hover:bg-zinc-100 dark:hover:bg-zinc-800" onClick={() => handleSort('share')}>
                                         <div className="flex items-center justify-end gap-1.5"><SortIcon sortKey="share" /> Share</div>
                                     </th>
                                 </tr>
@@ -252,21 +252,21 @@ export function CaNhanTab() {
 
                                     return (
                                         <tr key={video.id} className="border-b border-zinc-50/50 last:border-0 dark:border-zinc-800/30 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 transition-colors">
-                                            <td className="px-6 py-4 text-zinc-400 font-medium">
+                                            <td className="px-3 py-4 text-zinc-400 font-medium">
                                                 {(page - 1) * pageSize + index + 1}
                                             </td>
-                                            <td className="px-6 py-4 text-xs font-semibold text-zinc-500 whitespace-nowrap">
+                                            <td className="px-3 py-4 text-[11px] font-semibold text-zinc-500 whitespace-nowrap">
                                                 {video.createTime.toLocaleDateString("vi-VN")}
                                             </td>
                                             {isAdmin && (
-                                                <td className="px-6 py-4">
-                                                    <span className="text-xs font-bold tracking-tight text-zinc-900 dark:text-white bg-zinc-100 dark:bg-zinc-800 px-2 py-1.5 rounded-lg whitespace-nowrap">
+                                                <td className="px-3 py-4">
+                                                    <span className="text-[11px] font-bold tracking-tight text-zinc-900 dark:text-white bg-zinc-100 dark:bg-zinc-800 px-2 py-1.5 rounded-lg whitespace-nowrap">
                                                         {video.channelDisplayName || video.channelUsername}
                                                     </span>
                                                 </td>
                                             )}
-                                            <td className="px-6 py-4 max-w-xs relative group cursor-help hover:z-50">
-                                                <div className="line-clamp-2 leading-relaxed text-zinc-600 dark:text-zinc-400 font-medium">
+                                            <td className="px-3 py-4 max-w-[180px] md:max-w-[220px] relative group cursor-help hover:z-50">
+                                                <div className="line-clamp-2 leading-relaxed text-[13px] text-zinc-600 dark:text-zinc-400 font-medium">
                                                     {captionClean || "—"}
                                                 </div>
                                                 {captionClean && (
@@ -275,8 +275,8 @@ export function CaNhanTab() {
                                                     </div>
                                                 )}
                                             </td>
-                                            <td className="px-6 py-4 max-w-[180px] relative group cursor-help hover:z-50">
-                                                <div className="line-clamp-1 leading-relaxed text-xs font-bold text-blue-500 dark:text-blue-400 break-all md:break-words whitespace-pre-wrap">
+                                            <td className="px-3 py-4 max-w-[120px] md:max-w-[160px] relative group cursor-help hover:z-50">
+                                                <div className="line-clamp-1 leading-relaxed text-xs font-bold text-blue-500 dark:text-blue-400 break-all whitespace-pre-wrap">
                                                     {hashtags || "—"}
                                                 </div>
                                                 {hashtags && (
@@ -285,7 +285,7 @@ export function CaNhanTab() {
                                                     </div>
                                                 )}
                                             </td>
-                                            <td className="px-6 py-4 text-center">
+                                            <td className="px-3 py-4 text-center">
                                                 {video.link && (
                                                     <a href={video.link} target="_blank" rel="noopener noreferrer"
                                                         className="inline-flex text-zinc-400 hover:text-blue-500 transition-colors bg-white hover:bg-blue-50 dark:bg-zinc-800 dark:hover:bg-blue-900/30 p-2 rounded-lg border border-zinc-100 dark:border-zinc-700/50">
@@ -293,16 +293,16 @@ export function CaNhanTab() {
                                                     </a>
                                                 )}
                                             </td>
-                                            <td className="px-6 py-4 text-right font-bold text-zinc-900 dark:text-white">
+                                            <td className="px-3 py-4 text-right font-bold text-zinc-900 dark:text-white">
                                                 {(video.stats?.view || 0).toLocaleString("vi-VN")}
                                             </td>
-                                            <td className="px-6 py-4 text-right font-medium text-zinc-600 dark:text-zinc-400">
+                                            <td className="px-3 py-4 text-right font-medium text-zinc-600 dark:text-zinc-400">
                                                 {(video.stats?.like || 0).toLocaleString("vi-VN")}
                                             </td>
-                                            <td className="px-6 py-4 text-right font-medium text-zinc-600 dark:text-zinc-400">
+                                            <td className="px-3 py-4 text-right font-medium text-zinc-600 dark:text-zinc-400">
                                                 {(video.stats?.comment || 0).toLocaleString("vi-VN")}
                                             </td>
-                                            <td className="px-6 py-4 text-right font-medium text-zinc-600 dark:text-zinc-400">
+                                            <td className="px-3 py-4 text-right font-medium text-zinc-600 dark:text-zinc-400">
                                                 {(video.stats?.share || 0).toLocaleString("vi-VN")}
                                             </td>
                                         </tr>

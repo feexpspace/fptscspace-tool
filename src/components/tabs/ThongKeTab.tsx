@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Eye, MessageCircle, Share2, Users, Video, Tv, RefreshCw, Link, Heart } from "lucide-react";
+import { Eye, MessageCircle, Share2, Users, Video, Tv, RefreshCw, Link, Heart, ChevronDown, ChevronUp } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useData } from "@/context/DataContext";
 import { StatCard } from "@/components/StatCard";
@@ -13,6 +13,7 @@ export function ThongKeTab() {
     const [selectedTeam, setSelectedTeam] = useState("");
     const [selectedChannel, setSelectedChannel] = useState("");
     const [selectedMonth, setSelectedMonth] = useState("");
+    const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({ key: 'views', direction: 'desc' });
 
     const monthOptions = useMemo(() => {
         const options: { value: string; label: string }[] = [];
@@ -83,7 +84,7 @@ export function ThongKeTab() {
             byChannel.set(v.channelId, cur);
         });
 
-        const channelBreakdown = scopedStats
+        let breakdown = scopedStats
             .map(s => {
                 const agg = byChannel.get(s.channelId) || { views: 0, comments: 0, shares: 0, videos: 0 };
                 return {
@@ -99,8 +100,36 @@ export function ThongKeTab() {
             })
             .filter(ch => ch.videoCount > 0 || !selectedMonth); // hide empty channels when month filtered
 
-        return { totalViews, totalLikes, totalComments, totalShares, totalFollowers, totalVideos, activeChannels: scopedStats.length, channelBreakdown };
-    }, [allVideos, allStats, channelTeamMap, selectedTeam, selectedChannel, selectedMonth]);
+        breakdown.sort((a, b) => {
+            let aVal = 0; let bVal = 0;
+            if (sortConfig.key === 'views') { aVal = a.totalViews; bVal = b.totalViews; }
+            else if (sortConfig.key === 'followers') { aVal = a.followerCount; bVal = b.followerCount; }
+            else if (sortConfig.key === 'videos') { aVal = a.videoCount; bVal = b.videoCount; }
+            else if (sortConfig.key === 'comments') { aVal = a.totalComments; bVal = b.totalComments; }
+            else if (sortConfig.key === 'shares') { aVal = a.totalShares; bVal = b.totalShares; }
+
+            if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+            if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+            return 0;
+        });
+
+        return { totalViews, totalLikes, totalComments, totalShares, totalFollowers, totalVideos, activeChannels: scopedStats.length, channelBreakdown: breakdown };
+    }, [allVideos, allStats, channelTeamMap, selectedTeam, selectedChannel, selectedMonth, sortConfig]);
+
+    const handleSort = (key: string) => {
+        let direction: 'asc' | 'desc' = 'desc';
+        if (sortConfig.key === key && sortConfig.direction === 'desc') {
+            direction = 'asc';
+        }
+        setSortConfig({ key, direction });
+    };
+
+    const SortIcon = ({ sortKey }: { sortKey: string }) => {
+        if (sortConfig.key !== sortKey) return <ChevronDown className="h-3 w-3 opacity-20 transition-opacity group-hover:opacity-100" />;
+        return sortConfig.direction === 'asc' 
+            ? <ChevronUp className="h-3 w-3 text-blue-500" /> 
+            : <ChevronDown className="h-3 w-3 text-blue-500" />;
+    };
 
     return (
         <div className="space-y-6">
@@ -201,12 +230,22 @@ export function ThongKeTab() {
                             <table className="w-full text-sm">
                                 <thead>
                                     <tr className="border-b border-zinc-100 dark:border-zinc-800/80">
-                                        <th className="px-6 py-5 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-[#1a1a1a]/50">Kênh</th>
-                                        <th className="px-6 py-5 text-right text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-[#1a1a1a]/50">Followers</th>
-                                        <th className="px-6 py-5 text-right text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-[#1a1a1a]/50">Video</th>
-                                        <th className="px-6 py-5 text-right text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-[#1a1a1a]/50">Lượt xem</th>
-                                        <th className="px-6 py-5 text-right text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-[#1a1a1a]/50">Bình luận</th>
-                                        <th className="px-6 py-5 text-right text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-[#1a1a1a]/50">Chia sẻ</th>
+                                        <th className="px-6 py-5 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50">Kênh</th>
+                                        <th className="px-6 py-5 text-right text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50 cursor-pointer group hover:bg-zinc-100 dark:hover:bg-zinc-800" onClick={() => handleSort('followers')}>
+                                            <div className="flex items-center justify-end gap-1.5"><SortIcon sortKey="followers" /> Followers</div>
+                                        </th>
+                                        <th className="px-6 py-5 text-right text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50 cursor-pointer group hover:bg-zinc-100 dark:hover:bg-zinc-800" onClick={() => handleSort('videos')}>
+                                            <div className="flex items-center justify-end gap-1.5"><SortIcon sortKey="videos" /> Video</div>
+                                        </th>
+                                        <th className="px-6 py-5 text-right text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50 cursor-pointer group hover:bg-zinc-100 dark:hover:bg-zinc-800" onClick={() => handleSort('views')}>
+                                            <div className="flex items-center justify-end gap-1.5"><SortIcon sortKey="views" /> Lượt xem</div>
+                                        </th>
+                                        <th className="px-6 py-5 text-right text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50 cursor-pointer group hover:bg-zinc-100 dark:hover:bg-zinc-800" onClick={() => handleSort('comments')}>
+                                            <div className="flex items-center justify-end gap-1.5"><SortIcon sortKey="comments" /> Bình luận</div>
+                                        </th>
+                                        <th className="px-6 py-5 text-right text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50 cursor-pointer group hover:bg-zinc-100 dark:hover:bg-zinc-800" onClick={() => handleSort('shares')}>
+                                            <div className="flex items-center justify-end gap-1.5"><SortIcon sortKey="shares" /> Chia sẻ</div>
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody>
