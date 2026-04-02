@@ -98,6 +98,17 @@ export async function removeMemberFromTeam(teamId: string, userId: string) {
     }
 }
 
+export async function assignUserToTeam(userId: string, teamId: string | null) {
+    try {
+        await supabaseAdmin.from('users').update({ team_id: teamId }).eq('id', userId);
+        revalidatePath('/');
+        return { success: true };
+    } catch (error) {
+        console.error("Assign Team Error:", error);
+        return { success: false, error: "Không thể xếp Mảng." };
+    }
+}
+
 export async function updateTeamName(teamId: string, newName: string) {
     try {
         if (!newName || newName.trim() === "") {
