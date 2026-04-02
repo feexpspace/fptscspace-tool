@@ -134,54 +134,59 @@ export function ThongKeTab() {
     return (
         <div className="space-y-6">
             {/* Header section (Filters + Actions) */}
-            <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 w-full">
+            <div className="flex flex-wrap lg:flex-nowrap justify-between items-center gap-2 w-full">
                 {/* Filters */}
-                <div className="flex flex-wrap items-center gap-3">
-                    <CustomSelect
-                        value={selectedMonth}
-                        onChange={setSelectedMonth}
-                        options={monthOptions}
-                        placeholder="Tất cả thời gian"
-                    />
+                <div className="flex items-center gap-2 w-full lg:w-auto overflow-x-auto scrollbar-none pb-1 -mb-1">
+                    <div className="w-[125px] sm:w-44 shrink-0">
+                        <CustomSelect
+                            value={selectedMonth}
+                            onChange={setSelectedMonth}
+                            options={monthOptions}
+                            placeholder="Tất cả thời gian"
+                        />
+                    </div>
 
                     {isAdmin && (
                         <>
-                            <CustomSelect
-                                value={selectedTeam}
-                                onChange={(val) => { setSelectedTeam(val); setSelectedChannel(""); }}
-                                options={teams.map(t => ({ value: t.id, label: t.name }))}
-                                placeholder="Tất cả mảng"
-                            />
+                            <div className="w-[120px] sm:w-44 shrink-0">
+                                <CustomSelect
+                                    value={selectedTeam}
+                                    onChange={(val) => { setSelectedTeam(val); setSelectedChannel(""); }}
+                                    options={teams.map(t => ({ value: t.id, label: t.name }))}
+                                    placeholder="Tất cả mảng"
+                                />
+                            </div>
 
-                            <CustomSelect
-                                value={selectedChannel}
-                                onChange={(val) => { setSelectedChannel(val); setSelectedTeam(""); }}
-                                options={allChannels.map(ch => ({ value: ch.id, label: ch.displayName }))}
-                                placeholder="Tất cả kênh"
-                                className="max-w-[200px]"
-                            />
+                            <div className="w-[120px] sm:w-[200px] shrink-0">
+                                <CustomSelect
+                                    value={selectedChannel}
+                                    onChange={(val) => { setSelectedChannel(val); setSelectedTeam(""); }}
+                                    options={allChannels.map(ch => ({ value: ch.id, label: ch.displayName }))}
+                                    placeholder="Tất cả kênh"
+                                />
+                            </div>
                         </>
                     )}
                 </div>
 
                 {/* Actions */}
-                <div className="flex flex-wrap items-center gap-3">
+                <div className="flex items-center gap-2 shrink-0">
                     {!isAdmin && hasChannel === false && (
                         <a
                             href={`/api/tiktok/login?userId=${user?.id}`}
-                            className="flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_4px_14px_rgba(37,99,235,0.25)] hover:bg-blue-700 hover:shadow-[0_4px_14px_rgba(37,99,235,0.35)] active:scale-[0.98] transition-all"
+                            className="flex items-center gap-1.5 rounded-xl bg-blue-600 px-3 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white shadow-[0_4px_14px_rgba(37,99,235,0.25)] hover:bg-blue-700 hover:shadow-[0_4px_14px_rgba(37,99,235,0.35)] active:scale-[0.98] transition-all whitespace-nowrap"
                         >
-                            <Link className="h-4 w-4 stroke-[2]" />
-                            Kết nối TikTok
+                            <Link className="h-3.5 w-3.5 sm:h-4 sm:w-4 stroke-[2]" />
+                            Kết nối
                         </a>
                     )}
                     {(isAdmin || hasChannel) && (
                         <button
                             onClick={doSync}
                             disabled={syncing || dataLoading}
-                            className="flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_4px_14px_rgba(37,99,235,0.25)] hover:bg-blue-700 hover:shadow-[0_4px_14px_rgba(37,99,235,0.35)] active:scale-[0.98] disabled:opacity-50 transition-all"
+                            className="flex items-center gap-1.5 rounded-xl bg-blue-600 px-3 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white shadow-[0_4px_14px_rgba(37,99,235,0.25)] hover:bg-blue-700 hover:shadow-[0_4px_14px_rgba(37,99,235,0.35)] active:scale-[0.98] disabled:opacity-50 transition-all whitespace-nowrap"
                         >
-                            <RefreshCw className={`h-4 w-4 stroke-[2] ${syncing ? "animate-spin" : ""}`} />
+                            <RefreshCw className={`h-3.5 w-3.5 sm:h-4 sm:w-4 stroke-[2] ${syncing ? "animate-spin" : ""}`} />
                             {syncing ? "Đang đồng bộ..." : "Đồng bộ"}
                         </button>
                     )}
@@ -198,10 +203,10 @@ export function ThongKeTab() {
                 <>
                     {isAdmin ? (
                         <>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 mb-4">
                                 <StatCard title="Lượt xem" value={stats.totalViews} icon={Eye} color="blue" />
                                 <StatCard title="Người theo dõi" value={stats.totalFollowers} icon={Users} color="purple" />
-                                <StatCard title="Kênh hoạt động" value={stats.activeChannels} icon={Tv} color="yellow" />
+                                <StatCard title="Kênh hoạt động" value={stats.activeChannels} icon={Tv} color="yellow" className="col-span-2 md:col-span-1" />
                             </div>
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                 <StatCard title="Like" value={stats.totalLikes} icon={Heart} color="rose" />
@@ -212,7 +217,7 @@ export function ThongKeTab() {
                         </>
                     ) : (
                         <>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-4">
                                 <StatCard title="Lượt xem" value={stats.totalViews} icon={Eye} color="blue" />
                                 <StatCard title="Người theo dõi" value={stats.totalFollowers} icon={Users} color="purple" />
                             </div>

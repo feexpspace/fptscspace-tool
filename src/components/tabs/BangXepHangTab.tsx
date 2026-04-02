@@ -64,8 +64,8 @@ export function BangXepHangTab({ isActive = true }: { isActive?: boolean }) {
                             <th className="px-6 py-5 text-center w-20 text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50">Top</th>
                             <th className="px-6 py-5 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50">Kênh</th>
                             <th className="px-6 py-5 text-right text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50">View</th>
-                            <th className="px-6 py-5 text-right text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50">Follow</th>
-                            <th className="px-6 py-5 text-right text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50">Video</th>
+                            <th className="px-6 py-5 text-right text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50 hidden sm:table-cell">Follow</th>
+                            <th className="px-6 py-5 text-right text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50 hidden sm:table-cell">Video</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -124,10 +124,10 @@ export function BangXepHangTab({ isActive = true }: { isActive?: boolean }) {
                                                 {ch.totalViews.toLocaleString("vi-VN")}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-5 text-right font-medium text-zinc-600 dark:text-zinc-400">
+                                        <td className="px-6 py-5 text-right font-medium text-zinc-600 dark:text-zinc-400 hidden sm:table-cell">
                                             {ch.followerCount.toLocaleString("vi-VN")}
                                         </td>
-                                        <td className="px-6 py-5 text-right font-medium text-zinc-600 dark:text-zinc-400">
+                                        <td className="px-6 py-5 text-right font-medium text-zinc-600 dark:text-zinc-400 hidden sm:table-cell">
                                             {ch.videoCount.toLocaleString("vi-VN")}
                                         </td>
                                     </tr>

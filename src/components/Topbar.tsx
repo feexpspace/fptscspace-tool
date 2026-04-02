@@ -42,7 +42,6 @@ interface TopbarProps {
 export function Topbar({ activeTab, onTabChange }: TopbarProps) {
     const { user, role, isAdmin } = useAuth();
     const router = useRouter();
-    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [userDropdownOpen, setUserDropdownOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -67,41 +66,32 @@ export function Topbar({ activeTab, onTabChange }: TopbarProps) {
     return (
         <header className="sticky top-0 z-40 w-full border-b border-zinc-200 bg-white/80 backdrop-blur-md dark:border-zinc-800 dark:bg-[#0a0a0a]/80">
             <div className="flex h-16 items-center px-4 md:px-6">
-                
-                {/* Mobile Menu Button */}
-                <button
-                    onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                    className="mr-4 inline-flex items-center justify-center rounded-md p-2 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 md:hidden"
-                >
-                    {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-                </button>
-
                 {/* Logo */}
-                <div className="flex items-center gap-3 cursor-pointer" onClick={() => onTabChange("thong-ke")}>
+                <div className="flex items-center gap-2 sm:gap-3 cursor-pointer shrink-0 mr-2 sm:mr-0" onClick={() => onTabChange("thong-ke")}>
                     <div className="relative h-8 w-8 flex items-center justify-center font-bold text-blue-600 shrink-0 rounded-xl overflow-hidden shadow-sm border border-zinc-100 dark:border-zinc-800 bg-white">
                         <Image src="/logo.png" alt="Logo" fill className="object-cover" priority sizes="100px" />
                     </div>
-                    <span className="text-xl font-bold tracking-tight text-zinc-900 dark:text-white hidden sm:block">
+                    <span className="text-lg sm:text-xl font-bold tracking-tight text-zinc-900 dark:text-white hidden min-[380px]:block">
                         FPTscSpace
                     </span>
                 </div>
 
-                {/* Desktop Navigation */}
-                <nav className="hidden md:flex items-center justify-center gap-2 flex-1">
+                {/* Navigation Tabs */}
+                <nav className="flex items-center justify-center gap-1 sm:gap-2 flex-1 overflow-x-auto px-2 scrollbar-none">
                     {visibleTabs.map((tab) => (
                         <button
                             key={tab.id}
                             onClick={() => onTabChange(tab.id)}
                             className={cn(
-                                "flex items-center gap-2 rounded-xl px-5 py-2 text-[13px] font-bold transition-all duration-200",
+                                "flex items-center justify-center gap-2 rounded-xl text-[13px] font-bold transition-all duration-200 shrink-0",
                                 activeTab === tab.id
-                                    ? "bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-white"
-                                    : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white"
+                                    ? "bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-white px-3 sm:px-5 py-2"
+                                    : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white px-2 sm:px-5 py-2"
                             )}
+                            title={tab.name}
                         >
-                            {/* Option: hide icon on desktop to make it cleaner, or keep it. Let's keep a subtle icon */}
-                            {false && <tab.icon className="h-4 w-4" />}
-                            {tab.name}
+                            <tab.icon className={cn("h-5 w-5", activeTab === tab.id ? "hidden sm:block" : "block sm:hidden")} />
+                            <span className={cn(activeTab === tab.id ? "block" : "hidden sm:block")}>{tab.name}</span>
                         </button>
                     ))}
                 </nav>
@@ -159,32 +149,6 @@ export function Topbar({ activeTab, onTabChange }: TopbarProps) {
                     </div>
                 </div>
             </div>
-
-            {/* Mobile Navigation Menu */}
-            {mobileMenuOpen && (
-                <div className="md:hidden border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#0a0a0a]">
-                    <nav className="flex flex-col space-y-1 px-4 py-4">
-                        {visibleTabs.map((tab) => (
-                            <button
-                                key={tab.id}
-                                onClick={() => {
-                                    onTabChange(tab.id);
-                                    setMobileMenuOpen(false);
-                                }}
-                                className={cn(
-                                    "flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-colors",
-                                    activeTab === tab.id
-                                        ? "bg-zinc-100 text-black dark:bg-zinc-800 dark:text-white"
-                                        : "text-zinc-600 hover:bg-zinc-50 dark:text-zinc-400 dark:hover:bg-zinc-900"
-                                )}
-                            >
-                                <tab.icon className="h-5 w-5" />
-                                {tab.name}
-                            </button>
-                        ))}
-                    </nav>
-                </div>
-            )}
         </header>
     );
 }
