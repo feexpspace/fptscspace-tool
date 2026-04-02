@@ -73,27 +73,27 @@ export function QuanTriTab() {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-8">
             {/* === Tài khoản chờ duyệt === */}
             {users.filter(u => u.status === 'pending').length > 0 && (
-                <div>
-                    <h2 className="mb-3 text-lg font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+                <div className="space-y-3">
+                    <h2 className="text-lg font-extrabold text-zinc-900 dark:text-white flex items-center gap-2">
                         Chờ duyệt
-                        <span className="rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-bold text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-400">
+                        <span className="rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-bold text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-400">
                             {users.filter(u => u.status === 'pending').length}
                         </span>
                     </h2>
-                    <div className="space-y-2">
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                         {users.filter(u => u.status === 'pending').map(u => (
-                            <div key={u.id} className="flex items-center justify-between rounded-xl border border-yellow-200 bg-yellow-50 px-4 py-3 dark:border-yellow-900/40 dark:bg-yellow-900/10">
+                            <div key={u.id} className="flex items-center justify-between rounded-xl border border-yellow-200/50 bg-gradient-to-br from-yellow-50 to-white px-5 py-4 shadow-[0_4px_24px_rgba(234,179,8,0.06)] dark:border-yellow-900/30 dark:from-yellow-900/10 dark:to-[#121212]">
                                 <div>
-                                    <p className="font-medium text-zinc-900 dark:text-white">{u.name}</p>
-                                    <p className="text-xs text-zinc-500">{u.email}</p>
+                                    <p className="font-bold text-zinc-900 dark:text-white">{u.name}</p>
+                                    <p className="text-xs font-medium text-zinc-500">{u.email}</p>
                                 </div>
                                 <button disabled={actionLoading}
                                     onClick={async () => { setActionLoading(true); await approveUser(u.id); await refresh(); setActionLoading(false); }}
-                                    className="flex items-center gap-1.5 rounded-lg bg-green-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50">
-                                    <ShieldCheck className="h-4 w-4" /> Duyệt
+                                    className="flex items-center gap-2 rounded-xl bg-yellow-500 px-4 py-2.5 text-sm font-bold text-white shadow-[0_4px_14px_rgba(234,179,8,0.25)] hover:bg-yellow-600 active:scale-[0.98] disabled:opacity-50 transition-all">
+                                    <ShieldCheck className="h-4 w-4 stroke-[2]" /> Duyệt
                                 </button>
                             </div>
                         ))}
@@ -102,12 +102,12 @@ export function QuanTriTab() {
             )}
 
             {/* === Quản lý Mảng === */}
-            <div>
-                <div className="mb-4 flex items-center justify-between">
-                    <h2 className="text-lg font-bold text-zinc-900 dark:text-white">Quản lý Mảng</h2>
+            <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                    <h2 className="text-lg font-extrabold text-zinc-900 dark:text-white">Quản lý Mảng</h2>
                     <button onClick={() => setShowCreateTeam(!showCreateTeam)}
-                        className="flex items-center gap-1.5 rounded-lg bg-zinc-900 px-3 py-2 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-900">
-                        <Plus className="h-4 w-4" /> Tạo Mảng
+                        className="flex items-center gap-2 rounded-xl bg-zinc-900 px-5 py-2.5 text-[13px] font-bold text-white shadow-[0_4px_14px_rgba(0,0,0,0.15)] hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:shadow-[0_4px_14px_rgba(255,255,255,0.15)] active:scale-[0.98] transition-all">
+                        <Plus className="h-4 w-4 stroke-[2]" /> Tạo Mảng
                     </button>
                 </div>
 
@@ -127,123 +127,125 @@ export function QuanTriTab() {
                     </div>
                 )}
 
-                <div className="space-y-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                     {teams.map(team => (
-                        <div key={team.id} className="rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden">
-                            <div className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-900/50"
+                        <div key={team.id} className="rounded-xl border border-zinc-100/50 bg-white shadow-[0_4px_24px_rgba(0,0,0,0.03)] dark:border-zinc-800/50 dark:bg-[#121212] overflow-hidden transition-all">
+                            <div className="flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-zinc-50/50 dark:hover:bg-[#1a1a1a]/50"
                                 onClick={() => setExpandedTeam(expandedTeam === team.id ? null : team.id)}>
                                 <div className="flex items-center gap-3">
-                                    {expandedTeam === team.id ? <ChevronUp className="h-4 w-4 text-zinc-400" /> : <ChevronDown className="h-4 w-4 text-zinc-400" />}
+                                    {expandedTeam === team.id ? <ChevronUp className="h-4 w-4 text-zinc-400 stroke-[2.5]" /> : <ChevronDown className="h-4 w-4 text-zinc-400 stroke-[2.5]" />}
                                     {editingTeamId === team.id ? (
                                         <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
                                             <input type="text" value={editTeamName} onChange={e => setEditTeamName(e.target.value)} autoFocus
-                                                className="rounded border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-600 dark:bg-zinc-800 dark:text-white"
+                                                className="rounded-lg border border-zinc-200 px-3 py-1.5 text-sm dark:border-zinc-700 dark:bg-[#1a1a1a] dark:text-white outline-none"
                                                 onKeyDown={e => e.key === 'Enter' && handleRenameTeam(team.id)} />
-                                            <button onClick={() => handleRenameTeam(team.id)} className="text-green-500"><Check className="h-4 w-4" /></button>
-                                            <button onClick={() => setEditingTeamId(null)} className="text-zinc-400"><X className="h-4 w-4" /></button>
+                                            <button onClick={() => handleRenameTeam(team.id)} className="text-green-500 hover:text-green-600 bg-green-50 p-2 rounded-lg dark:bg-green-900/20"><Check className="h-4 w-4" /></button>
+                                            <button onClick={() => setEditingTeamId(null)} className="text-zinc-400 hover:text-zinc-600 bg-zinc-50 p-2 rounded-lg dark:bg-zinc-800"><X className="h-4 w-4" /></button>
                                         </div>
                                     ) : (
-                                        <span className="font-medium text-zinc-900 dark:text-white">{team.name}</span>
+                                        <span className="font-bold text-zinc-900 dark:text-white">{team.name}</span>
                                     )}
-                                    <span className="text-xs text-zinc-400">{team.members?.length || 0} thành viên</span>
+                                    <span className="text-xs font-semibold text-zinc-400 bg-zinc-100 px-2 py-0.5 rounded-full dark:bg-zinc-800">{team.members?.length || 0}</span>
                                 </div>
                                 <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
                                     <button onClick={() => { setEditingTeamId(team.id); setEditTeamName(team.name); }}
-                                        className="p-1.5 text-zinc-400 hover:text-zinc-600 rounded">
+                                        className="p-2 text-zinc-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg dark:hover:bg-blue-900/20 transition-colors">
                                         <Pencil className="h-3.5 w-3.5" />
                                     </button>
                                     <button onClick={() => handleDeleteTeam(team.id)}
-                                        className="p-1.5 text-red-400 hover:text-red-600 rounded">
+                                        className="p-2 text-zinc-400 hover:text-red-500 hover:bg-red-50 rounded-lg dark:hover:bg-red-900/20 transition-colors">
                                         <Trash2 className="h-3.5 w-3.5" />
                                     </button>
                                 </div>
                             </div>
 
                             {expandedTeam === team.id && (
-                                <div className="border-t border-zinc-200 dark:border-zinc-800 px-4 py-3">
-                                    <p className="text-xs text-zinc-400 mb-2 font-semibold uppercase">Thành viên</p>
+                                <div className="border-t border-zinc-100 dark:border-zinc-800/80 px-5 py-4 bg-zinc-50/30 dark:bg-[#1a1a1a]/30">
+                                    <p className="text-[10px] text-zinc-400 mb-3 font-bold uppercase tracking-widest">Thành viên</p>
                                     {team.members?.length > 0 ? (
-                                        <div className="space-y-1">
+                                        <div className="space-y-2">
                                             {team.members.map(memId => (
-                                                <div key={memId} className="text-sm text-zinc-700 dark:text-zinc-300 px-2 py-1">
+                                                <div key={memId} className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
                                                     {getUserName(memId)}
                                                 </div>
                                             ))}
                                         </div>
                                     ) : (
-                                        <p className="text-xs text-zinc-400">Chưa có thành viên — xếp từ bảng Tổng quan kênh bên dưới</p>
+                                        <p className="text-[13px] font-medium text-zinc-400 italic">Chưa có thành viên (thêm từ bảng bên dưới)</p>
                                     )}
                                 </div>
                             )}
                         </div>
                     ))}
                     {teams.length === 0 && (
-                        <p className="text-center text-sm text-zinc-400 py-8">Chưa có Mảng nào</p>
+                        <div className="col-span-full">
+                            <p className="text-center text-sm font-medium text-zinc-400 py-12 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl">Chưa có Mảng nào được tạo</p>
+                        </div>
                     )}
                 </div>
             </div>
 
             {/* === Tổng quan kênh === */}
-            <div>
-                <h2 className="mb-4 text-lg font-bold text-zinc-900 dark:text-white">Tổng quan kênh</h2>
-                <div className="overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-800">
+            <div className="space-y-4">
+                <h2 className="text-lg font-extrabold text-zinc-900 dark:text-white">Tổng quan kênh</h2>
+                <div className="overflow-x-auto rounded-xl border border-zinc-100/50 bg-white shadow-[0_4px_24px_rgba(0,0,0,0.03)] dark:border-zinc-800/50 dark:bg-[#121212]">
                     <table className="w-full text-sm">
                         <thead>
-                            <tr className="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900">
-                                <th className="px-4 py-3 text-left font-medium text-zinc-500">Người dùng</th>
-                                <th className="px-4 py-3 text-left font-medium text-zinc-500">Kênh TikTok</th>
-                                <th className="px-4 py-3 text-left font-medium text-zinc-500">Mảng</th>
-                                <th className="px-4 py-3 text-left font-medium text-zinc-500">Vai trò</th>
-                                <th className="px-4 py-3 w-10"></th>
+                            <tr className="border-b border-zinc-100 dark:border-zinc-800/80">
+                                <th className="px-6 py-5 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-[#1a1a1a]/50">Người dùng</th>
+                                <th className="px-6 py-5 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-[#1a1a1a]/50">Kênh TikTok</th>
+                                <th className="px-6 py-5 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-[#1a1a1a]/50">Mảng</th>
+                                <th className="px-6 py-5 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-[#1a1a1a]/50">Vai trò</th>
+                                <th className="px-6 py-5 text-right w-10 bg-zinc-50/50 dark:bg-[#1a1a1a]/50"></th>
                             </tr>
                         </thead>
                         <tbody>
                             {users.filter(u => u.status === 'approved').map(u => {
                                 const currentTeamId = teams.find(t => t.members?.includes(u.id))?.id || "";
                                 return (
-                                    <tr key={u.id} className="border-b border-zinc-100 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900/50">
-                                        <td className="px-4 py-3">
+                                    <tr key={u.id} className="border-b border-zinc-50/50 last:border-0 dark:border-zinc-800/30 hover:bg-zinc-50/50 dark:hover:bg-[#1a1a1a]/50 transition-colors">
+                                        <td className="px-6 py-4">
                                             <div>
-                                                <span className="font-medium text-zinc-900 dark:text-white">{u.name}</span>
-                                                <p className="text-xs text-zinc-400">{u.email}</p>
+                                                <span className="font-bold text-zinc-900 dark:text-white block mb-0.5">{u.name}</span>
+                                                <p className="text-xs font-medium text-zinc-400">{u.email}</p>
                                             </div>
                                         </td>
-                                        <td className="px-4 py-3">
+                                        <td className="px-6 py-4">
                                             {u.channels.length > 0 ? (
-                                                <div className="space-y-1">
+                                                <div className="flex flex-wrap gap-2">
                                                     {u.channels.map(ch => (
-                                                        <span key={ch.id} className="inline-flex items-center rounded-full bg-zinc-100 px-2 py-0.5 text-xs dark:bg-zinc-800">
+                                                        <span key={ch.id} className="inline-flex items-center rounded-lg bg-zinc-100 px-3 py-1.5 text-xs font-bold text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
                                                             {ch.displayName || ch.username}
                                                         </span>
                                                     ))}
                                                 </div>
                                             ) : (
-                                                <span className="text-xs text-zinc-400">—</span>
+                                                <span className="text-xs font-medium text-zinc-400 italic">—</span>
                                             )}
                                         </td>
-                                        <td className="px-4 py-3">
+                                        <td className="px-6 py-4">
                                             <select
                                                 value={currentTeamId}
                                                 disabled={actionLoading}
                                                 onChange={e => handleAssignTeam(u.id, e.target.value)}
-                                                className="rounded-lg border border-zinc-200 bg-white px-2 py-1 text-xs dark:border-zinc-700 dark:bg-zinc-900 dark:text-white disabled:opacity-50"
+                                                className="rounded-xl border border-zinc-200/80 bg-zinc-50 px-3 py-2 text-xs font-semibold shadow-sm outline-none dark:border-zinc-700 dark:bg-[#1a1a1a] dark:text-white disabled:opacity-50 hover:bg-zinc-100 transition-colors"
                                             >
-                                                <option value="">— Chưa có Mảng —</option>
+                                                <option value="" className="font-medium">— Chưa có Mảng —</option>
                                                 {teams.map(t => (
-                                                    <option key={t.id} value={t.id}>{t.name}</option>
+                                                    <option key={t.id} value={t.id} className="font-medium">{t.name}</option>
                                                 ))}
                                             </select>
                                         </td>
-                                        <td className="px-4 py-3">
-                                            <span className={`inline-flex rounded px-1.5 py-0.5 text-[10px] font-bold uppercase ${
+                                        <td className="px-6 py-4">
+                                            <span className={`inline-flex rounded-lg px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-widest ${
                                                 u.role === 'admin'
-                                                    ? "bg-red-100 text-red-600 dark:bg-red-950 dark:text-red-400"
-                                                    : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
+                                                    ? "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"
+                                                    : "bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400"
                                             }`}>
                                                 {u.role}
                                             </span>
                                         </td>
-                                        <td className="px-4 py-3">
+                                        <td className="px-6 py-4 text-right">
                                             {u.role !== 'admin' && (
                                                 <button disabled={actionLoading}
                                                     onClick={async () => {
@@ -252,7 +254,7 @@ export function QuanTriTab() {
                                                         await deleteUserAccount(u.id);
                                                         await refresh(); setActionLoading(false);
                                                     }}
-                                                    className="text-red-400 hover:text-red-600 disabled:opacity-50">
+                                                    className="p-2 text-zinc-400 hover:bg-red-50 hover:text-red-500 rounded-lg dark:hover:bg-red-900/20 disabled:opacity-50 transition-colors">
                                                     <Trash2 className="h-4 w-4" />
                                                 </button>
                                             )}

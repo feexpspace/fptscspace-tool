@@ -37,9 +37,8 @@ export function CustomSelect({ value, onChange, options, placeholder = "Chọn..
         <div className="relative inline-block text-left" ref={ref}>
             <button
                 type="button"
-                onClick={() => setOpen(!open)}
                 className={cn(
-                    "flex items-center justify-between gap-3 rounded-xl border border-zinc-200/80 bg-white px-4 py-2.5 text-[13px] font-semibold shadow-[0_2px_10px_rgba(0,0,0,0.02)] transition-all dark:border-zinc-800 dark:bg-[#121212] dark:text-white hover:bg-zinc-50 dark:hover:bg-[#1a1a1a] outline-none",
+                    "flex items-center justify-between gap-3 rounded-xl border border-zinc-200/80 bg-white px-4 py-2.5 text-[13px] font-normal shadow-[0_2px_10px_rgba(0,0,0,0.02)] transition-all dark:border-zinc-800 dark:bg-[#121212] dark:text-white hover:bg-zinc-50 dark:hover:bg-[#1a1a1a] outline-none",
                     className
                 )}
             >
@@ -59,7 +58,7 @@ export function CustomSelect({ value, onChange, options, placeholder = "Chọn..
                                 "flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-[13px] transition-colors relative mb-1",
                                 value === ""
                                     ? "bg-zinc-100 font-bold text-zinc-900 dark:bg-zinc-800 dark:text-white"
-                                    : "font-medium text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800/50 dark:hover:text-white"
+                                    : "font-normal text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800/50 dark:hover:text-white"
                             )}
                         >
                             {value === "" && <Check className="absolute left-3 h-3.5 w-3.5 stroke-[3]" />}
@@ -77,7 +76,7 @@ export function CustomSelect({ value, onChange, options, placeholder = "Chọn..
                                     "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-[13px] transition-colors relative",
                                     value === option.value
                                         ? "bg-zinc-100 font-bold text-zinc-900 dark:bg-zinc-800 dark:text-white"
-                                        : "font-medium text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800/50 dark:hover:text-white"
+                                        : "font-normal text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800/50 dark:hover:text-white"
                                 )}
                             >
                                 {value === option.value && <Check className="absolute left-3 h-3.5 w-3.5 stroke-[3]" />}

@@ -5,10 +5,11 @@ import { ExternalLink, Loader2, RefreshCw, Link } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useData } from "@/context/DataContext";
 import { Pagination } from "@/components/Pagination";
+import { CustomSelect } from "@/components/CustomSelect";
 
 export function CaNhanTab() {
     const { user, isAdmin } = useAuth();
-    const { allVideos, channelTeamMap, teams, myChannels, hasChannel, dataLoading, syncing, syncMsg, doSync } = useData();
+    const { allVideos, channelTeamMap, teams, myChannels, hasChannel, dataLoading, syncing, doSync } = useData();
     const [selectedChannel, setSelectedChannel] = useState(""); // admin: filter by channel
     const [selectedTeam, setSelectedTeam] = useState("");       // admin: filter by team
     const [selectedMonth, setSelectedMonth] = useState("");
@@ -74,80 +75,64 @@ export function CaNhanTab() {
     };
 
     return (
-        <div className="space-y-4">
-            {/* Filters */}
-            <div className="flex flex-wrap items-center gap-3">
-                <select
-                    value={selectedMonth}
-                    onChange={e => { setSelectedMonth(e.target.value); setPage(1); }}
-                    className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-white"
-                >
-                    <option value="">Tất cả thời gian</option>
-                    {monthOptions.map(m => (
-                        <option key={m.value} value={m.value}>{m.label}</option>
-                    ))}
-                </select>
+        <div className="space-y-6">
+            {/* Header section (Filters + Actions) */}
+            <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 w-full">
+                {/* Filters */}
+                <div className="flex flex-wrap items-center gap-3">
+                    <CustomSelect
+                        value={selectedMonth}
+                        onChange={v => { setSelectedMonth(v); setPage(1); }}
+                        options={monthOptions}
+                        placeholder="Tất cả thời gian"
+                    />
 
-                {isAdmin && (
-                    <>
-                        <select
-                            value={selectedTeam}
-                            onChange={e => { setSelectedTeam(e.target.value); setSelectedChannel(""); setPage(1); }}
-                            className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-white"
-                        >
-                            <option value="">Tất cả Mảng</option>
-                            {teams.map(t => (
-                                <option key={t.id} value={t.id}>{t.name}</option>
-                            ))}
-                        </select>
+                    {isAdmin && (
+                        <>
+                            <CustomSelect
+                                value={selectedTeam}
+                                onChange={v => { setSelectedTeam(v); setSelectedChannel(""); setPage(1); }}
+                                options={teams.map(t => ({ value: t.id, label: t.name }))}
+                                placeholder="Tất cả mảng"
+                            />
 
-                        <select
-                            value={selectedChannel}
-                            onChange={e => { setSelectedChannel(e.target.value); setSelectedTeam(""); setPage(1); }}
-                            className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-white"
-                        >
-                            <option value="">Tất cả kênh</option>
-                            {allChannels.map(ch => (
-                                <option key={ch.id} value={ch.id}>
-                                    {ch.displayName}{ch.username ? ` (@${ch.username})` : ""}
-                                </option>
-                            ))}
-                        </select>
-                    </>
-                )}
+                            <CustomSelect
+                                value={selectedChannel}
+                                onChange={v => { setSelectedChannel(v); setSelectedTeam(""); setPage(1); }}
+                                options={allChannels.map(ch => ({ value: ch.id, label: `${ch.displayName}${ch.username ? ` (@${ch.username})` : ""}` }))}
+                                placeholder="Tất cả kênh"
+                                className="max-w-[200px]"
+                            />
+                        </>
+                    )}
 
-                {!dataLoading && (
-                    <span className="text-xs text-zinc-400">{filteredVideos.length} video</span>
-                )}
+                    {!dataLoading && (
+                        <span className="text-xs font-bold text-zinc-500 bg-zinc-100 dark:bg-zinc-800 dark:text-zinc-400 px-3 py-1.5 rounded-lg">{filteredVideos.length} video</span>
+                    )}
+                </div>
 
-                <div className="ml-auto flex items-center gap-2">
-                    {/* Connect TikTok — only for members without a channel */}
+                {/* Actions */}
+                <div className="flex flex-wrap items-center gap-3">
                     {!isAdmin && hasChannel === false && (
                         <a
                             href={`/api/tiktok/login?userId=${user?.id}`}
-                            className="flex items-center gap-1.5 rounded-lg bg-zinc-900 px-3 py-2 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-900"
+                            className="flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_4px_14px_rgba(37,99,235,0.25)] hover:bg-blue-700 hover:shadow-[0_4px_14px_rgba(37,99,235,0.35)] active:scale-[0.98] transition-all"
                         >
-                            <Link className="h-4 w-4" />
+                            <Link className="h-4 w-4 stroke-[2]" />
                             Kết nối TikTok
                         </a>
                     )}
-
-                    {/* Sync button — admin always, member only when has channel */}
                     {(isAdmin || hasChannel) && (
                         <button
                             onClick={doSync}
                             disabled={syncing || dataLoading}
-                            className="flex items-center gap-1.5 rounded-lg border border-zinc-200 px-3 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800"
+                            className="flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_4px_14px_rgba(37,99,235,0.25)] hover:bg-blue-700 hover:shadow-[0_4px_14px_rgba(37,99,235,0.35)] active:scale-[0.98] disabled:opacity-50 transition-all"
                         >
-                            <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
+                            <RefreshCw className={`h-4 w-4 stroke-[2] ${syncing ? "animate-spin" : ""}`} />
                             {syncing ? "Đang đồng bộ..." : isAdmin ? "Đồng bộ tất cả" : "Đồng bộ"}
                         </button>
                     )}
                 </div>
-
-                {syncMsg && (
-                    <span className="w-full text-xs text-zinc-500">{syncMsg}</span>
-                )}
             </div>
 
             {/* Video Table */}
@@ -157,20 +142,20 @@ export function CaNhanTab() {
                 </div>
             ) : pagedVideos.length > 0 ? (
                 <>
-                    <div className="overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-800">
+                    <div className="overflow-x-auto rounded-xl border border-zinc-100/50 bg-white shadow-[0_4px_24px_rgba(0,0,0,0.03)] dark:border-zinc-800/50 dark:bg-[#121212]">
                         <table className="w-full text-sm">
                             <thead>
-                                <tr className="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900">
-                                    <th className="px-3 py-3 text-left font-medium text-zinc-500 w-12">STT</th>
-                                    <th className="px-3 py-3 text-left font-medium text-zinc-500 w-28">Thời gian</th>
-                                    {isAdmin && <th className="px-3 py-3 text-left font-medium text-zinc-500">Kênh</th>}
-                                    <th className="px-3 py-3 text-left font-medium text-zinc-500">Caption</th>
-                                    <th className="px-3 py-3 text-left font-medium text-zinc-500">Hashtag</th>
-                                    <th className="px-3 py-3 text-center font-medium text-zinc-500 w-10">Link</th>
-                                    <th className="px-3 py-3 text-right font-medium text-zinc-500">Lượt xem</th>
-                                    <th className="px-3 py-3 text-right font-medium text-zinc-500">Like</th>
-                                    <th className="px-3 py-3 text-right font-medium text-zinc-500">Comment</th>
-                                    <th className="px-3 py-3 text-right font-medium text-zinc-500">Share</th>
+                                <tr className="border-b border-zinc-100 dark:border-zinc-800/80">
+                                    <th className="px-6 py-5 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-[#1a1a1a]/50 w-12">STT</th>
+                                    <th className="px-6 py-5 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-[#1a1a1a]/50 w-28">Thời gian</th>
+                                    {isAdmin && <th className="px-6 py-5 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-[#1a1a1a]/50">Kênh</th>}
+                                    <th className="px-6 py-5 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-[#1a1a1a]/50">Caption</th>
+                                    <th className="px-6 py-5 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-[#1a1a1a]/50">Hashtag</th>
+                                    <th className="px-6 py-5 text-center text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-[#1a1a1a]/50 w-10">Link</th>
+                                    <th className="px-6 py-5 text-right text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-[#1a1a1a]/50">Lượt xem</th>
+                                    <th className="px-6 py-5 text-right text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-[#1a1a1a]/50">Like</th>
+                                    <th className="px-6 py-5 text-right text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-[#1a1a1a]/50">Comment</th>
+                                    <th className="px-6 py-5 text-right text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-[#1a1a1a]/50">Share</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -180,48 +165,48 @@ export function CaNhanTab() {
                                     const hashtags = extractHashtags(caption);
 
                                     return (
-                                        <tr key={video.id} className="border-b border-zinc-100 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900/50">
-                                            <td className="px-3 py-2.5 text-zinc-400">
+                                        <tr key={video.id} className="border-b border-zinc-50/50 last:border-0 dark:border-zinc-800/30 hover:bg-zinc-50/50 dark:hover:bg-[#1a1a1a]/50 transition-colors">
+                                            <td className="px-6 py-4 text-zinc-400 font-medium">
                                                 {(page - 1) * pageSize + index + 1}
                                             </td>
-                                            <td className="px-3 py-2.5 text-xs text-zinc-500 whitespace-nowrap">
+                                            <td className="px-6 py-4 text-xs font-semibold text-zinc-500 whitespace-nowrap">
                                                 {video.createTime.toLocaleDateString("vi-VN")}
                                             </td>
                                             {isAdmin && (
-                                                <td className="px-3 py-2.5">
-                                                    <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
+                                                <td className="px-6 py-4">
+                                                    <span className="text-xs font-bold tracking-tight text-zinc-900 dark:text-white bg-zinc-100 dark:bg-zinc-800 px-2 py-1.5 rounded-lg whitespace-nowrap">
                                                         {video.channelDisplayName || video.channelUsername}
                                                     </span>
                                                 </td>
                                             )}
-                                            <td className="px-3 py-2.5 max-w-xs">
-                                                <span className="line-clamp-2 text-zinc-700 dark:text-zinc-300" title={captionClean}>
+                                            <td className="px-6 py-4 max-w-xs">
+                                                <span className="line-clamp-2 leading-relaxed text-zinc-600 dark:text-zinc-400 font-medium" title={captionClean}>
                                                     {captionClean || "—"}
                                                 </span>
                                             </td>
-                                            <td className="px-3 py-2.5 max-w-[180px]">
-                                                <span className="line-clamp-1 text-xs text-blue-500" title={hashtags}>
+                                            <td className="px-6 py-4 max-w-[180px]">
+                                                <span className="line-clamp-1 leading-relaxed text-xs font-bold text-blue-500 dark:text-blue-400" title={hashtags}>
                                                     {hashtags || "—"}
                                                 </span>
                                             </td>
-                                            <td className="px-3 py-2.5 text-center">
+                                            <td className="px-6 py-4 text-center">
                                                 {video.link && (
                                                     <a href={video.link} target="_blank" rel="noopener noreferrer"
-                                                        className="inline-flex text-zinc-400 hover:text-blue-500 transition-colors">
-                                                        <ExternalLink className="h-4 w-4" />
+                                                        className="inline-flex text-zinc-400 hover:text-blue-500 transition-colors bg-white hover:bg-blue-50 dark:bg-zinc-800 dark:hover:bg-blue-900/30 p-2 rounded-lg border border-zinc-100 dark:border-zinc-700/50">
+                                                        <ExternalLink className="h-4 w-4 stroke-[2.5]" />
                                                     </a>
                                                 )}
                                             </td>
-                                            <td className="px-3 py-2.5 text-right font-medium text-zinc-700 dark:text-zinc-300">
+                                            <td className="px-6 py-4 text-right font-bold text-zinc-900 dark:text-white">
                                                 {(video.stats?.view || 0).toLocaleString("vi-VN")}
                                             </td>
-                                            <td className="px-3 py-2.5 text-right text-zinc-600 dark:text-zinc-400">
+                                            <td className="px-6 py-4 text-right font-medium text-zinc-600 dark:text-zinc-400">
                                                 {(video.stats?.like || 0).toLocaleString("vi-VN")}
                                             </td>
-                                            <td className="px-3 py-2.5 text-right text-zinc-600 dark:text-zinc-400">
+                                            <td className="px-6 py-4 text-right font-medium text-zinc-600 dark:text-zinc-400">
                                                 {(video.stats?.comment || 0).toLocaleString("vi-VN")}
                                             </td>
-                                            <td className="px-3 py-2.5 text-right text-zinc-600 dark:text-zinc-400">
+                                            <td className="px-6 py-4 text-right font-medium text-zinc-600 dark:text-zinc-400">
                                                 {(video.stats?.share || 0).toLocaleString("vi-VN")}
                                             </td>
                                         </tr>

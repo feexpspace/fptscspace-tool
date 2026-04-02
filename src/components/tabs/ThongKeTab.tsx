@@ -158,9 +158,6 @@ export function ThongKeTab() {
                 </div>
             </div>
 
-            {syncMsg && (
-                <span className="w-full text-xs text-zinc-500">{syncMsg}</span>
-            )}
 
             {/* Stat Cards */}
             {dataLoading ? (
