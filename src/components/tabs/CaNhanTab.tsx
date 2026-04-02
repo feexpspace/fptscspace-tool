@@ -92,6 +92,17 @@ export function CaNhanTab() {
         return videos;
     }, [allVideos, channelTeamMap, selectedChannel, selectedTeam, selectedMonth, isAdmin, sortConfig]);
 
+    const statsSummary = useMemo(() => {
+        let views = 0, likes = 0, comments = 0, shares = 0;
+        filteredVideos.forEach(v => {
+            views += v.stats?.view || 0;
+            likes += v.stats?.like || 0;
+            comments += v.stats?.comment || 0;
+            shares += v.stats?.share || 0;
+        });
+        return { views, likes, comments, shares };
+    }, [filteredVideos]);
+
     useEffect(() => { setPage(1); }, [selectedChannel, selectedTeam, selectedMonth]);
 
     const totalPages = Math.ceil(filteredVideos.length / pageSize);
@@ -151,12 +162,32 @@ export function CaNhanTab() {
                     )}
 
                     {!dataLoading && (
-                        <span className="text-xs font-bold text-zinc-500 bg-zinc-100 dark:bg-zinc-800 dark:text-zinc-400 px-3 py-1.5 rounded-lg">{filteredVideos.length} video</span>
+                        <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-xs font-bold text-zinc-500 bg-zinc-100 dark:bg-zinc-800 dark:text-zinc-400 px-3 py-1.5 rounded-lg">
+                                {filteredVideos.length} video
+                            </span>
+                            {filteredVideos.length > 0 && (
+                                <>
+                                    <span className="text-xs font-bold text-blue-500 bg-blue-50 dark:bg-blue-900/30 dark:text-blue-400 px-3 py-1.5 rounded-lg">
+                                        {statsSummary.views.toLocaleString('vi-VN')} View
+                                    </span>
+                                    <span className="text-xs font-bold text-red-500 bg-red-50 dark:bg-red-900/30 dark:text-red-400 px-3 py-1.5 rounded-lg">
+                                        {statsSummary.likes.toLocaleString('vi-VN')} Like
+                                    </span>
+                                    <span className="text-xs font-bold text-green-500 bg-green-50 dark:bg-green-900/30 dark:text-green-400 px-3 py-1.5 rounded-lg">
+                                        {statsSummary.comments.toLocaleString('vi-VN')} Comment
+                                    </span>
+                                    <span className="text-xs font-bold text-purple-500 bg-purple-50 dark:bg-purple-900/30 dark:text-purple-400 px-3 py-1.5 rounded-lg">
+                                        {statsSummary.shares.toLocaleString('vi-VN')} Share
+                                    </span>
+                                </>
+                            )}
+                        </div>
                     )}
                 </div>
 
                 {/* Actions */}
-                <div className="flex flex-wrap items-center gap-3">
+                <div className="flex items-center gap-3 w-full sm:w-auto mt-4 sm:mt-0 xl:mt-0 lg:mt-0 md:mt-0">
                     {!isAdmin && hasChannel === false && (
                         <a
                             href={`/api/tiktok/login?userId=${user?.id}`}
