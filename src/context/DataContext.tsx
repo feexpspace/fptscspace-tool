@@ -8,11 +8,18 @@ import { getTeamsList } from "@/app/actions/helpers";
 import { syncAllChannels, syncMyChannels, getMyChannels } from "@/app/actions/report";
 import { Video, Team } from "@/types";
 
+export interface ChannelInfo {
+    id: string;
+    displayName: string;
+    username: string;
+}
+
 interface DataContextType {
     allVideos: Video[];
     channelTeamMap: Record<string, string>;
     allStats: ChannelStat[];
     teams: Team[];
+    myChannels: ChannelInfo[]; // channels belonging to current user (for connect check + filter)
     hasChannel: boolean | null;
     dataLoading: boolean;
     syncing: boolean;
@@ -25,6 +32,7 @@ const DataContext = createContext<DataContextType>({
     channelTeamMap: {},
     allStats: [],
     teams: [],
+    myChannels: [],
     hasChannel: null,
     dataLoading: true,
     syncing: false,
@@ -38,6 +46,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     const [channelTeamMap, setChannelTeamMap] = useState<Record<string, string>>({});
     const [allStats, setAllStats] = useState<ChannelStat[]>([]);
     const [teams, setTeams] = useState<Team[]>([]);
+    const [myChannels, setMyChannels] = useState<ChannelInfo[]>([]);
     const [hasChannel, setHasChannel] = useState<boolean | null>(null);
     const [dataLoading, setDataLoading] = useState(false);
     const [syncing, setSyncing] = useState(false);
@@ -50,19 +59,20 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
             getAllVideos(uid, userRole),
             getAllChannelStats(uid, userRole),
             admin ? getTeamsList(uid, "admin") : Promise.resolve([]),
-            admin ? Promise.resolve([{ id: "x" }]) : getMyChannels(uid),
+            getMyChannels(uid), // always check user's own channels
         ]);
         setAllVideos(videosData.videos);
         setChannelTeamMap(videosData.channelTeamMap);
         setAllStats(statsData);
         setTeams(teamsData);
-        setHasChannel(admin ? true : channels.length > 0);
+        setMyChannels(channels);
+        setHasChannel(channels.length > 0);
         setDataLoading(false);
     }, []);
 
     useEffect(() => {
         if (!user || !role || isPending) return;
-        if (loadedForRef.current === user.id) return; // Already loaded for this user
+        if (loadedForRef.current === user.id) return;
         loadedForRef.current = user.id;
         fetchData(user.id, role, isAdmin);
     }, [user?.id, role, isPending, isAdmin, fetchData]);
@@ -74,14 +84,14 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         const result = isAdmin ? await syncAllChannels() : await syncMyChannels(user.id);
         setSyncMsg(result.message);
         if (result.success) {
-            loadedForRef.current = null; // Allow re-fetch
+            loadedForRef.current = null;
             await fetchData(user.id, role, isAdmin);
         }
         setSyncing(false);
     }, [user?.id, role, isAdmin, fetchData]);
 
     return (
-        <DataContext.Provider value={{ allVideos, channelTeamMap, allStats, teams, hasChannel, dataLoading, syncing, syncMsg, doSync }}>
+        <DataContext.Provider value={{ allVideos, channelTeamMap, allStats, teams, myChannels, hasChannel, dataLoading, syncing, syncMsg, doSync }}>
             {children}
         </DataContext.Provider>
     );

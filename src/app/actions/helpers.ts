@@ -74,42 +74,48 @@ export async function getChannelsForUsers(userIds: string[]): Promise<Channel[]>
  * Lấy danh sách teams dựa trên role
  */
 export async function getTeamsList(userId: string, role: string): Promise<Team[]> {
-    if (role === 'admin') {
-        const { data } = await supabaseAdmin
-            .from('teams')
-            .select('*, team_managers(user_id), users(id)')
-            .order('created_at');
+    let teamIds: string[];
 
-        return mapTeams(data || []);
+    if (role === 'admin') {
+        const { data } = await supabaseAdmin.from('teams').select('id, name, created_at').order('created_at');
+        if (!data || data.length === 0) return [];
+        teamIds = data.map(t => t.id);
+
+        const [{ data: managersData }, { data: usersData }] = await Promise.all([
+            supabaseAdmin.from('team_managers').select('team_id, user_id').in('team_id', teamIds),
+            supabaseAdmin.from('users').select('id, team_id').in('team_id', teamIds),
+        ]);
+
+        return data.map(team => ({
+            id: team.id,
+            name: team.name,
+            createdAt: new Date(team.created_at),
+            managerIds: (managersData || []).filter(m => m.team_id === team.id).map(m => m.user_id),
+            members: (usersData || []).filter(u => u.team_id === team.id).map(u => u.id),
+        }));
     } else if (role === 'manager') {
         const { data: managed } = await supabaseAdmin
-            .from('team_managers')
-            .select('team_id')
-            .eq('user_id', userId);
+            .from('team_managers').select('team_id').eq('user_id', userId);
 
-        const teamIds = (managed || []).map(m => m.team_id);
+        teamIds = (managed || []).map(m => m.team_id);
         if (teamIds.length === 0) return [];
 
-        const { data } = await supabaseAdmin
-            .from('teams')
-            .select('*, team_managers(user_id), users(id)')
-            .in('id', teamIds);
+        const [{ data: teamsData }, { data: managersData }, { data: usersData }] = await Promise.all([
+            supabaseAdmin.from('teams').select('id, name, created_at').in('id', teamIds),
+            supabaseAdmin.from('team_managers').select('team_id, user_id').in('team_id', teamIds),
+            supabaseAdmin.from('users').select('id, team_id').in('team_id', teamIds),
+        ]);
 
-        return mapTeams(data || []);
+        return (teamsData || []).map(team => ({
+            id: team.id,
+            name: team.name,
+            createdAt: new Date(team.created_at),
+            managerIds: (managersData || []).filter(m => m.team_id === team.id).map(m => m.user_id),
+            members: (usersData || []).filter(u => u.team_id === team.id).map(u => u.id),
+        }));
     }
 
     return [];
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapTeams(rows: any[]): Team[] {
-    return rows.map(row => ({
-        id: row.id,
-        name: row.name,
-        createdAt: new Date(row.created_at),
-        managerIds: (row.team_managers || []).map((m: { user_id: string }) => m.user_id),
-        members: (row.users || []).map((u: { id: string }) => u.id),
-    }));
 }
 
 /**
