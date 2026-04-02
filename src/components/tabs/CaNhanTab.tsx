@@ -91,6 +91,17 @@ export function CaNhanTab() {
                 {isAdmin && (
                     <>
                         <select
+                            value={selectedTeam}
+                            onChange={e => { setSelectedTeam(e.target.value); setSelectedChannel(""); setPage(1); }}
+                            className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-white"
+                        >
+                            <option value="">Tất cả Mảng</option>
+                            {teams.map(t => (
+                                <option key={t.id} value={t.id}>{t.name}</option>
+                            ))}
+                        </select>
+
+                        <select
                             value={selectedChannel}
                             onChange={e => { setSelectedChannel(e.target.value); setSelectedTeam(""); setPage(1); }}
                             className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-white"
@@ -102,17 +113,6 @@ export function CaNhanTab() {
                                 </option>
                             ))}
                         </select>
-
-                        <select
-                            value={selectedTeam}
-                            onChange={e => { setSelectedTeam(e.target.value); setSelectedChannel(""); setPage(1); }}
-                            className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-white"
-                        >
-                            <option value="">Tất cả Mảng</option>
-                            {teams.map(t => (
-                                <option key={t.id} value={t.id}>{t.name}</option>
-                            ))}
-                        </select>
                     </>
                 )}
 
@@ -121,7 +121,8 @@ export function CaNhanTab() {
                 )}
 
                 <div className="ml-auto flex items-center gap-2">
-                    {hasChannel === false && (
+                    {/* Connect TikTok — only for members without a channel */}
+                    {!isAdmin && hasChannel === false && (
                         <a
                             href={`/api/tiktok/login?userId=${user?.id}`}
                             className="flex items-center gap-1.5 rounded-lg bg-zinc-900 px-3 py-2 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-900"
@@ -131,7 +132,8 @@ export function CaNhanTab() {
                         </a>
                     )}
 
-                    {hasChannel && (
+                    {/* Sync button — admin always, member only when has channel */}
+                    {(isAdmin || hasChannel) && (
                         <button
                             onClick={doSync}
                             disabled={syncing || dataLoading}
@@ -139,18 +141,6 @@ export function CaNhanTab() {
                         >
                             <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
                             {syncing ? "Đang đồng bộ..." : isAdmin ? "Đồng bộ tất cả" : "Đồng bộ"}
-                        </button>
-                    )}
-
-                    {/* Admin always sees sync button even if they personally have no channel */}
-                    {isAdmin && !hasChannel && (
-                        <button
-                            onClick={doSync}
-                            disabled={syncing || dataLoading}
-                            className="flex items-center gap-1.5 rounded-lg border border-zinc-200 px-3 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800"
-                        >
-                            <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
-                            {syncing ? "Đang đồng bộ..." : "Đồng bộ tất cả"}
                         </button>
                     )}
                 </div>

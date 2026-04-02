@@ -10,6 +10,7 @@ export function ThongKeTab() {
     const { user, isAdmin } = useAuth();
     const { allVideos, channelTeamMap, allStats, teams, hasChannel, dataLoading, syncing, syncMsg, doSync } = useData();
     const [selectedTeam, setSelectedTeam] = useState("");
+    const [selectedChannel, setSelectedChannel] = useState("");
     const [selectedMonth, setSelectedMonth] = useState("");
 
     const monthOptions = useMemo(() => {
@@ -24,11 +25,24 @@ export function ThongKeTab() {
         return options;
     }, []);
 
+    // Derive unique channels for filter dropdown
+    const allChannels = useMemo(() => {
+        const map = new Map<string, { id: string; displayName: string; username: string }>();
+        allVideos.forEach(v => {
+            if (!map.has(v.channelId)) {
+                map.set(v.channelId, { id: v.channelId, displayName: v.channelDisplayName || v.channelUsername || v.channelId, username: v.channelUsername || '' });
+            }
+        });
+        return Array.from(map.values());
+    }, [allVideos]);
+
     // Client-side stats computation — instant filter, no server call
     const stats = useMemo(() => {
-        // Determine which channels are in scope (team filter)
+        // Determine which channels are in scope
         let scopedChannelIds: Set<string>;
-        if (selectedTeam) {
+        if (selectedChannel) {
+            scopedChannelIds = new Set([selectedChannel]);
+        } else if (selectedTeam) {
             scopedChannelIds = new Set(
                 Object.entries(channelTeamMap)
                     .filter(([, tid]) => tid === selectedTeam)
@@ -36,7 +50,6 @@ export function ThongKeTab() {
             );
         } else {
             scopedChannelIds = new Set(allStats.map(s => s.channelId));
-            // Also include channels that have videos but no stats row yet
             allVideos.forEach(v => scopedChannelIds.add(v.channelId));
         }
 
@@ -85,7 +98,7 @@ export function ThongKeTab() {
             .filter(ch => ch.videoCount > 0 || !selectedMonth); // hide empty channels when month filtered
 
         return { totalViews, totalComments, totalShares, totalFollowers, totalVideos, activeChannels: scopedStats.length, channelBreakdown };
-    }, [allVideos, allStats, channelTeamMap, selectedTeam, selectedMonth]);
+    }, [allVideos, allStats, channelTeamMap, selectedTeam, selectedChannel, selectedMonth]);
 
     return (
         <div className="space-y-6">
@@ -103,20 +116,35 @@ export function ThongKeTab() {
                 </select>
 
                 {isAdmin && (
-                    <select
-                        value={selectedTeam}
-                        onChange={e => setSelectedTeam(e.target.value)}
-                        className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-white"
-                    >
-                        <option value="">Tất cả Mảng</option>
-                        {teams.map(t => (
-                            <option key={t.id} value={t.id}>{t.name}</option>
-                        ))}
-                    </select>
+                    <>
+                        <select
+                            value={selectedTeam}
+                            onChange={e => { setSelectedTeam(e.target.value); setSelectedChannel(""); }}
+                            className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-white"
+                        >
+                            <option value="">Tất cả Mảng</option>
+                            {teams.map(t => (
+                                <option key={t.id} value={t.id}>{t.name}</option>
+                            ))}
+                        </select>
+
+                        <select
+                            value={selectedChannel}
+                            onChange={e => { setSelectedChannel(e.target.value); setSelectedTeam(""); }}
+                            className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-white"
+                        >
+                            <option value="">Tất cả kênh</option>
+                            {allChannels.map(ch => (
+                                <option key={ch.id} value={ch.id}>
+                                    {ch.displayName}{ch.username ? ` (@${ch.username})` : ""}
+                                </option>
+                            ))}
+                        </select>
+                    </>
                 )}
 
                 <div className="ml-auto flex items-center gap-2">
-                    {hasChannel === false && (
+                    {!isAdmin && hasChannel === false && (
                         <a
                             href={`/api/tiktok/login?userId=${user?.id}`}
                             className="flex items-center gap-1.5 rounded-lg bg-zinc-900 px-3 py-2 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-900"
