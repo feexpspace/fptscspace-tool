@@ -31,7 +31,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             .from('users')
             .select('*')
             .eq('id', userId)
-            .single();
+            .maybeSingle();
 
         if (data) {
             setUser({
