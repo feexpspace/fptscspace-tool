@@ -232,7 +232,7 @@ export function ThongKeTab() {
 
                     {isAdmin && stats.channelBreakdown.length > 0 && (
                         <div className="overflow-x-auto rounded-xl border border-zinc-100/50 bg-white shadow-[0_4px_24px_rgba(0,0,0,0.03)] dark:border-zinc-800/50 dark:bg-[#121212]">
-                            <table className="w-full text-sm">
+                            <table className="w-full text-[11px] sm:text-[12px]">
                                 <thead>
                                     <tr className="border-b border-zinc-100 dark:border-zinc-800/80">
                                         <th className="px-6 py-5 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50">Kênh</th>
@@ -260,7 +260,7 @@ export function ThongKeTab() {
                                                 <div>
                                                     <span className="font-medium text-zinc-900 dark:text-white">{ch.channelName}</span>
                                                     {ch.channelUsername && (
-                                                        <span className="ml-2 text-xs text-zinc-400">@{ch.channelUsername}</span>
+                                                        <span className="ml-1.5 text-zinc-400">@{ch.channelUsername}</span>
                                                     )}
                                                 </div>
                                             </td>

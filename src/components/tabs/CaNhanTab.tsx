@@ -225,7 +225,7 @@ export function CaNhanTab() {
             ) : pagedVideos.length > 0 ? (
                 <>
                     <div className="overflow-x-auto rounded-xl border border-zinc-100/50 bg-white shadow-[0_4px_24px_rgba(0,0,0,0.03)] dark:border-zinc-800/50 dark:bg-zinc-900">
-                        <table className="w-full text-sm">
+                        <table className="w-full text-[11px] sm:text-[12px]">
                             <thead>
                                 <tr className="border-b border-zinc-100 dark:border-zinc-800/80">
                                     <th className="px-3 py-4 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50 min-w-[40px]" />
@@ -261,32 +261,32 @@ export function CaNhanTab() {
                                             <td className="px-3 py-4 text-zinc-400 font-medium">
                                                 {(page - 1) * pageSize + index + 1}
                                             </td>
-                                            <td className="px-3 py-4 text-[11px] font-semibold text-zinc-500 whitespace-nowrap">
+                                            <td className="px-3 py-4 font-semibold text-zinc-500 whitespace-nowrap">
                                                 {video.createTime.toLocaleDateString("vi-VN")}
                                             </td>
                                             {isAdmin && (
                                                 <td className="px-3 py-4">
-                                                    <span className="text-[11px] font-bold tracking-tight text-zinc-900 dark:text-white bg-zinc-100 dark:bg-zinc-800 px-2 py-1.5 rounded-lg whitespace-nowrap">
+                                                    <span className="font-bold tracking-tight text-zinc-900 dark:text-white bg-zinc-100 dark:bg-zinc-800 px-2 py-1.5 rounded-lg whitespace-nowrap">
                                                         {video.channelDisplayName || video.channelUsername}
                                                     </span>
                                                 </td>
                                             )}
                                             <td className="px-3 py-4 max-w-[180px] md:max-w-[220px] relative group cursor-help hover:z-50">
-                                                <div className="line-clamp-2 leading-relaxed text-[13px] text-zinc-600 dark:text-zinc-400 font-medium">
+                                                <div className="line-clamp-2 leading-relaxed text-zinc-600 dark:text-zinc-400 font-medium">
                                                     {captionClean || "—"}
                                                 </div>
                                                 {captionClean && (
-                                                    <div className="absolute left-10 top-full mt-2 z-[100] hidden group-hover:block rounded-xl border border-zinc-200 bg-white p-3.5 text-[13px] font-medium leading-relaxed text-zinc-700 shadow-[0_10px_40px_rgba(0,0,0,0.12)] dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 w-max max-w-[320px] whitespace-pre-wrap">
+                                                    <div className="absolute left-10 top-full mt-2 z-[100] hidden group-hover:block rounded-xl border border-zinc-200 bg-white p-3.5 font-medium leading-relaxed text-zinc-700 shadow-[0_10px_40px_rgba(0,0,0,0.12)] dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 w-max max-w-[320px] whitespace-pre-wrap">
                                                         {captionClean}
                                                     </div>
                                                 )}
                                             </td>
                                             <td className="px-3 py-4 max-w-[120px] md:max-w-[160px] relative group cursor-help hover:z-50">
-                                                <div className="line-clamp-1 leading-relaxed text-xs font-bold text-blue-500 dark:text-blue-400 break-all whitespace-pre-wrap">
+                                                <div className="line-clamp-1 leading-relaxed font-bold text-blue-500 dark:text-blue-400 break-all whitespace-pre-wrap">
                                                     {hashtags || "—"}
                                                 </div>
                                                 {hashtags && (
-                                                    <div className="absolute left-10 top-full mt-2 z-[100] hidden group-hover:block rounded-xl border border-blue-200/80 bg-blue-50 p-3.5 text-xs font-bold leading-relaxed text-blue-600 shadow-[0_10px_40px_rgba(37,99,235,0.12)] dark:border-blue-900/50 dark:bg-blue-950 dark:text-blue-400 w-max max-w-[280px] whitespace-pre-wrap">
+                                                    <div className="absolute left-10 top-full mt-2 z-[100] hidden group-hover:block rounded-xl border border-blue-200/80 bg-blue-50 p-3.5 font-bold leading-relaxed text-blue-600 shadow-[0_10px_40px_rgba(37,99,235,0.12)] dark:border-blue-900/50 dark:bg-blue-950 dark:text-blue-400 w-max max-w-[280px] whitespace-pre-wrap">
                                                         {hashtags}
                                                     </div>
                                                 )}

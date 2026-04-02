@@ -58,7 +58,7 @@ export function BangXepHangTab({ isActive = true }: { isActive?: boolean }) {
 
             {/* Table */}
             <div className="rounded-xl border border-zinc-100/50 bg-white shadow-[0_4px_24px_rgba(0,0,0,0.03)] dark:border-zinc-800/50 dark:bg-[#121212]">
-                <table className="w-full text-sm relative">
+                <table className="w-full text-[11px] sm:text-[12px] relative">
                     <thead>
                         <tr className="border-b border-zinc-100 dark:border-zinc-800/80">
                             <th className="px-6 py-5 text-center w-20 text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50">Top</th>
@@ -110,11 +110,11 @@ export function BangXepHangTab({ isActive = true }: { isActive?: boolean }) {
                                         <td className="px-6 py-5">
                                             <div className="flex items-center gap-3">
                                                 <div>
-                                                    <span className={`font-bold ${rank <= 3 ? 'text-zinc-900 dark:text-white text-[15px]' : 'text-zinc-700 dark:text-zinc-300'}`}>
+                                                    <span className={`font-bold ${rank <= 3 ? 'text-zinc-900 dark:text-white' : 'text-zinc-700 dark:text-zinc-300'}`}>
                                                         {ch.channelName}
                                                     </span>
                                                     {ch.channelUsername && (
-                                                        <span className="block mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">@{ch.channelUsername}</span>
+                                                        <span className="block mt-0.5 text-zinc-500 dark:text-zinc-400">@{ch.channelUsername}</span>
                                                     )}
                                                 </div>
                                             </div>

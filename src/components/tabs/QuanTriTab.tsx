@@ -127,7 +127,7 @@ export function QuanTriTab() {
                     </div>
                 </div>
                 <div className="rounded-xl border border-zinc-100/50 bg-white shadow-[0_4px_24px_rgba(0,0,0,0.03)] dark:border-zinc-800/50 dark:bg-zinc-900">
-                    <table className="w-full text-sm">
+                    <table className="w-full text-[11px] sm:text-[12px]">
                         <thead>
                             <tr className="border-b border-zinc-100 dark:border-zinc-800/80">
                                 <th className="px-6 py-5 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50">Người dùng</th>
@@ -149,14 +149,14 @@ export function QuanTriTab() {
                                         <td className="px-6 py-4">
                                             <div>
                                                 <span className="font-bold text-zinc-900 dark:text-white block mb-0.5">{u.name}</span>
-                                                <p className="text-xs font-medium text-zinc-400">{u.email}</p>
+                                                <p className="font-medium text-zinc-400">{u.email}</p>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
                                             {u.channels.length > 0 ? (
                                                 <div className="flex flex-wrap gap-2">
                                                     {u.channels.map(ch => (
-                                                        <span key={ch.id} className="inline-flex items-center rounded-lg bg-zinc-100 px-3 py-1.5 text-xs font-bold text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+                                                        <span key={ch.id} className="inline-flex items-center rounded-lg bg-zinc-100 px-2.5 py-1.5 font-bold tracking-tight text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400 whitespace-nowrap">
                                                             {ch.displayName || ch.username}
                                                         </span>
                                                     ))}
