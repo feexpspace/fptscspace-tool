@@ -158,7 +158,6 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
                                 <span className={cn(
                                     "px-1 py-0.5 rounded text-[9px] font-bold uppercase shrink-0",
                                     role === 'admin' ? "bg-red-100 text-red-600" :
-                                    role === 'manager' ? "bg-blue-100 text-blue-600" :
                                     "bg-gray-100 text-gray-600"
                                 )}>
                                     {role}

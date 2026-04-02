@@ -1,9 +1,6 @@
 
-export type UserRole = 'admin' | 'manager' | 'member';
+export type UserRole = 'admin' | 'member';
 
-/**
- * 1. User: Thông tin tài khoản hệ thống
- */
 export type UserStatus = 'pending' | 'approved';
 
 export interface User {
@@ -15,22 +12,13 @@ export interface User {
     status: UserStatus;
 }
 
-/**
- * 2. Team: Nhóm làm việc
- * Đã bao gồm Email và Name của Manager
- */
 export interface Team {
     id: string;
     name: string;
     createdAt: Date;
-    managerIds: string[];
     members: string[];
 }
 
-/**
- * 3. Channel: Kênh TikTok
- * Đã bao gồm Email của User sở hữu
- */
 export interface Channel {
     id: string;
     openId: string;
@@ -47,10 +35,6 @@ export interface Channel {
     userId: string;
 }
 
-/**
- * 4. Video: Dữ liệu video
- * Đã bao gồm Username và DisplayName của Channel để hiển thị UI
- */
 export interface Video {
     id: string;
     videoId: string;
@@ -79,41 +63,13 @@ export interface Token {
     openId: string;
     accessToken: string;
     refreshToken: string;
-    expiresIn: number;       // Thời gian hết hạn của Access Token (giây)
-    refreshExpiresIn: number;// Thời gian hết hạn của Refresh Token (giây)
-    updatedAt: Date;         // Thời điểm cập nhật token lần cuối
+    expiresIn: number;
+    refreshExpiresIn: number;
+    updatedAt: Date;
 }
 
 export interface Editor {
     id: string;
     name: string;
     email?: string;
-}
-
-export interface Statistic {
-    id: string;
-    channelId: string;
-    userId: string;
-    channelUsername: string;
-    channelOwnerName: string;
-    updatedAt: Date;
-    followerCount: number;
-    videoCount: number;
-    totalViews: number;
-    totalLikes: number;
-    totalComments: number;
-    totalShares: number;
-}
-
-export interface MonthlyStatistic {
-    id: string;
-    channelId: string;
-    userId: string;
-    month: string; // Định dạng 'YYYY-MM'
-    followerCount: number;
-    videoCount: number;
-    totalViews: number;
-    totalLikes: number;
-    totalComments: number;
-    totalShares: number;
 }

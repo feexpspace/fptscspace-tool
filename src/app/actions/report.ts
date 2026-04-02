@@ -69,17 +69,6 @@ export async function syncTikTokVideos(userId: string, channelId: string) {
                 .eq('id', channelId);
         }
 
-        // Get user info from DB
-        const { data: userData } = await supabaseAdmin
-            .from('users')
-            .select('name')
-            .eq('id', userId)
-            .single();
-
-        if (!userData) throw new Error("Không tìm thấy User trong Database");
-
-        const ownerName = userData.name || "Unknown User";
-        const currentFollowers = tiktokUser?.follower_count ?? 0;
         const currentUsername = tiktokUser?.username ?? "";
         const currentDisplayName = tiktokUser?.display_name ?? "";
 
@@ -87,17 +76,6 @@ export async function syncTikTokVideos(userId: string, channelId: string) {
         let cursor: number | null = 0;
         let hasMore = true;
         let totalSynced = 0;
-        let aggTotalViews = 0, aggTotalLikes = 0, aggTotalComments = 0, aggTotalShares = 0;
-
-        const monthlyBuckets = new Map<string, {
-            newVideoCount: number;
-            newViews: number;
-            newLikes: number;
-            newComments: number;
-            newShares: number;
-        }>();
-
-        let earliestDate: Date | null = null;
 
         const url = "https://open.tiktokapis.com/v2/video/list/";
         const fields = "id,create_time,cover_image_url,video_description,title,duration,share_url,like_count,comment_count,share_count,view_count";
@@ -128,30 +106,6 @@ export async function syncTikTokVideos(userId: string, channelId: string) {
             // Upsert videos
             const videoRows = filteredVideos.map((v: any) => {
                 const createTime = new Date(v.create_time * 1000);
-
-                if (!earliestDate || createTime < earliestDate) earliestDate = createTime;
-
-                const viewCount = Number(v.view_count) || 0;
-                const likeCount = Number(v.like_count) || 0;
-                const commentCount = Number(v.comment_count) || 0;
-                const shareCount = Number(v.share_count) || 0;
-
-                aggTotalViews += viewCount;
-                aggTotalLikes += likeCount;
-                aggTotalComments += commentCount;
-                aggTotalShares += shareCount;
-
-                const monthKey = createTime.toISOString().slice(0, 7);
-                if (!monthlyBuckets.has(monthKey)) {
-                    monthlyBuckets.set(monthKey, { newVideoCount: 0, newViews: 0, newLikes: 0, newComments: 0, newShares: 0 });
-                }
-                const bucket = monthlyBuckets.get(monthKey)!;
-                bucket.newVideoCount += 1;
-                bucket.newViews += viewCount;
-                bucket.newLikes += likeCount;
-                bucket.newComments += commentCount;
-                bucket.newShares += shareCount;
-
                 return {
                     id: v.id,
                     video_id: v.id,
@@ -164,10 +118,10 @@ export async function syncTikTokVideos(userId: string, channelId: string) {
                     channel_id: channelId,
                     channel_username: currentUsername,
                     channel_display_name: currentDisplayName,
-                    view_count: viewCount,
-                    like_count: likeCount,
-                    comment_count: commentCount,
-                    share_count: shareCount,
+                    view_count: Number(v.view_count) || 0,
+                    like_count: Number(v.like_count) || 0,
+                    comment_count: Number(v.comment_count) || 0,
+                    share_count: Number(v.share_count) || 0,
                 };
             });
 
@@ -181,57 +135,6 @@ export async function syncTikTokVideos(userId: string, channelId: string) {
             hasMore = res.data.has_more;
             cursor = res.data.cursor;
             if (!hasMore || typeof cursor !== 'number') break;
-        }
-
-        // Upsert statistics
-        await supabaseAdmin
-            .from('statistics')
-            .upsert({
-                channel_id: channelId,
-                user_id: userId,
-                channel_username: currentUsername,
-                channel_owner_name: ownerName,
-                follower_count: currentFollowers,
-                video_count: totalSynced,
-                total_views: aggTotalViews,
-                total_likes: aggTotalLikes,
-                total_comments: aggTotalComments,
-                total_shares: aggTotalShares,
-                updated_at: new Date().toISOString(),
-            }, { onConflict: 'channel_id' });
-
-        // Upsert monthly statistics
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
-        const firstDate: Date | null = earliestDate as Date | null;
-        if (firstDate !== null) {
-            const currentDateIterator = new Date(firstDate.getFullYear(), firstDate.getMonth(), 1);
-            const now = new Date();
-            const monthlyRows = [];
-
-            while (currentDateIterator <= now) {
-                const monthKey = `${currentDateIterator.getFullYear()}-${String(currentDateIterator.getMonth() + 1).padStart(2, '0')}`;
-                const bucket = monthlyBuckets.get(monthKey);
-
-                monthlyRows.push({
-                    channel_id: channelId,
-                    user_id: userId,
-                    month: monthKey,
-                    video_count: bucket?.newVideoCount ?? 0,
-                    total_views: bucket?.newViews ?? 0,
-                    total_likes: bucket?.newLikes ?? 0,
-                    total_comments: bucket?.newComments ?? 0,
-                    total_shares: bucket?.newShares ?? 0,
-                    ...(bucket ? {} : { follower_count: currentFollowers, channel_username: currentUsername }),
-                });
-
-                currentDateIterator.setMonth(currentDateIterator.getMonth() + 1);
-            }
-
-            if (monthlyRows.length > 0) {
-                await supabaseAdmin
-                    .from('monthly_statistics')
-                    .upsert(monthlyRows, { onConflict: 'channel_id,month' });
-            }
         }
 
         return { success: true, count: totalSynced };

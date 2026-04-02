@@ -44,8 +44,8 @@ export async function getAllUsersWithChannels(): Promise<{ success: boolean, dat
             channels: channels.filter(c => c.userId === user.id),
         }));
 
-        const roleOrder = { admin: 1, manager: 2, member: 3 };
-        usersWithChannels.sort((a, b) => roleOrder[a.role] - roleOrder[b.role]);
+        const roleOrder = { admin: 1, member: 2 };
+        usersWithChannels.sort((a, b) => (roleOrder[a.role] || 9) - (roleOrder[b.role] || 9));
 
         return { success: true, data: usersWithChannels };
     } catch (error) {
@@ -68,7 +68,7 @@ export async function approveUser(userId: string) {
     }
 }
 
-export async function changeUserRole(userId: string, newRole: 'admin' | 'manager' | 'member') {
+export async function changeUserRole(userId: string, newRole: 'admin' | 'member') {
     try {
         await supabaseAdmin
             .from('users')

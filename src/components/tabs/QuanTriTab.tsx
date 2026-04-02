@@ -11,11 +11,8 @@ import {
     deleteTeam,
     addMemberToTeam,
     removeMemberFromTeam,
-    addManagerToTeam,
-    removeManagerFromTeam,
     updateTeamName,
     searchAvailableUsers,
-    searchManagers,
 } from "@/app/actions/team";
 
 export function QuanTriTab() {
@@ -28,12 +25,8 @@ export function QuanTriTab() {
     const [newTeamName, setNewTeamName] = useState("");
     const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
     const [editTeamName, setEditTeamName] = useState("");
-
-    // Search states
     const [memberSearch, setMemberSearch] = useState("");
-    const [managerSearch, setManagerSearch] = useState("");
     const [memberResults, setMemberResults] = useState<{ id: string; name: string; email: string }[]>([]);
-    const [managerResults, setManagerResults] = useState<{ id: string; name: string; email: string }[]>([]);
     const [actionLoading, setActionLoading] = useState(false);
 
     const refresh = async () => {
@@ -44,9 +37,7 @@ export function QuanTriTab() {
             getAllUsersWithChannels(),
         ]);
         setTeams(teamsData);
-        if (usersResult.success && usersResult.data) {
-            setUsers(usersResult.data);
-        }
+        if (usersResult.success && usersResult.data) setUsers(usersResult.data);
         setLoading(false);
     };
 
@@ -58,7 +49,7 @@ export function QuanTriTab() {
     const handleCreateTeam = async () => {
         if (!newTeamName.trim()) return;
         setActionLoading(true);
-        await createNewTeam(newTeamName.trim(), [], []);
+        await createNewTeam(newTeamName.trim(), []);
         setNewTeamName("");
         setShowCreateTeam(false);
         await refresh();
@@ -90,13 +81,6 @@ export function QuanTriTab() {
         setMemberResults(results.map(u => ({ id: u.id, name: u.name, email: u.email })));
     };
 
-    const handleSearchManagers = async (term: string) => {
-        setManagerSearch(term);
-        if (term.length < 2) { setManagerResults([]); return; }
-        const results = await searchManagers(term);
-        setManagerResults(results.map(u => ({ id: u.id, name: u.name, email: u.email })));
-    };
-
     const handleAddMember = async (teamId: string, userId: string) => {
         setActionLoading(true);
         await addMemberToTeam(teamId, userId);
@@ -113,31 +97,8 @@ export function QuanTriTab() {
         setActionLoading(false);
     };
 
-    const handleAddManager = async (teamId: string, userId: string) => {
-        setActionLoading(true);
-        await addManagerToTeam(teamId, userId);
-        setManagerSearch("");
-        setManagerResults([]);
-        await refresh();
-        setActionLoading(false);
-    };
-
-    const handleRemoveManager = async (teamId: string, userId: string) => {
-        setActionLoading(true);
-        await removeManagerFromTeam(teamId, userId);
-        await refresh();
-        setActionLoading(false);
-    };
-
-    const getUserName = (userId: string) => {
-        const u = users.find(u => u.id === userId);
-        return u ? u.name : userId;
-    };
-
-    const getUserEmail = (userId: string) => {
-        const u = users.find(u => u.id === userId);
-        return u?.email || "";
-    };
+    const getUserName = (userId: string) => users.find(u => u.id === userId)?.name || userId;
+    const getUserEmail = (userId: string) => users.find(u => u.id === userId)?.email || "";
 
     if (loading) {
         return (
@@ -149,7 +110,7 @@ export function QuanTriTab() {
 
     return (
         <div className="space-y-6">
-            {/* === SECTION: Tài khoản chờ duyệt === */}
+            {/* === Tài khoản chờ duyệt === */}
             {users.filter(u => u.status === 'pending').length > 0 && (
                 <div>
                     <h2 className="mb-3 text-lg font-bold text-zinc-900 dark:text-white flex items-center gap-2">
@@ -184,7 +145,7 @@ export function QuanTriTab() {
                 </div>
             )}
 
-            {/* === SECTION: Quản lý Mảng === */}
+            {/* === Quản lý Mảng === */}
             <div>
                 <div className="mb-4 flex items-center justify-between">
                     <h2 className="text-lg font-bold text-zinc-900 dark:text-white">Quản lý Mảng</h2>
@@ -197,7 +158,6 @@ export function QuanTriTab() {
                     </button>
                 </div>
 
-                {/* Create Team Form */}
                 {showCreateTeam && (
                     <div className="mb-4 flex items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-900">
                         <input
@@ -221,11 +181,9 @@ export function QuanTriTab() {
                     </div>
                 )}
 
-                {/* Teams List */}
                 <div className="space-y-2">
                     {teams.map(team => (
                         <div key={team.id} className="rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden">
-                            {/* Team Header */}
                             <div
                                 className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-900/50"
                                 onClick={() => setExpandedTeam(expandedTeam === team.id ? null : team.id)}
@@ -248,7 +206,7 @@ export function QuanTriTab() {
                                     ) : (
                                         <span className="font-medium text-zinc-900 dark:text-white">{team.name}</span>
                                     )}
-                                    <span className="text-xs text-zinc-400">{team.members?.length || 0} thành viên · {team.managerIds?.length || 0} quản lý</span>
+                                    <span className="text-xs text-zinc-400">{team.members?.length || 0} thành viên</span>
                                 </div>
                                 <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
                                     <button
@@ -266,102 +224,52 @@ export function QuanTriTab() {
                                 </div>
                             </div>
 
-                            {/* Team Detail */}
                             {expandedTeam === team.id && (
-                                <div className="border-t border-zinc-200 dark:border-zinc-800 p-4 space-y-4">
-                                    {/* Managers */}
-                                    <div>
-                                        <h4 className="text-xs font-semibold uppercase text-zinc-400 mb-2">Quản lý</h4>
-                                        <div className="space-y-1">
-                                            {team.managerIds?.map(mgrId => (
-                                                <div key={mgrId} className="flex items-center justify-between rounded-lg bg-blue-50 px-3 py-2 dark:bg-blue-950/30">
-                                                    <div>
-                                                        <span className="text-sm font-medium text-zinc-900 dark:text-white">{getUserName(mgrId)}</span>
-                                                        <span className="ml-2 text-xs text-zinc-400">{getUserEmail(mgrId)}</span>
-                                                    </div>
-                                                    <button onClick={() => handleRemoveManager(team.id, mgrId)} className="text-red-400 hover:text-red-600">
-                                                        <UserMinus className="h-4 w-4" />
-                                                    </button>
+                                <div className="border-t border-zinc-200 dark:border-zinc-800 p-4 space-y-3">
+                                    <h4 className="text-xs font-semibold uppercase text-zinc-400">Thành viên</h4>
+                                    <div className="space-y-1">
+                                        {team.members?.map(memId => (
+                                            <div key={memId} className="flex items-center justify-between rounded-lg bg-zinc-50 px-3 py-2 dark:bg-zinc-800/50">
+                                                <div>
+                                                    <span className="text-sm font-medium text-zinc-900 dark:text-white">{getUserName(memId)}</span>
+                                                    <span className="ml-2 text-xs text-zinc-400">{getUserEmail(memId)}</span>
                                                 </div>
-                                            ))}
-                                        </div>
-                                        {/* Add Manager Search */}
-                                        <div className="mt-2 relative">
-                                            <div className="flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-3 py-1.5 dark:border-zinc-700 dark:bg-zinc-800">
-                                                <Search className="h-3.5 w-3.5 text-zinc-400" />
-                                                <input
-                                                    type="text"
-                                                    value={managerSearch}
-                                                    onChange={e => handleSearchManagers(e.target.value)}
-                                                    placeholder="Tìm quản lý..."
-                                                    className="flex-1 bg-transparent text-sm outline-none dark:text-white"
-                                                />
+                                                <button onClick={() => handleRemoveMember(team.id, memId)} className="text-red-400 hover:text-red-600">
+                                                    <UserMinus className="h-4 w-4" />
+                                                </button>
                                             </div>
-                                            {managerResults.length > 0 && (
-                                                <div className="absolute z-10 mt-1 w-full rounded-lg border border-zinc-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-800">
-                                                    {managerResults
-                                                        .filter(r => !team.managerIds?.includes(r.id))
-                                                        .map(r => (
-                                                            <button
-                                                                key={r.id}
-                                                                onClick={() => handleAddManager(team.id, r.id)}
-                                                                className="flex w-full items-center justify-between px-3 py-2 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-700"
-                                                            >
-                                                                <span>{r.name} <span className="text-zinc-400">({r.email})</span></span>
-                                                                <UserPlus className="h-4 w-4 text-blue-500" />
-                                                            </button>
-                                                        ))}
-                                                </div>
-                                            )}
-                                        </div>
+                                        ))}
+                                        {(!team.members || team.members.length === 0) && (
+                                            <p className="text-xs text-zinc-400 py-1">Chưa có thành viên</p>
+                                        )}
                                     </div>
 
-                                    {/* Members */}
-                                    <div>
-                                        <h4 className="text-xs font-semibold uppercase text-zinc-400 mb-2">Thành viên</h4>
-                                        <div className="space-y-1">
-                                            {team.members?.map(memId => (
-                                                <div key={memId} className="flex items-center justify-between rounded-lg bg-zinc-50 px-3 py-2 dark:bg-zinc-800/50">
-                                                    <div>
-                                                        <span className="text-sm font-medium text-zinc-900 dark:text-white">{getUserName(memId)}</span>
-                                                        <span className="ml-2 text-xs text-zinc-400">{getUserEmail(memId)}</span>
-                                                    </div>
-                                                    <button onClick={() => handleRemoveMember(team.id, memId)} className="text-red-400 hover:text-red-600">
-                                                        <UserMinus className="h-4 w-4" />
+                                    {/* Add Member */}
+                                    <div className="relative">
+                                        <div className="flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-3 py-1.5 dark:border-zinc-700 dark:bg-zinc-800">
+                                            <Search className="h-3.5 w-3.5 text-zinc-400" />
+                                            <input
+                                                type="text"
+                                                value={memberSearch}
+                                                onChange={e => handleSearchMembers(e.target.value)}
+                                                placeholder="Tìm thành viên..."
+                                                className="flex-1 bg-transparent text-sm outline-none dark:text-white"
+                                            />
+                                        </div>
+                                        {memberResults.length > 0 && (
+                                            <div className="absolute z-10 mt-1 w-full rounded-lg border border-zinc-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-800">
+                                                {memberResults.map(r => (
+                                                    <button
+                                                        key={r.id}
+                                                        onClick={() => handleAddMember(team.id, r.id)}
+                                                        className="flex w-full items-center justify-between px-3 py-2 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-700"
+                                                    >
+                                                        <span>{r.name} <span className="text-zinc-400">({r.email})</span></span>
+                                                        <UserPlus className="h-4 w-4 text-green-500" />
                                                     </button>
-                                                </div>
-                                            ))}
-                                            {(!team.members || team.members.length === 0) && (
-                                                <p className="text-xs text-zinc-400 py-1">Chưa có thành viên</p>
-                                            )}
-                                        </div>
-                                        {/* Add Member Search */}
-                                        <div className="mt-2 relative">
-                                            <div className="flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-3 py-1.5 dark:border-zinc-700 dark:bg-zinc-800">
-                                                <Search className="h-3.5 w-3.5 text-zinc-400" />
-                                                <input
-                                                    type="text"
-                                                    value={memberSearch}
-                                                    onChange={e => handleSearchMembers(e.target.value)}
-                                                    placeholder="Tìm thành viên..."
-                                                    className="flex-1 bg-transparent text-sm outline-none dark:text-white"
-                                                />
+                                                ))}
                                             </div>
-                                            {memberResults.length > 0 && (
-                                                <div className="absolute z-10 mt-1 w-full rounded-lg border border-zinc-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-800">
-                                                    {memberResults.map(r => (
-                                                        <button
-                                                            key={r.id}
-                                                            onClick={() => handleAddMember(team.id, r.id)}
-                                                            className="flex w-full items-center justify-between px-3 py-2 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-700"
-                                                        >
-                                                            <span>{r.name} <span className="text-zinc-400">({r.email})</span></span>
-                                                            <UserPlus className="h-4 w-4 text-green-500" />
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
+                                        )}
                                     </div>
                                 </div>
                             )}
@@ -374,7 +282,7 @@ export function QuanTriTab() {
                 </div>
             </div>
 
-            {/* === SECTION: Tổng quan kênh === */}
+            {/* === Tổng quan kênh === */}
             <div>
                 <h2 className="mb-4 text-lg font-bold text-zinc-900 dark:text-white">Tổng quan kênh</h2>
                 <div className="overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-800">
@@ -390,9 +298,7 @@ export function QuanTriTab() {
                         </thead>
                         <tbody>
                             {users.map(u => {
-                                const userTeam = teams.find(t =>
-                                    t.members?.includes(u.id) || t.managerIds?.includes(u.id)
-                                );
+                                const userTeam = teams.find(t => t.members?.includes(u.id));
                                 return (
                                     <tr key={u.id} className="border-b border-zinc-100 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900/50">
                                         <td className="px-4 py-3">
@@ -419,9 +325,9 @@ export function QuanTriTab() {
                                         </td>
                                         <td className="px-4 py-3">
                                             <span className={`inline-flex rounded px-1.5 py-0.5 text-[10px] font-bold uppercase ${
-                                                u.role === 'admin' ? "bg-red-100 text-red-600 dark:bg-red-950 dark:text-red-400" :
-                                                u.role === 'manager' ? "bg-blue-100 text-blue-600 dark:bg-blue-950 dark:text-blue-400" :
-                                                "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
+                                                u.role === 'admin'
+                                                    ? "bg-red-100 text-red-600 dark:bg-red-950 dark:text-red-400"
+                                                    : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
                                             }`}>
                                                 {u.role}
                                             </span>
