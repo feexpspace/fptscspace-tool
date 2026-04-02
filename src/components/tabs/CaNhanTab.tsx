@@ -233,15 +233,25 @@ export function CaNhanTab() {
                                                     </span>
                                                 </td>
                                             )}
-                                            <td className="px-6 py-4 max-w-xs align-top">
-                                                <span className="line-clamp-2 hover:line-clamp-none leading-relaxed text-zinc-600 dark:text-zinc-400 font-medium cursor-pointer" title={captionClean}>
+                                            <td className="px-6 py-4 max-w-xs relative group cursor-help hover:z-50">
+                                                <div className="line-clamp-2 leading-relaxed text-zinc-600 dark:text-zinc-400 font-medium">
                                                     {captionClean || "—"}
-                                                </span>
+                                                </div>
+                                                {captionClean && (
+                                                    <div className="absolute left-10 top-full mt-2 z-[100] hidden group-hover:block rounded-xl border border-zinc-200 bg-white p-3.5 text-[13px] font-medium leading-relaxed text-zinc-700 shadow-[0_10px_40px_rgba(0,0,0,0.12)] dark:border-zinc-700 dark:bg-[#1a1a1a] dark:text-zinc-300 w-max max-w-[320px] whitespace-pre-wrap">
+                                                        {captionClean}
+                                                    </div>
+                                                )}
                                             </td>
-                                            <td className="px-6 py-4 max-w-[180px] align-top">
-                                                <span className="line-clamp-1 hover:line-clamp-none leading-relaxed text-xs font-bold text-blue-500 dark:text-blue-400 cursor-pointer break-all md:break-words whitespace-pre-wrap" title={hashtags}>
+                                            <td className="px-6 py-4 max-w-[180px] relative group cursor-help hover:z-50">
+                                                <div className="line-clamp-1 leading-relaxed text-xs font-bold text-blue-500 dark:text-blue-400 break-all md:break-words whitespace-pre-wrap">
                                                     {hashtags || "—"}
-                                                </span>
+                                                </div>
+                                                {hashtags && (
+                                                    <div className="absolute left-10 top-full mt-2 z-[100] hidden group-hover:block rounded-xl border border-blue-200/80 bg-blue-50 p-3.5 text-xs font-bold leading-relaxed text-blue-600 shadow-[0_10px_40px_rgba(37,99,235,0.12)] dark:border-blue-900/50 dark:bg-blue-950 dark:text-blue-400 w-max max-w-[280px] whitespace-pre-wrap">
+                                                        {hashtags}
+                                                    </div>
+                                                )}
                                             </td>
                                             <td className="px-6 py-4 text-center">
                                                 {video.link && (
