@@ -4,6 +4,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { loginUser, resetPassword } from "@/lib/auth-service";
+import { ensureEmailConfirmed } from "@/app/actions/auth";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
@@ -60,6 +61,7 @@ function LoginForm() {
         setIsSubmitting(true);
         setError("");
 
+        await ensureEmailConfirmed(email);
         const res = await loginUser(email, password);
 
         if (res.error) {
