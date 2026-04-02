@@ -49,16 +49,22 @@ export async function getAllChannelStats(userId: string, role: string): Promise<
         }
         if (channelIds.length === 0) return [];
 
-        const { data } = await supabaseAdmin
-            .from('statistics')
-            .select('channel_id, channel_owner_name, channel_username, follower_count')
-            .in('channel_id', channelIds);
+        const { data: channelsData } = await supabaseAdmin
+            .from('channels')
+            .select('id, display_name, username, follower, user_id')
+            .in('id', channelIds);
 
-        return (data || []).map(s => ({
-            channelId: s.channel_id,
-            channelOwnerName: s.channel_owner_name || '',
-            channelUsername: s.channel_username || '',
-            followerCount: s.follower_count || 0,
+        const userIds2 = [...new Set((channelsData || []).map(c => c.user_id).filter(Boolean))];
+        const { data: usersData } = await supabaseAdmin
+            .from('users').select('id, name').in('id', userIds2);
+
+        const userNameMap = Object.fromEntries((usersData || []).map(u => [u.id, u.name]));
+
+        return (channelsData || []).map(c => ({
+            channelId: c.id,
+            channelOwnerName: userNameMap[c.user_id] || c.display_name || '',
+            channelUsername: c.username || '',
+            followerCount: c.follower || 0,
         }));
     } catch {
         return [];

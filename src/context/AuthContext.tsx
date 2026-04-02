@@ -9,7 +9,6 @@ interface AuthContextType {
     loading: boolean;
     role: UserRole | null;
     isAdmin: boolean;
-    isManager: boolean;
     isMember: boolean;
     isPending: boolean;
 }
@@ -19,7 +18,6 @@ const AuthContext = createContext<AuthContextType>({
     loading: true,
     role: null,
     isAdmin: false,
-    isManager: false,
     isMember: false,
     isPending: false,
 });
@@ -90,12 +88,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const role = user?.role || null;
     const isAdmin = role === 'admin';
-    const isManager = role === 'manager';
     const isMember = role === 'member';
     const isPending = user?.status === 'pending';
 
     return (
-        <AuthContext.Provider value={{ user, loading, role, isAdmin, isManager, isMember, isPending }}>
+        <AuthContext.Provider value={{ user, loading, role, isAdmin, isMember, isPending }}>
             {!loading && children}
         </AuthContext.Provider>
     );
