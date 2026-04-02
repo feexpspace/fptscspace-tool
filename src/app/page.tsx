@@ -80,6 +80,7 @@ export default function HomePage() {
                             <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-zinc-900 dark:text-white">
                                 {TAB_TITLES[activeTab] || "Tổng quan"}
                             </h1>
+                            <div id="global-header-actions"></div>
                         </div>
 
                         {/* Content */}

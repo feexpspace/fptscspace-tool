@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { Trophy, Medal, Star } from "lucide-react";
 import { getGlobalLeaderboard, ChannelBreakdown } from "@/app/actions/stats";
 import { CustomSelect } from "@/components/CustomSelect";
@@ -9,6 +10,11 @@ export function BangXepHangTab() {
     const [leaderboard, setLeaderboard] = useState<ChannelBreakdown[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedMonth, setSelectedMonth] = useState("");
+    const [headerActionsEl, setHeaderActionsEl] = useState<Element | null>(null);
+
+    useEffect(() => {
+        setHeaderActionsEl(document.getElementById("global-header-actions"));
+    }, []);
 
     const monthOptions = useMemo(() => {
         const options: { value: string; label: string }[] = [];
@@ -38,8 +44,7 @@ export function BangXepHangTab() {
 
     return (
         <div className="space-y-6">
-            {/* Header / Filter */}
-            <div className="flex justify-end gap-4">
+            {headerActionsEl && createPortal(
                 <div className="w-48">
                     <CustomSelect
                         value={selectedMonth}
@@ -47,8 +52,9 @@ export function BangXepHangTab() {
                         options={[{ value: "", label: "Tất cả thời gian" }, ...monthOptions]}
                         placeholder="Tất cả thời gian"
                     />
-                </div>
-            </div>
+                </div>,
+                headerActionsEl
+            )}
 
             {/* Table */}
             <div className="rounded-xl border border-zinc-100/50 bg-white shadow-[0_4px_24px_rgba(0,0,0,0.03)] dark:border-zinc-800/50 dark:bg-[#121212]">
