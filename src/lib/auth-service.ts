@@ -1,58 +1,55 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 // src/lib/auth-service.ts
-import {
-    createUserWithEmailAndPassword,
-    signInWithEmailAndPassword,
-    signOut,
-    updateProfile
-} from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
-import { auth, db } from "./firebase"; // Sử dụng auth và db từ file firebase.ts đã có
-import { User, UserRole } from "@/types/index";
+import { supabase } from "./supabase";
+import { UserRole } from "@/types/index";
 
-/**
- * Đăng ký tài khoản mới và lưu thông tin vào Firestore
- */
 export const registerUser = async (email: string, pass: string, name: string, role: UserRole = 'member') => {
     try {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
-        const firebaseUser = userCredential.user;
+        const { data, error } = await supabase.auth.signUp({
+            email,
+            password: pass,
+        });
 
-        // Cập nhật Display Name trong Firebase Auth
-        await updateProfile(firebaseUser, { displayName: name });
+        if (error) throw error;
+        if (!data.user) throw new Error("Không tạo được tài khoản");
 
-        // Tạo document user trong Firestore theo cấu trúc đã định nghĩa
-        const userData: User = {
-            id: firebaseUser.uid,
-            email: email,
-            name: name,
-            role: role,
-            teamId: "" // Sẽ cập nhật sau khi join team
-        };
+        // Tạo record trong bảng users
+        const { error: insertError } = await supabase.from("users").insert({
+            id: data.user.id,
+            email,
+            name,
+            role,
+        });
 
-        await setDoc(doc(db, "users", firebaseUser.uid), userData);
-        await signOut(auth);
-        return { user: userData, error: null };
-    } catch (error: any) {
-        return { user: null, error: error.message };
+        if (insertError) throw insertError;
+
+        await supabase.auth.signOut();
+        return { user: { id: data.user.id, email, name, role, team_id: null }, error: null };
+    } catch (error: unknown) {
+        const msg = error instanceof Error ? error.message : "Đã có lỗi xảy ra";
+        return { user: null, error: msg };
     }
 };
 
-/**
- * Đăng nhập
- */
 export const loginUser = async (email: string, pass: string) => {
     try {
-        const userCredential = await signInWithEmailAndPassword(auth, email, pass);
-        return { user: userCredential.user, error: null };
-    } catch (error: any) {
-        return { user: null, error: error.message };
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email,
+            password: pass,
+        });
+
+        if (error) throw error;
+        return { user: data.user, error: null };
+    } catch (error: unknown) {
+        const msg = error instanceof Error ? error.message : "Đã có lỗi xảy ra";
+        return { user: null, error: msg };
     }
 };
 
-/**
- * Đăng xuất
- */
 export const logoutUser = async () => {
-    await signOut(auth);
+    await supabase.auth.signOut();
+};
+
+export const resetPassword = async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email);
+    if (error) throw error;
 };

@@ -1,24 +1,30 @@
 // src/app/actions/helpers.ts
 'use server'
 
-import { adminDb } from "@/lib/firebase-admin";
+import { supabaseAdmin } from "@/lib/supabase-server";
 import { Channel, Team } from "@/types";
-import { chunkArray } from "@/lib/utils";
 
 /**
- * Lấy danh sách channelIds thuộc 1 team (thông qua members + managers → channels)
+ * Lấy danh sách channelIds thuộc 1 team
  */
 export async function getChannelIdsForTeam(teamId: string): Promise<string[]> {
-    const teamDoc = await adminDb.collection("teams").doc(teamId).get();
-    if (!teamDoc.exists) return [];
+    // Members: users with team_id = teamId
+    const { data: members } = await supabaseAdmin
+        .from('users')
+        .select('id')
+        .eq('team_id', teamId);
 
-    const data = teamDoc.data()!;
-    const members: string[] = Array.isArray(data.members) ? data.members : [];
-    const managers: string[] = Array.isArray(data.managerIds) ? data.managerIds : [];
-    const allUserIds = Array.from(new Set([...members, ...managers]));
+    // Managers: from team_managers junction table
+    const { data: managers } = await supabaseAdmin
+        .from('team_managers')
+        .select('user_id')
+        .eq('team_id', teamId);
+
+    const memberIds = (members || []).map(u => u.id);
+    const managerIds = (managers || []).map(m => m.user_id);
+    const allUserIds = Array.from(new Set([...memberIds, ...managerIds]));
 
     if (allUserIds.length === 0) return [];
-
     return getChannelIdsForUsers(allUserIds);
 }
 
@@ -28,64 +34,82 @@ export async function getChannelIdsForTeam(teamId: string): Promise<string[]> {
 export async function getChannelIdsForUsers(userIds: string[]): Promise<string[]> {
     if (userIds.length === 0) return [];
 
-    const userChunks = chunkArray(userIds, 10);
-    const channelPromises = userChunks.map(chunk =>
-        adminDb.collection("channels").where("userId", "in", chunk).get()
-    );
-    const snapshots = await Promise.all(channelPromises);
+    const { data } = await supabaseAdmin
+        .from('channels')
+        .select('id')
+        .in('user_id', userIds);
 
-    return snapshots.flatMap(snap => snap.docs.map(doc => doc.id));
+    return (data || []).map(c => c.id);
 }
 
 /**
- * Lấy danh sách channels từ danh sách userIds (trả về full Channel objects)
+ * Lấy danh sách channels từ danh sách userIds
  */
 export async function getChannelsForUsers(userIds: string[]): Promise<Channel[]> {
     if (userIds.length === 0) return [];
 
-    const userChunks = chunkArray(userIds, 10);
-    const channelPromises = userChunks.map(chunk =>
-        adminDb.collection("channels").where("userId", "in", chunk).get()
-    );
-    const snapshots = await Promise.all(channelPromises);
+    const { data } = await supabaseAdmin
+        .from('channels')
+        .select('*')
+        .in('user_id', userIds);
 
-    return snapshots.flatMap(snap =>
-        snap.docs.map(doc => {
-            const d = doc.data();
-            return {
-                id: doc.id,
-                ...d,
-            } as unknown as Channel;
-        })
-    );
+    return (data || []).map(row => ({
+        id: row.id,
+        openId: row.open_id,
+        unionId: row.union_id,
+        avatar: row.avatar,
+        displayName: row.display_name,
+        username: row.username,
+        email: row.email || '',
+        isVerified: row.is_verified,
+        follower: row.follower,
+        following: row.following,
+        like: row.likes,
+        videoCount: row.video_count,
+        userId: row.user_id,
+    }));
 }
 
 /**
  * Lấy danh sách teams dựa trên role
  */
 export async function getTeamsList(userId: string, role: string): Promise<Team[]> {
-    let teamDocs: FirebaseFirestore.DocumentData[] = [];
-
     if (role === 'admin') {
-        const snap = await adminDb.collection("teams").get();
-        teamDocs = snap.docs;
+        const { data } = await supabaseAdmin
+            .from('teams')
+            .select('*, team_managers(user_id), users(id)')
+            .order('created_at');
+
+        return mapTeams(data || []);
     } else if (role === 'manager') {
-        const snap = await adminDb.collection("teams")
-            .where("managerIds", "array-contains", userId)
-            .get();
-        teamDocs = snap.docs;
-    } else {
-        return [];
+        const { data: managed } = await supabaseAdmin
+            .from('team_managers')
+            .select('team_id')
+            .eq('user_id', userId);
+
+        const teamIds = (managed || []).map(m => m.team_id);
+        if (teamIds.length === 0) return [];
+
+        const { data } = await supabaseAdmin
+            .from('teams')
+            .select('*, team_managers(user_id), users(id)')
+            .in('id', teamIds);
+
+        return mapTeams(data || []);
     }
 
-    return teamDocs.map(doc => {
-        const data = doc.data();
-        return {
-            id: doc.id,
-            ...data,
-            createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
-        } as unknown as Team;
-    });
+    return [];
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapTeams(rows: any[]): Team[] {
+    return rows.map(row => ({
+        id: row.id,
+        name: row.name,
+        createdAt: new Date(row.created_at),
+        managerIds: (row.team_managers || []).map((m: { user_id: string }) => m.user_id),
+        members: (row.users || []).map((u: { id: string }) => u.id),
+    }));
 }
 
 /**
@@ -96,27 +120,39 @@ export async function getUserIdsForScope(
     userId: string,
     teamId?: string
 ): Promise<string[]> {
-    const allUserIds = new Set<string>();
-
     if (teamId) {
-        const teamDoc = await adminDb.collection("teams").doc(teamId).get();
-        if (teamDoc.exists) {
-            const data = teamDoc.data()!;
-            const members: string[] = data.members || [];
-            const managers: string[] = data.managerIds || [];
-            members.forEach(id => allUserIds.add(id));
-            managers.forEach(id => allUserIds.add(id));
-        }
-    } else if (role === 'admin') {
-        const snap = await adminDb.collection("teams").get();
-        snap.docs.forEach(doc => {
-            const data = doc.data();
-            (data.members || []).forEach((id: string) => allUserIds.add(id));
-            (data.managerIds || []).forEach((id: string) => allUserIds.add(id));
-        });
-    } else if (role === 'member') {
-        allUserIds.add(userId);
+        const [{ data: members }, { data: managers }] = await Promise.all([
+            supabaseAdmin.from('users').select('id').eq('team_id', teamId),
+            supabaseAdmin.from('team_managers').select('user_id').eq('team_id', teamId),
+        ]);
+        const memberIds = (members || []).map(u => u.id);
+        const managerIds = (managers || []).map(m => m.user_id);
+        return Array.from(new Set([...memberIds, ...managerIds]));
     }
 
-    return Array.from(allUserIds);
+    if (role === 'admin') {
+        const { data } = await supabaseAdmin.from('users').select('id');
+        return (data || []).map(u => u.id);
+    }
+
+    if (role === 'member') {
+        return [userId];
+    }
+
+    // manager without teamId — get all teams they manage
+    const { data: managed } = await supabaseAdmin
+        .from('team_managers')
+        .select('team_id')
+        .eq('user_id', userId);
+
+    const teamIds = (managed || []).map(m => m.team_id);
+    if (teamIds.length === 0) return [];
+
+    const [{ data: members }, { data: managers }] = await Promise.all([
+        supabaseAdmin.from('users').select('id').in('team_id', teamIds),
+        supabaseAdmin.from('team_managers').select('user_id').in('team_id', teamIds),
+    ]);
+    const memberIds = (members || []).map(u => u.id);
+    const managerIds = (managers || []).map(m => m.user_id);
+    return Array.from(new Set([...memberIds, ...managerIds]));
 }

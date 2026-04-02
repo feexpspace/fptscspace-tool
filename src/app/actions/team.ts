@@ -1,40 +1,31 @@
 // src/app/actions/team.ts
 'use server'
 
-import { adminDb } from "@/lib/firebase-admin"; // Dùng Admin SDK
+import { supabaseAdmin } from "@/lib/supabase-server";
 import { User, Team } from "@/types/index";
-import { FieldValue } from "firebase-admin/firestore";
 import { revalidatePath } from "next/cache";
-
-/**
- * ========================================================
- * 1. TÌM KIẾM NGƯỜI DÙNG
- * ========================================================
- */
 
 export async function searchAvailableUsers(searchTerm: string) {
     try {
-        const usersRef = adminDb.collection("users");
+        const { data } = await supabaseAdmin
+            .from('users')
+            .select('*')
+            .eq('role', 'member')
+            .is('team_id', null);
 
-        const snapshot = await usersRef
-            .where("role", "==", "member")
-            .where("teamId", "==", "")
-            .get();
-
-        const users: User[] = [];
         const lowerTerm = searchTerm.toLowerCase();
-
-        snapshot.forEach((doc) => {
-            const data = doc.data();
-            const userData = { id: doc.id, ...data } as User;
-
-            if (
-                userData.email.toLowerCase().includes(lowerTerm) ||
-                userData.name.toLowerCase().includes(lowerTerm)
-            ) {
-                users.push(userData);
-            }
-        });
+        const users: User[] = (data || [])
+            .filter(u =>
+                u.email.toLowerCase().includes(lowerTerm) ||
+                u.name.toLowerCase().includes(lowerTerm)
+            )
+            .map(u => ({
+                id: u.id,
+                email: u.email,
+                name: u.name,
+                role: u.role,
+                teamId: u.team_id || '',
+            }));
 
         return users;
     } catch (error) {
@@ -45,26 +36,24 @@ export async function searchAvailableUsers(searchTerm: string) {
 
 export async function searchManagers(searchTerm: string) {
     try {
-        const usersRef = adminDb.collection("users");
+        const { data } = await supabaseAdmin
+            .from('users')
+            .select('*')
+            .eq('role', 'manager');
 
-        const snapshot = await usersRef
-            .where("role", "==", "manager")
-            .get();
-
-        const users: User[] = [];
         const lowerTerm = searchTerm.toLowerCase();
-
-        snapshot.forEach((doc) => {
-            const data = doc.data();
-            const userData = { id: doc.id, ...data } as User;
-
-            if (
-                userData.email.toLowerCase().includes(lowerTerm) ||
-                userData.name.toLowerCase().includes(lowerTerm)
-            ) {
-                users.push(userData);
-            }
-        });
+        const users: User[] = (data || [])
+            .filter(u =>
+                u.email.toLowerCase().includes(lowerTerm) ||
+                u.name.toLowerCase().includes(lowerTerm)
+            )
+            .map(u => ({
+                id: u.id,
+                email: u.email,
+                name: u.name,
+                role: u.role,
+                teamId: u.team_id || '',
+            }));
 
         return users;
     } catch (error) {
@@ -73,52 +62,54 @@ export async function searchManagers(searchTerm: string) {
     }
 }
 
-/**
- * ========================================================
- * 2. QUẢN LÝ TEAM (TẠO MỚI / GIẢI TÁN)
- * ========================================================
- */
-
 export async function createNewTeam(
     teamName: string,
     managerIds: string[],
     memberIds: string[]
 ) {
     try {
-        const batch = adminDb.batch();
-        const teamRef = adminDb.collection("teams").doc();
+        // Create team
+        const { data: team, error: teamError } = await supabaseAdmin
+            .from('teams')
+            .insert({ name: teamName })
+            .select('id')
+            .single();
 
-        const newTeamData = {
-            name: teamName,
-            createdAt: new Date(),
-            managerIds: managerIds,
-            members: memberIds
-        };
+        if (teamError || !team) throw teamError || new Error("Failed to create team");
 
-        batch.set(teamRef, newTeamData);
+        const teamId = team.id;
 
-        // 1. Đối với Managers: Kiểm tra role hiện tại. NẾU KHÔNG PHẢI ADMIN thì mới set thành manager
-        const managerDocs = await Promise.all(managerIds.map(id => adminDb.collection("users").doc(id).get()));
-        managerDocs.forEach((docSnap) => {
-            if (docSnap.exists) {
-                const currentRole = docSnap.data()?.role;
-                if (currentRole !== 'admin') {
-                    batch.update(docSnap.ref, { role: 'manager' });
-                }
+        // Insert team_managers
+        if (managerIds.length > 0) {
+            await supabaseAdmin
+                .from('team_managers')
+                .insert(managerIds.map(uid => ({ team_id: teamId, user_id: uid })));
+
+            // Promote managers (skip admins)
+            const { data: managers } = await supabaseAdmin
+                .from('users')
+                .select('id, role')
+                .in('id', managerIds);
+
+            const toPromote = (managers || []).filter(u => u.role !== 'admin').map(u => u.id);
+            if (toPromote.length > 0) {
+                await supabaseAdmin
+                    .from('users')
+                    .update({ role: 'manager' })
+                    .in('id', toPromote);
             }
-        });
+        }
 
-        // 2. Đối với Members: Gán teamId duy nhất
-        memberIds.forEach((memId) => {
-            const userRef = adminDb.collection("users").doc(memId);
-            batch.update(userRef, { teamId: teamRef.id });
-        });
+        // Assign members to team
+        if (memberIds.length > 0) {
+            await supabaseAdmin
+                .from('users')
+                .update({ team_id: teamId })
+                .in('id', memberIds);
+        }
 
-        await batch.commit();
         revalidatePath('/teams');
-
-        return { success: true, teamId: teamRef.id };
-
+        return { success: true, teamId };
     } catch (error) {
         console.error("Create Team Error:", error);
         return { success: false, error: "Không thể tạo team. Vui lòng thử lại." };
@@ -127,35 +118,42 @@ export async function createNewTeam(
 
 export async function deleteTeam(teamId: string) {
     try {
-        const teamRef = adminDb.collection("teams").doc(teamId);
-        const teamDoc = await teamRef.get();
-        if (!teamDoc.exists) throw new Error("Team không tồn tại");
+        // Get managers before deleting
+        const { data: managers } = await supabaseAdmin
+            .from('team_managers')
+            .select('user_id')
+            .eq('team_id', teamId);
 
-        const managerIds: string[] = teamDoc.data()?.managerIds || [];
-        const batch = adminDb.batch();
+        const managerIds = (managers || []).map(m => m.user_id);
 
-        // 1. Xóa Document Team
-        batch.delete(teamRef);
+        // Remove team_id from members
+        await supabaseAdmin
+            .from('users')
+            .update({ team_id: null })
+            .eq('team_id', teamId);
 
-        // 2. Trả tự do cho Members (Xóa teamId)
-        const usersInTeamSnap = await adminDb.collection("users").where("teamId", "==", teamId).get();
-        usersInTeamSnap.forEach((doc) => {
-            batch.update(doc.ref, { teamId: "" });
-        });
+        // Delete team (CASCADE removes team_managers)
+        await supabaseAdmin.from('teams').delete().eq('id', teamId);
 
-        await batch.commit();
-
-        // 3. Xử lý Managers: Nếu không còn quản lý team nào khác VÀ KHÔNG PHẢI LÀ ADMIN, giáng cấp thành Member
+        // Downgrade managers who no longer manage any team
         for (const mgrId of managerIds) {
-            const otherTeams = await adminDb.collection("teams")
-                .where("managerIds", "array-contains", mgrId)
-                .get();
+            const { data: otherTeams } = await supabaseAdmin
+                .from('team_managers')
+                .select('team_id')
+                .eq('user_id', mgrId);
 
-            if (otherTeams.empty) {
-                const userRef = adminDb.collection("users").doc(mgrId);
-                const userSnap = await userRef.get();
-                if (userSnap.exists && userSnap.data()?.role !== 'admin') {
-                    await userRef.update({ role: "member" });
+            if (!otherTeams || otherTeams.length === 0) {
+                const { data: user } = await supabaseAdmin
+                    .from('users')
+                    .select('role')
+                    .eq('id', mgrId)
+                    .single();
+
+                if (user && user.role !== 'admin') {
+                    await supabaseAdmin
+                        .from('users')
+                        .update({ role: 'member' })
+                        .eq('id', mgrId);
                 }
             }
         }
@@ -168,24 +166,14 @@ export async function deleteTeam(teamId: string) {
     }
 }
 
-/**
- * ========================================================
- * 3. QUẢN LÝ THÀNH VIÊN & QUẢN LÝ (THÊM / XÓA)
- * ========================================================
- */
-
 export async function addMemberToTeam(teamId: string, userId: string) {
     try {
-        const batch = adminDb.batch();
-        const userRef = adminDb.collection("users").doc(userId);
-        const teamRef = adminDb.collection("teams").doc(teamId);
+        await supabaseAdmin
+            .from('users')
+            .update({ team_id: teamId })
+            .eq('id', userId);
 
-        batch.update(userRef, { teamId: teamId });
-        batch.update(teamRef, { members: FieldValue.arrayUnion(userId) });
-
-        await batch.commit();
         revalidatePath('/teams');
-
         return { success: true };
     } catch (error) {
         console.error("Add Member Error:", error);
@@ -195,16 +183,13 @@ export async function addMemberToTeam(teamId: string, userId: string) {
 
 export async function removeMemberFromTeam(teamId: string, userId: string) {
     try {
-        const batch = adminDb.batch();
-        const teamRef = adminDb.collection("teams").doc(teamId);
-        const userRef = adminDb.collection("users").doc(userId);
+        await supabaseAdmin
+            .from('users')
+            .update({ team_id: null })
+            .eq('id', userId)
+            .eq('team_id', teamId);
 
-        batch.update(teamRef, { members: FieldValue.arrayRemove(userId) });
-        batch.update(userRef, { teamId: "" });
-
-        await batch.commit();
         revalidatePath('/teams');
-
         return { success: true };
     } catch (error) {
         console.error("Remove Member Error:", error);
@@ -214,21 +199,25 @@ export async function removeMemberFromTeam(teamId: string, userId: string) {
 
 export async function addManagerToTeam(teamId: string, userId: string) {
     try {
-        const batch = adminDb.batch();
-        const userRef = adminDb.collection("users").doc(userId);
-        const teamRef = adminDb.collection("teams").doc(teamId);
+        // Check role before promoting
+        const { data: user } = await supabaseAdmin
+            .from('users')
+            .select('role')
+            .eq('id', userId)
+            .single();
 
-        // Kiểm tra role trước khi nâng quyền lên manager (bảo vệ quyền Admin)
-        const userSnap = await userRef.get();
-        if (userSnap.exists && userSnap.data()?.role !== 'admin') {
-            batch.update(userRef, { role: 'manager' });
+        if (user && user.role !== 'admin') {
+            await supabaseAdmin
+                .from('users')
+                .update({ role: 'manager' })
+                .eq('id', userId);
         }
 
-        batch.update(teamRef, { managerIds: FieldValue.arrayUnion(userId) });
+        await supabaseAdmin
+            .from('team_managers')
+            .upsert({ team_id: teamId, user_id: userId });
 
-        await batch.commit();
         revalidatePath('/teams');
-
         return { success: true };
     } catch (error) {
         console.error("Add Manager Error:", error);
@@ -238,22 +227,30 @@ export async function addManagerToTeam(teamId: string, userId: string) {
 
 export async function removeManagerFromTeam(teamId: string, userId: string) {
     try {
-        const teamRef = adminDb.collection("teams").doc(teamId);
-        const userRef = adminDb.collection("users").doc(userId);
+        await supabaseAdmin
+            .from('team_managers')
+            .delete()
+            .eq('team_id', teamId)
+            .eq('user_id', userId);
 
-        // 1. Xóa userId khỏi mảng managerIds của team này
-        await teamRef.update({ managerIds: FieldValue.arrayRemove(userId) });
+        // Check if still managing other teams
+        const { data: otherTeams } = await supabaseAdmin
+            .from('team_managers')
+            .select('team_id')
+            .eq('user_id', userId);
 
-        // 2. Kiểm tra xem Manager này còn quản lý team nào khác không
-        const otherTeams = await adminDb.collection("teams")
-            .where("managerIds", "array-contains", userId)
-            .get();
+        if (!otherTeams || otherTeams.length === 0) {
+            const { data: user } = await supabaseAdmin
+                .from('users')
+                .select('role')
+                .eq('id', userId)
+                .single();
 
-        // 3. Nếu không quản lý team nào nữa VÀ KHÔNG PHẢI LÀ ADMIN, giáng quyền về member
-        if (otherTeams.empty) {
-            const userSnap = await userRef.get();
-            if (userSnap.exists && userSnap.data()?.role !== 'admin') {
-                await userRef.update({ role: "member" });
+            if (user && user.role !== 'admin') {
+                await supabaseAdmin
+                    .from('users')
+                    .update({ role: 'member' })
+                    .eq('id', userId);
             }
         }
 
@@ -271,10 +268,10 @@ export async function updateTeamName(teamId: string, newName: string) {
             return { success: false, error: "Tên team không được để trống." };
         }
 
-        const teamRef = adminDb.collection("teams").doc(teamId);
-        await teamRef.update({
-            name: newName.trim()
-        });
+        await supabaseAdmin
+            .from('teams')
+            .update({ name: newName.trim() })
+            .eq('id', teamId);
 
         revalidatePath('/teams');
         return { success: true };
@@ -283,3 +280,4 @@ export async function updateTeamName(teamId: string, newName: string) {
         return { success: false, error: "Không thể đổi tên team. Lỗi server." };
     }
 }
+
