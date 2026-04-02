@@ -102,76 +102,79 @@ export function ThongKeTab() {
 
     return (
         <div className="space-y-6">
-            {/* Filters */}
-            <div className="flex flex-wrap items-center gap-3">
-                <div className="relative">
-                    <select
-                        value={selectedMonth}
-                        onChange={e => setSelectedMonth(e.target.value)}
-                        className="appearance-none rounded-xl border border-zinc-200/80 bg-white pl-4 pr-10 py-2.5 text-[13px] font-medium shadow-[0_2px_10px_rgba(0,0,0,0.02)] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-zinc-800 dark:bg-[#121212] dark:text-white transition-all"
-                    >
-                        <option value="">Tất cả thời gian</option>
-                        {monthOptions.map(m => (
-                            <option key={m.value} value={m.value}>{m.label}</option>
-                        ))}
-                    </select>
-                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 pointer-events-none" />
+            {/* Header section (Filters + Actions) */}
+            <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 w-full">
+                {/* Filters */}
+                <div className="flex flex-wrap items-center gap-3">
+                    <div className="relative">
+                        <select
+                            value={selectedMonth}
+                            onChange={e => setSelectedMonth(e.target.value)}
+                            className="appearance-none rounded-xl border border-zinc-200/80 bg-white pl-4 pr-10 py-2.5 text-[13px] font-medium shadow-[0_2px_10px_rgba(0,0,0,0.02)] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-zinc-800 dark:bg-[#121212] dark:text-white transition-all"
+                        >
+                            <option value="">Tất cả thời gian</option>
+                            {monthOptions.map(m => (
+                                <option key={m.value} value={m.value}>{m.label}</option>
+                            ))}
+                        </select>
+                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 pointer-events-none" />
+                    </div>
+
+                    {isAdmin && (
+                        <>
+                            <div className="relative">
+                                <select
+                                    value={selectedTeam}
+                                    onChange={e => { setSelectedTeam(e.target.value); setSelectedChannel(""); }}
+                                    className="appearance-none rounded-xl border border-zinc-200/80 bg-white pl-4 pr-10 py-2.5 text-[13px] font-medium shadow-[0_2px_10px_rgba(0,0,0,0.02)] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-zinc-800 dark:bg-[#121212] dark:text-white transition-all"
+                                >
+                                    <option value="">Tất cả mảng</option>
+                                    {teams.map(t => (
+                                        <option key={t.id} value={t.id}>{t.name}</option>
+                                    ))}
+                                </select>
+                                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 pointer-events-none" />
+                            </div>
+
+                            <div className="relative">
+                                <select
+                                    value={selectedChannel}
+                                    onChange={e => { setSelectedChannel(e.target.value); setSelectedTeam(""); }}
+                                    className="appearance-none rounded-xl border border-zinc-200/80 bg-white pl-4 pr-10 py-2.5 text-[13px] font-medium shadow-[0_2px_10px_rgba(0,0,0,0.02)] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-zinc-800 dark:bg-[#121212] dark:text-white max-w-[200px] truncate transition-all"
+                                >
+                                    <option value="">Tất cả kênh</option>
+                                    {allChannels.map(ch => (
+                                        <option key={ch.id} value={ch.id}>{ch.displayName}</option>
+                                    ))}
+                                </select>
+                                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 pointer-events-none" />
+                            </div>
+                        </>
+                    )}
                 </div>
 
-                {isAdmin && (
-                    <>
-                        <div className="relative">
-                            <select
-                                value={selectedTeam}
-                                onChange={e => { setSelectedTeam(e.target.value); setSelectedChannel(""); }}
-                                className="appearance-none rounded-xl border border-zinc-200/80 bg-white pl-4 pr-10 py-2.5 text-[13px] font-medium shadow-[0_2px_10px_rgba(0,0,0,0.02)] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-zinc-800 dark:bg-[#121212] dark:text-white transition-all"
-                            >
-                                <option value="">Tất cả mảng</option>
-                                {teams.map(t => (
-                                    <option key={t.id} value={t.id}>{t.name}</option>
-                                ))}
-                            </select>
-                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 pointer-events-none" />
-                        </div>
-
-                        <div className="relative">
-                            <select
-                                value={selectedChannel}
-                                onChange={e => { setSelectedChannel(e.target.value); setSelectedTeam(""); }}
-                                className="appearance-none rounded-xl border border-zinc-200/80 bg-white pl-4 pr-10 py-2.5 text-[13px] font-medium shadow-[0_2px_10px_rgba(0,0,0,0.02)] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-zinc-800 dark:bg-[#121212] dark:text-white max-w-[200px] truncate transition-all"
-                            >
-                                <option value="">Tất cả kênh</option>
-                                {allChannels.map(ch => (
-                                    <option key={ch.id} value={ch.id}>{ch.displayName}</option>
-                                ))}
-                            </select>
-                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 pointer-events-none" />
-                        </div>
-                    </>
-                )}
-            </div>
-
-            {/* Actions */}
-            <div className="flex flex-wrap items-center gap-3">
-                {!isAdmin && hasChannel === false && (
-                    <a
-                        href={`/api/tiktok/login?userId=${user?.id}`}
-                        className="flex items-center gap-2 rounded-full bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_4px_14px_rgba(37,99,235,0.25)] hover:bg-blue-700 hover:shadow-[0_4px_14px_rgba(37,99,235,0.35)] active:scale-[0.98] transition-all"
-                    >
-                        <Link className="h-4 w-4 stroke-[2]" />
-                        Kết nối TikTok
-                    </a>
-                )}
-                {(isAdmin || hasChannel) && (
-                    <button
-                        onClick={doSync}
-                        disabled={syncing || dataLoading}
-                        className="flex items-center gap-2 rounded-xl border border-zinc-200/80 bg-white px-5 py-2.5 text-sm font-semibold text-zinc-700 shadow-[0_2px_10px_rgba(0,0,0,0.02)] hover:bg-zinc-50 hover:shadow-[0_4px_14px_rgba(0,0,0,0.05)] active:scale-[0.98] disabled:opacity-50 dark:border-zinc-800/80 dark:bg-[#121212] dark:text-zinc-300 dark:hover:bg-[#1a1a1a] transition-all"
-                    >
-                        <RefreshCw className={`h-4 w-4 stroke-[2] ${syncing ? "animate-spin" : ""}`} />
-                        {syncing ? "Đang đồng bộ..." : isAdmin ? "Đồng bộ tất cả" : "Đồng bộ"}
-                    </button>
-                )}
+                {/* Actions */}
+                <div className="flex flex-wrap items-center gap-3">
+                    {!isAdmin && hasChannel === false && (
+                        <a
+                            href={`/api/tiktok/login?userId=${user?.id}`}
+                            className="flex items-center gap-2 rounded-full bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_4px_14px_rgba(37,99,235,0.25)] hover:bg-blue-700 hover:shadow-[0_4px_14px_rgba(37,99,235,0.35)] active:scale-[0.98] transition-all"
+                        >
+                            <Link className="h-4 w-4 stroke-[2]" />
+                            Kết nối TikTok
+                        </a>
+                    )}
+                    {(isAdmin || hasChannel) && (
+                        <button
+                            onClick={doSync}
+                            disabled={syncing || dataLoading}
+                            className="flex items-center gap-2 rounded-full bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_4px_14px_rgba(37,99,235,0.25)] hover:bg-blue-700 hover:shadow-[0_4px_14px_rgba(37,99,235,0.35)] active:scale-[0.98] disabled:opacity-50 transition-all"
+                        >
+                            <RefreshCw className={`h-4 w-4 stroke-[2] ${syncing ? "animate-spin" : ""}`} />
+                            {syncing ? "Đang đồng bộ..." : isAdmin ? "Đồng bộ tất cả" : "Đồng bộ"}
+                        </button>
+                    )}
+                </div>
             </div>
 
             {syncMsg && (
@@ -185,8 +188,10 @@ export function ThongKeTab() {
                 </div>
             ) : (
                 <>
-                    <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6">
-                        <StatCard title="Lượt xem" value={stats.totalViews} icon={Eye} color="blue" />
+                    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
+                        <div className="col-span-2">
+                            <StatCard title="Lượt xem" value={stats.totalViews} icon={Eye} color="blue" />
+                        </div>
                         <StatCard title="Bình luận" value={stats.totalComments} icon={MessageCircle} color="green" />
                         <StatCard title="Chia sẻ" value={stats.totalShares} icon={Share2} color="orange" />
                         <StatCard title="Người theo dõi" value={stats.totalFollowers} icon={Users} color="purple" />
