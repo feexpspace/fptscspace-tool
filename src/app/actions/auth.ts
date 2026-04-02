@@ -35,3 +35,17 @@ export async function registerUserAction(email: string, password: string, name: 
         return { success: false, error: msg };
     }
 }
+
+// Ensure email is confirmed in Supabase Auth before signInWithPassword
+// Needed for accounts created before the admin API fix
+export async function ensureEmailConfirmed(email: string) {
+    try {
+        const { data } = await supabaseAdmin.auth.admin.listUsers();
+        const authUser = data.users.find(u => u.email === email);
+        if (authUser && !authUser.email_confirmed_at) {
+            await supabaseAdmin.auth.admin.updateUserById(authUser.id, { email_confirm: true });
+        }
+    } catch {
+        // Non-fatal — let signInWithPassword handle errors
+    }
+}
