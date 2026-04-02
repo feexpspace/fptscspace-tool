@@ -38,8 +38,8 @@ function AuthForm() {
     }, [searchParams]);
 
     useEffect(() => {
-        if (!loading && user) router.push("/");
-    }, [user, loading, router]);
+        if (!loading && user) window.location.href = "/";
+    }, [user, loading]);
 
     const switchMode = (m: Mode) => {
         setMode(m);
@@ -59,7 +59,7 @@ function AuthForm() {
                 : "Email hoặc mật khẩu không chính xác.");
             setIsSubmitting(false);
         } else {
-            router.push("/");
+            window.location.href = "/";
         }
     };
 
