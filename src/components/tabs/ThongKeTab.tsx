@@ -116,7 +116,7 @@ export function ThongKeTab() {
                 )}
 
                 <div className="ml-auto flex items-center gap-2">
-                    {!isAdmin && hasChannel === false && (
+                    {hasChannel === false && (
                         <a
                             href={`/api/tiktok/login?userId=${user?.id}`}
                             className="flex items-center gap-1.5 rounded-lg bg-zinc-900 px-3 py-2 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-900"

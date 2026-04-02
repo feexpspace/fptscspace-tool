@@ -8,8 +8,9 @@ import { Pagination } from "@/components/Pagination";
 
 export function CaNhanTab() {
     const { user, isAdmin } = useAuth();
-    const { allVideos, channelTeamMap, teams, hasChannel, dataLoading, syncing, syncMsg, doSync } = useData();
-    const [selectedTeam, setSelectedTeam] = useState("");
+    const { allVideos, channelTeamMap, teams, myChannels, hasChannel, dataLoading, syncing, syncMsg, doSync } = useData();
+    const [selectedChannel, setSelectedChannel] = useState(""); // admin: filter by channel
+    const [selectedTeam, setSelectedTeam] = useState("");       // admin: filter by team
     const [selectedMonth, setSelectedMonth] = useState("");
     const [page, setPage] = useState(1);
     const pageSize = 20;
@@ -26,11 +27,28 @@ export function CaNhanTab() {
         return options;
     }, []);
 
+    // Derive unique channels from allVideos for the channel dropdown (admin)
+    const allChannels = useMemo(() => {
+        const map = new Map<string, { id: string; displayName: string; username: string }>();
+        allVideos.forEach(v => {
+            if (!map.has(v.channelId)) {
+                map.set(v.channelId, {
+                    id: v.channelId,
+                    displayName: v.channelDisplayName || v.channelUsername || v.channelId,
+                    username: v.channelUsername || '',
+                });
+            }
+        });
+        return Array.from(map.values());
+    }, [allVideos]);
+
     // Client-side filtering — instant, no server call
     const filteredVideos = useMemo(() => {
         let videos = allVideos;
 
-        if (selectedTeam) {
+        if (isAdmin && selectedChannel) {
+            videos = videos.filter(v => v.channelId === selectedChannel);
+        } else if (isAdmin && selectedTeam) {
             videos = videos.filter(v => channelTeamMap[v.channelId] === selectedTeam);
         }
 
@@ -43,10 +61,9 @@ export function CaNhanTab() {
         }
 
         return videos;
-    }, [allVideos, channelTeamMap, selectedTeam, selectedMonth]);
+    }, [allVideos, channelTeamMap, selectedChannel, selectedTeam, selectedMonth, isAdmin]);
 
-    // Reset to page 1 on filter change
-    useEffect(() => { setPage(1); }, [selectedTeam, selectedMonth]);
+    useEffect(() => { setPage(1); }, [selectedChannel, selectedTeam, selectedMonth]);
 
     const totalPages = Math.ceil(filteredVideos.length / pageSize);
     const pagedVideos = filteredVideos.slice((page - 1) * pageSize, page * pageSize);
@@ -72,26 +89,39 @@ export function CaNhanTab() {
                 </select>
 
                 {isAdmin && (
-                    <select
-                        value={selectedTeam}
-                        onChange={e => { setSelectedTeam(e.target.value); setPage(1); }}
-                        className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-white"
-                    >
-                        <option value="">Tất cả Mảng</option>
-                        {teams.map(t => (
-                            <option key={t.id} value={t.id}>{t.name}</option>
-                        ))}
-                    </select>
+                    <>
+                        <select
+                            value={selectedChannel}
+                            onChange={e => { setSelectedChannel(e.target.value); setSelectedTeam(""); setPage(1); }}
+                            className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-white"
+                        >
+                            <option value="">Tất cả kênh</option>
+                            {allChannels.map(ch => (
+                                <option key={ch.id} value={ch.id}>
+                                    {ch.displayName}{ch.username ? ` (@${ch.username})` : ""}
+                                </option>
+                            ))}
+                        </select>
+
+                        <select
+                            value={selectedTeam}
+                            onChange={e => { setSelectedTeam(e.target.value); setSelectedChannel(""); setPage(1); }}
+                            className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-white"
+                        >
+                            <option value="">Tất cả Mảng</option>
+                            {teams.map(t => (
+                                <option key={t.id} value={t.id}>{t.name}</option>
+                            ))}
+                        </select>
+                    </>
                 )}
 
                 {!dataLoading && (
-                    <span className="text-xs text-zinc-400">
-                        {filteredVideos.length} video
-                    </span>
+                    <span className="text-xs text-zinc-400">{filteredVideos.length} video</span>
                 )}
 
                 <div className="ml-auto flex items-center gap-2">
-                    {!isAdmin && hasChannel === false && (
+                    {hasChannel === false && (
                         <a
                             href={`/api/tiktok/login?userId=${user?.id}`}
                             className="flex items-center gap-1.5 rounded-lg bg-zinc-900 px-3 py-2 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-900"
@@ -101,7 +131,7 @@ export function CaNhanTab() {
                         </a>
                     )}
 
-                    {(isAdmin || hasChannel) && (
+                    {hasChannel && (
                         <button
                             onClick={doSync}
                             disabled={syncing || dataLoading}
@@ -109,6 +139,18 @@ export function CaNhanTab() {
                         >
                             <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
                             {syncing ? "Đang đồng bộ..." : isAdmin ? "Đồng bộ tất cả" : "Đồng bộ"}
+                        </button>
+                    )}
+
+                    {/* Admin always sees sync button even if they personally have no channel */}
+                    {isAdmin && !hasChannel && (
+                        <button
+                            onClick={doSync}
+                            disabled={syncing || dataLoading}
+                            className="flex items-center gap-1.5 rounded-lg border border-zinc-200 px-3 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800"
+                        >
+                            <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
+                            {syncing ? "Đang đồng bộ..." : "Đồng bộ tất cả"}
                         </button>
                     )}
                 </div>
@@ -174,12 +216,8 @@ export function CaNhanTab() {
                                             </td>
                                             <td className="px-3 py-2.5 text-center">
                                                 {video.link && (
-                                                    <a
-                                                        href={video.link}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="inline-flex text-zinc-400 hover:text-blue-500 transition-colors"
-                                                    >
+                                                    <a href={video.link} target="_blank" rel="noopener noreferrer"
+                                                        className="inline-flex text-zinc-400 hover:text-blue-500 transition-colors">
                                                         <ExternalLink className="h-4 w-4" />
                                                     </a>
                                                 )}
