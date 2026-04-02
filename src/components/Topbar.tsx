@@ -28,7 +28,7 @@ interface TabItem {
 
 const tabs: TabItem[] = [
     { id: "thong-ke", name: "Thống kê", icon: BarChart3 },
-    { id: "ca-nhan", name: "Cá nhân", icon: Video },
+    { id: "ca-nhan", name: "Videos", icon: Video },
     { id: "quan-tri", name: "Quản trị", icon: Settings, adminOnly: true },
 ];
 
@@ -75,26 +75,26 @@ export function Topbar({ activeTab, onTabChange }: TopbarProps) {
                 </button>
 
                 {/* Logo */}
-                <div className="flex items-center gap-3 mr-8 cursor-pointer" onClick={() => onTabChange("thong-ke")}>
-                    <div className="relative h-9 w-9 shrink-0 rounded-xl overflow-hidden shadow-sm border border-zinc-100 dark:border-zinc-800 bg-white">
+                <div className="flex items-center gap-3 cursor-pointer" onClick={() => onTabChange("thong-ke")}>
+                    <div className="relative h-8 w-8 flex items-center justify-center font-bold text-blue-600 shrink-0 rounded-xl overflow-hidden shadow-sm border border-zinc-100 dark:border-zinc-800 bg-white">
                         <Image src="/logo.png" alt="Logo" fill className="object-cover" priority sizes="100px" />
                     </div>
-                    <span className="text-lg font-bold tracking-tight text-zinc-900 dark:text-white hidden sm:block">
+                    <span className="text-xl font-bold tracking-tight text-zinc-900 dark:text-white hidden sm:block">
                         FPTscSpace
                     </span>
                 </div>
 
                 {/* Desktop Navigation */}
-                <nav className="hidden md:flex items-center gap-1 flex-1">
+                <nav className="hidden md:flex items-center justify-center gap-2 flex-1">
                     {visibleTabs.map((tab) => (
                         <button
                             key={tab.id}
                             onClick={() => onTabChange(tab.id)}
                             className={cn(
-                                "flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-200",
+                                "flex items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold transition-all duration-200",
                                 activeTab === tab.id
-                                    ? "bg-zinc-100 text-black dark:bg-zinc-800 dark:text-white shadow-sm"
-                                    : "text-zinc-500 hover:bg-zinc-50 hover:text-black dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-white"
+                                    ? "bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-white"
+                                    : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white"
                             )}
                         >
                             {/* Option: hide icon on desktop to make it cleaner, or keep it. Let's keep a subtle icon */}
@@ -105,16 +105,11 @@ export function Topbar({ activeTab, onTabChange }: TopbarProps) {
                 </nav>
 
                 {/* Right Actions */}
-                <div className="flex items-center gap-3 ml-auto">
-                    <div className="hidden sm:block">
+                <div className="flex items-center gap-3">
+                    <div className="hidden sm:block mr-2">
                         <ModeToggle isCollapsed={true} />
                     </div>
                     
-                    <button className="relative flex h-10 w-10 items-center justify-center rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-500 transition-colors">
-                        <Bell className="h-5 w-5" />
-                        <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-[#0a0a0a]"></span>
-                    </button>
-
                     {/* User Dropdown */}
                     <div className="relative" ref={dropdownRef}>
                         <button 
