@@ -153,7 +153,7 @@ export function ThongKeTab() {
                             className="flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_4px_14px_rgba(37,99,235,0.25)] hover:bg-blue-700 hover:shadow-[0_4px_14px_rgba(37,99,235,0.35)] active:scale-[0.98] disabled:opacity-50 transition-all"
                         >
                             <RefreshCw className={`h-4 w-4 stroke-[2] ${syncing ? "animate-spin" : ""}`} />
-                            {syncing ? "Đang đồng bộ..." : isAdmin ? "Đồng bộ tất cả" : "Đồng bộ"}
+                            {syncing ? "Đang đồng bộ..." : "Đồng bộ"}
                         </button>
                     )}
                 </div>
@@ -187,7 +187,8 @@ export function ThongKeTab() {
                                 <StatCard title="Lượt xem" value={stats.totalViews} icon={Eye} color="blue" />
                                 <StatCard title="Người theo dõi" value={stats.totalFollowers} icon={Users} color="purple" />
                             </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <StatCard title="Like" value={stats.totalLikes} icon={Heart} color="rose" />
                                 <StatCard title="Bình luận" value={stats.totalComments} icon={MessageCircle} color="green" />
                                 <StatCard title="Chia sẻ" value={stats.totalShares} icon={Share2} color="orange" />
                                 <StatCard title="Tổng video" value={stats.totalVideos} icon={Video} color="red" />
