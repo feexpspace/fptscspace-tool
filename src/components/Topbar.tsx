@@ -83,7 +83,7 @@ export function Topbar({ activeTab, onTabChange }: TopbarProps) {
                             key={tab.id}
                             onClick={() => onTabChange(tab.id)}
                             className={cn(
-                                "flex items-center justify-center gap-1 sm:gap-2 rounded-xl text-[11px] sm:text-[13px] font-bold transition-all duration-200 shrink-0",
+                                "flex items-center cursor-pointer justify-center gap-1 sm:gap-2 rounded-xl text-[11px] sm:text-[13px] font-bold transition-all duration-200 shrink-0",
                                 activeTab === tab.id
                                     ? "bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-white px-2 py-1.5 sm:px-5 sm:py-2"
                                     : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white px-1.5 py-1.5 sm:px-5 sm:py-2"
