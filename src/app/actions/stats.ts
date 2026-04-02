@@ -216,3 +216,25 @@ async function getMonthlyStatsForChannels(channelIds: string[], month: string): 
         channelBreakdown,
     };
 }
+
+export async function getGlobalLeaderboard(month?: string): Promise<ChannelBreakdown[]> {
+    try {
+        const { data: channelsData } = await supabaseAdmin
+            .from('channels')
+            .select('id');
+            
+        const channelIds = (channelsData || []).map(c => c.id);
+        if (channelIds.length === 0) return [];
+
+        const stats = await getStatsForChannels(channelIds, month);
+        
+        // Sort by totalViews descending
+        const breakdown = stats.channelBreakdown;
+        breakdown.sort((a, b) => b.totalViews - a.totalViews);
+        
+        return breakdown;
+    } catch (error) {
+        console.error("Error fetching global leaderboard:", error);
+        return [];
+    }
+}

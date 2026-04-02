@@ -8,11 +8,13 @@ import { Topbar } from "@/components/Topbar";
 import { ThongKeTab } from "@/components/tabs/ThongKeTab";
 import { CaNhanTab } from "@/components/tabs/CaNhanTab";
 import { QuanTriTab } from "@/components/tabs/QuanTriTab";
+import { BangXepHangTab } from "@/components/tabs/BangXepHangTab";
 import { logoutUser } from "@/lib/auth-service";
 
 const TAB_TITLES: Record<string, string> = {
     "thong-ke": "Thống kê",
     "ca-nhan": "Videos",
+    "bang-xep-hang": "Bảng xếp hạng",
     "quan-tri": "Quản trị",
 };
 
@@ -84,6 +86,7 @@ export default function HomePage() {
                         <div className="w-full">
                             <div className={activeTab !== "thong-ke" ? "hidden" : ""}><ThongKeTab /></div>
                             <div className={activeTab !== "ca-nhan" ? "hidden" : ""}><CaNhanTab /></div>
+                            <div className={activeTab !== "bang-xep-hang" ? "hidden" : ""}><BangXepHangTab /></div>
                             {isAdmin && <div className={activeTab !== "quan-tri" ? "hidden" : ""}><QuanTriTab /></div>}
                         </div>
                     </div>

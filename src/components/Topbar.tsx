@@ -12,7 +12,8 @@ import {
     Bell,
     Menu,
     X,
-    ChevronDown
+    ChevronDown,
+    Trophy
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
@@ -29,6 +30,7 @@ interface TabItem {
 const tabs: TabItem[] = [
     { id: "thong-ke", name: "Thống kê", icon: BarChart3 },
     { id: "ca-nhan", name: "Videos", icon: Video },
+    { id: "bang-xep-hang", name: "Bảng xếp hạng", icon: Trophy },
     { id: "quan-tri", name: "Quản trị", icon: Settings, adminOnly: true },
 ];
 
