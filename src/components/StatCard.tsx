@@ -29,7 +29,7 @@ export function StatCard({ title, value, icon: Icon, color, className, featured 
             "rounded-xl p-6 flex flex-col gap-5 transition-all min-w-0 shadow-[0_4px_24px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] relative overflow-hidden",
             featured 
                 ? "bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-500 border-transparent shadow-[0_8px_30px_rgba(37,99,235,0.2)]" 
-                : "bg-white border border-zinc-100/50 dark:border-zinc-800/50 dark:bg-[#121212]",
+                : "bg-white border border-zinc-100/50 dark:border-zinc-800/50 dark:bg-zinc-900",
             className
         )}>
             {/* Subtle mesh background block for featured card */}

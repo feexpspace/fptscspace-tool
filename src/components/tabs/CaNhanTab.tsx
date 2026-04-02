@@ -140,6 +140,7 @@ export function CaNhanTab() {
                         onChange={v => { setSelectedMonth(v); setPage(1); }}
                         options={monthOptions}
                         placeholder="Tất cả thời gian"
+                        className="bg-white dark:bg-zinc-900 w-44 shadow-none"
                     />
 
                     {isAdmin && (
@@ -217,28 +218,28 @@ export function CaNhanTab() {
                 </div>
             ) : pagedVideos.length > 0 ? (
                 <>
-                    <div className="overflow-x-auto rounded-xl border border-zinc-100/50 bg-white shadow-[0_4px_24px_rgba(0,0,0,0.03)] dark:border-zinc-800/50 dark:bg-[#121212]">
+                    <div className="overflow-x-auto rounded-xl border border-zinc-100/50 bg-white shadow-[0_4px_24px_rgba(0,0,0,0.03)] dark:border-zinc-800/50 dark:bg-zinc-900">
                         <table className="w-full text-sm">
                             <thead>
                                 <tr className="border-b border-zinc-100 dark:border-zinc-800/80">
-                                    <th className="px-6 py-5 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-[#1a1a1a]/50 w-12" />
-                                    <th className="px-6 py-5 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-[#1a1a1a]/50 w-28 cursor-pointer group hover:bg-zinc-100 dark:hover:bg-[#222]" onClick={() => handleSort('date')}>
+                                    <th className="px-6 py-5 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50 w-12" />
+                                    <th className="px-6 py-5 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50 w-28 cursor-pointer group hover:bg-zinc-100 dark:hover:bg-zinc-800" onClick={() => handleSort('date')}>
                                         <div className="flex items-center gap-1.5">Thời gian <SortIcon sortKey="date" /></div>
                                     </th>
-                                    {isAdmin && <th className="px-6 py-5 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-[#1a1a1a]/50">Kênh</th>}
-                                    <th className="px-6 py-5 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-[#1a1a1a]/50">Caption</th>
-                                    <th className="px-6 py-5 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-[#1a1a1a]/50">Hashtag</th>
-                                    <th className="px-6 py-5 text-center text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-[#1a1a1a]/50 w-10">Link</th>
-                                    <th className="px-6 py-5 text-right text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-[#1a1a1a]/50 cursor-pointer group hover:bg-zinc-100 dark:hover:bg-[#222]" onClick={() => handleSort('view')}>
+                                    {isAdmin && <th className="px-6 py-5 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50">Kênh</th>}
+                                    <th className="px-6 py-5 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50">Caption</th>
+                                    <th className="px-6 py-5 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50">Hashtag</th>
+                                    <th className="px-6 py-5 text-center text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50 w-10">Link</th>
+                                    <th className="px-6 py-5 text-right text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50 cursor-pointer group hover:bg-zinc-100 dark:hover:bg-zinc-800" onClick={() => handleSort('view')}>
                                         <div className="flex items-center justify-end gap-1.5"><SortIcon sortKey="view" /> Lượt xem</div>
                                     </th>
-                                    <th className="px-6 py-5 text-right text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-[#1a1a1a]/50 cursor-pointer group hover:bg-zinc-100 dark:hover:bg-[#222]" onClick={() => handleSort('like')}>
+                                    <th className="px-6 py-5 text-right text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50 cursor-pointer group hover:bg-zinc-100 dark:hover:bg-zinc-800" onClick={() => handleSort('like')}>
                                         <div className="flex items-center justify-end gap-1.5"><SortIcon sortKey="like" /> Like</div>
                                     </th>
-                                    <th className="px-6 py-5 text-right text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-[#1a1a1a]/50 cursor-pointer group hover:bg-zinc-100 dark:hover:bg-[#222]" onClick={() => handleSort('comment')}>
+                                    <th className="px-6 py-5 text-right text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50 cursor-pointer group hover:bg-zinc-100 dark:hover:bg-zinc-800" onClick={() => handleSort('comment')}>
                                         <div className="flex items-center justify-end gap-1.5"><SortIcon sortKey="comment" /> Comment</div>
                                     </th>
-                                    <th className="px-6 py-5 text-right text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-[#1a1a1a]/50 cursor-pointer group hover:bg-zinc-100 dark:hover:bg-[#222]" onClick={() => handleSort('share')}>
+                                    <th className="px-6 py-5 text-right text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50 cursor-pointer group hover:bg-zinc-100 dark:hover:bg-zinc-800" onClick={() => handleSort('share')}>
                                         <div className="flex items-center justify-end gap-1.5"><SortIcon sortKey="share" /> Share</div>
                                     </th>
                                 </tr>
@@ -250,7 +251,7 @@ export function CaNhanTab() {
                                     const hashtags = extractHashtags(caption);
 
                                     return (
-                                        <tr key={video.id} className="border-b border-zinc-50/50 last:border-0 dark:border-zinc-800/30 hover:bg-zinc-50/50 dark:hover:bg-[#1a1a1a]/50 transition-colors">
+                                        <tr key={video.id} className="border-b border-zinc-50/50 last:border-0 dark:border-zinc-800/30 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 transition-colors">
                                             <td className="px-6 py-4 text-zinc-400 font-medium">
                                                 {(page - 1) * pageSize + index + 1}
                                             </td>
@@ -269,7 +270,7 @@ export function CaNhanTab() {
                                                     {captionClean || "—"}
                                                 </div>
                                                 {captionClean && (
-                                                    <div className="absolute left-10 top-full mt-2 z-[100] hidden group-hover:block rounded-xl border border-zinc-200 bg-white p-3.5 text-[13px] font-medium leading-relaxed text-zinc-700 shadow-[0_10px_40px_rgba(0,0,0,0.12)] dark:border-zinc-700 dark:bg-[#1a1a1a] dark:text-zinc-300 w-max max-w-[320px] whitespace-pre-wrap">
+                                                    <div className="absolute left-10 top-full mt-2 z-[100] hidden group-hover:block rounded-xl border border-zinc-200 bg-white p-3.5 text-[13px] font-medium leading-relaxed text-zinc-700 shadow-[0_10px_40px_rgba(0,0,0,0.12)] dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 w-max max-w-[320px] whitespace-pre-wrap">
                                                         {captionClean}
                                                     </div>
                                                 )}

@@ -111,7 +111,7 @@ export function QuanTriTab() {
                             value={filterTeamId}
                             onChange={v => setFilterTeamId(v)}
                             options={[{ value: "", label: "Tất cả mảng" }, ...teams.map(t => ({ value: t.id, label: t.name }))]}
-                            className="bg-white dark:bg-[#121212] w-48 shadow-none"
+                            className="bg-white dark:bg-zinc-900 w-48 shadow-none"
                         />
                         {!loading && (
                             <span className="text-xs font-bold text-zinc-500 bg-zinc-100 dark:bg-zinc-800 dark:text-zinc-400 px-3 py-1.5 rounded-lg">
@@ -124,15 +124,15 @@ export function QuanTriTab() {
                         )}
                     </div>
                 </div>
-                <div className="rounded-xl border border-zinc-100/50 bg-white shadow-[0_4px_24px_rgba(0,0,0,0.03)] dark:border-zinc-800/50 dark:bg-[#121212]">
+                <div className="rounded-xl border border-zinc-100/50 bg-white shadow-[0_4px_24px_rgba(0,0,0,0.03)] dark:border-zinc-800/50 dark:bg-zinc-900">
                     <table className="w-full text-sm">
                         <thead>
                             <tr className="border-b border-zinc-100 dark:border-zinc-800/80">
-                                <th className="px-6 py-5 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-[#1a1a1a]/50">Người dùng</th>
-                                <th className="px-6 py-5 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-[#1a1a1a]/50">Kênh TikTok</th>
-                                <th className="px-6 py-5 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-[#1a1a1a]/50">Mảng</th>
-                                <th className="px-6 py-5 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-[#1a1a1a]/50">Vai trò</th>
-                                <th className="px-6 py-5 text-right w-10 bg-zinc-50/50 dark:bg-[#1a1a1a]/50"></th>
+                                <th className="px-6 py-5 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50">Người dùng</th>
+                                <th className="px-6 py-5 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50">Kênh TikTok</th>
+                                <th className="px-6 py-5 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50">Mảng</th>
+                                <th className="px-6 py-5 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50">Vai trò</th>
+                                <th className="px-6 py-5 text-right w-10 bg-zinc-50/50 dark:bg-zinc-900/50"></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -143,7 +143,7 @@ export function QuanTriTab() {
                             }).map(u => {
                                 const currentTeamId = teams.find(t => t.members?.includes(u.id))?.id || "";
                                 return (
-                                    <tr key={u.id} className="border-b border-zinc-50/50 last:border-0 dark:border-zinc-800/30 hover:bg-zinc-50/50 dark:hover:bg-[#1a1a1a]/50 transition-colors">
+                                    <tr key={u.id} className="border-b border-zinc-50/50 last:border-0 dark:border-zinc-800/30 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 transition-colors">
                                         <td className="px-6 py-4">
                                             <div>
                                                 <span className="font-bold text-zinc-900 dark:text-white block mb-0.5">{u.name}</span>

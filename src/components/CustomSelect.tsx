@@ -41,8 +41,8 @@ export function CustomSelect({ value, onChange, options, placeholder = "Chọn..
                 onClick={() => !disabled && setOpen(!open)}
                 disabled={disabled}
                 className={cn(
-                    "flex items-center justify-between gap-3 rounded-xl border border-zinc-200/80 bg-white px-4 py-2.5 text-[13px] font-normal shadow-[0_2px_10px_rgba(0,0,0,0.02)] transition-all dark:border-zinc-800 dark:bg-[#121212] dark:text-white hover:bg-zinc-50 dark:hover:bg-[#1a1a1a] outline-none",
-                    disabled && "opacity-50 cursor-not-allowed hover:bg-white dark:hover:bg-[#121212]",
+                    "flex items-center justify-between gap-3 rounded-xl border border-zinc-200/80 bg-white px-4 py-2.5 text-[13px] font-normal shadow-[0_2px_10px_rgba(0,0,0,0.02)] transition-all dark:border-zinc-800 dark:bg-zinc-900 dark:text-white hover:bg-zinc-50 dark:hover:bg-zinc-800/50 outline-none",
+                    disabled && "opacity-50 cursor-not-allowed hover:bg-white dark:hover:bg-zinc-900",
                     className
                 )}
             >
@@ -51,7 +51,7 @@ export function CustomSelect({ value, onChange, options, placeholder = "Chọn..
             </button>
 
             {open && (
-                <div className="absolute z-50 mt-2 min-w-[220px] max-w-[300px] origin-top-right rounded-xl border border-zinc-200 bg-white p-1.5 shadow-[0_10px_40px_rgba(0,0,0,0.08)] dark:border-zinc-800 dark:bg-[#1a1a1a] animate-in fade-in zoom-in-95 duration-100">
+                <div className="absolute z-50 mt-2 min-w-[220px] max-w-[300px] origin-top-right rounded-xl border border-zinc-200 bg-white p-1.5 shadow-[0_10px_40px_rgba(0,0,0,0.08)] dark:border-zinc-800 dark:bg-zinc-900 animate-in fade-in zoom-in-95 duration-100">
                     <div className="max-h-64 overflow-auto py-1 custom-scrollbar">
                         <button
                             onClick={() => {

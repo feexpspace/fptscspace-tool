@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Eye, MessageCircle, Share2, Users, Video, Tv, RefreshCw, Link, ChevronDown } from "lucide-react";
+import { Eye, MessageCircle, Share2, Users, Video, Tv, RefreshCw, Link, Heart } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useData } from "@/context/DataContext";
 import { StatCard } from "@/components/StatCard";
@@ -66,6 +66,7 @@ export function ThongKeTab() {
         }
 
         const totalViews = videosForPeriod.reduce((s, v) => s + (v.stats?.view || 0), 0);
+        const totalLikes = videosForPeriod.reduce((s, v) => s + (v.stats?.like || 0), 0);
         const totalComments = videosForPeriod.reduce((s, v) => s + (v.stats?.comment || 0), 0);
         const totalShares = videosForPeriod.reduce((s, v) => s + (v.stats?.share || 0), 0);
         const totalVideos = videosForPeriod.length;
@@ -98,7 +99,7 @@ export function ThongKeTab() {
             })
             .filter(ch => ch.videoCount > 0 || !selectedMonth); // hide empty channels when month filtered
 
-        return { totalViews, totalComments, totalShares, totalFollowers, totalVideos, activeChannels: scopedStats.length, channelBreakdown };
+        return { totalViews, totalLikes, totalComments, totalShares, totalFollowers, totalVideos, activeChannels: scopedStats.length, channelBreakdown };
     }, [allVideos, allStats, channelTeamMap, selectedTeam, selectedChannel, selectedMonth]);
 
     return (
@@ -166,18 +167,33 @@ export function ThongKeTab() {
                 </div>
             ) : (
                 <>
-                    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
-                        <div className="col-span-2">
-                            <StatCard title="Lượt xem" value={stats.totalViews} icon={Eye} color="blue" />
-                        </div>
-                        <StatCard title="Bình luận" value={stats.totalComments} icon={MessageCircle} color="green" />
-                        <StatCard title="Chia sẻ" value={stats.totalShares} icon={Share2} color="orange" />
-                        <StatCard title="Người theo dõi" value={stats.totalFollowers} icon={Users} color="purple" />
-                        <StatCard title="Tổng video" value={stats.totalVideos} icon={Video} color="red" />
-                        {isAdmin && (
-                            <StatCard title="Kênh hoạt động" value={stats.activeChannels} icon={Tv} color="yellow" />
-                        )}
-                    </div>
+                    {isAdmin ? (
+                        <>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                <StatCard title="Lượt xem" value={stats.totalViews} icon={Eye} color="blue" />
+                                <StatCard title="Người theo dõi" value={stats.totalFollowers} icon={Users} color="purple" />
+                                <StatCard title="Kênh hoạt động" value={stats.activeChannels} icon={Tv} color="yellow" />
+                            </div>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <StatCard title="Like" value={stats.totalLikes} icon={Heart} color="rose" />
+                                <StatCard title="Bình luận" value={stats.totalComments} icon={MessageCircle} color="green" />
+                                <StatCard title="Chia sẻ" value={stats.totalShares} icon={Share2} color="orange" />
+                                <StatCard title="Tổng video" value={stats.totalVideos} icon={Video} color="red" />
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                <StatCard title="Lượt xem" value={stats.totalViews} icon={Eye} color="blue" />
+                                <StatCard title="Người theo dõi" value={stats.totalFollowers} icon={Users} color="purple" />
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <StatCard title="Bình luận" value={stats.totalComments} icon={MessageCircle} color="green" />
+                                <StatCard title="Chia sẻ" value={stats.totalShares} icon={Share2} color="orange" />
+                                <StatCard title="Tổng video" value={stats.totalVideos} icon={Video} color="red" />
+                            </div>
+                        </>
+                    )}
 
                     {isAdmin && stats.channelBreakdown.length > 0 && (
                         <div className="overflow-x-auto rounded-xl border border-zinc-100/50 bg-white shadow-[0_4px_24px_rgba(0,0,0,0.03)] dark:border-zinc-800/50 dark:bg-[#121212]">
@@ -194,7 +210,7 @@ export function ThongKeTab() {
                                 </thead>
                                 <tbody>
                                     {stats.channelBreakdown.map((ch) => (
-                                        <tr key={ch.channelId} className="border-b border-zinc-50/50 last:border-0 dark:border-zinc-800/30 hover:bg-zinc-50/50 dark:hover:bg-[#1a1a1a]/50 transition-colors">
+                                        <tr key={ch.channelId} className="border-b border-zinc-50/50 last:border-0 dark:border-zinc-800/30 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 transition-colors">
                                             <td className="px-6 py-5">
                                                 <div>
                                                     <span className="font-medium text-zinc-900 dark:text-white">{ch.channelName}</span>

@@ -9,7 +9,7 @@ export default function AuthLayout({
     children: React.ReactNode;
 }) {
     return (
-        <div className="flex min-h-screen flex-col bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
+        <div className="flex min-h-screen flex-col bg-zinc-50 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">
 
             {/* 1. MAIN CONTENT: Căn giữa màn hình */}
             <div className="flex-1 flex items-center justify-center p-4">
@@ -32,9 +32,6 @@ export default function AuthLayout({
                         <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 text-center mt-2">
                             FPTscSpace
                         </h1>
-                        <div className="flex flex-col items-center">
-                            <span className="text-xs text-zinc-500">v1.0.0</span>
-                        </div>
                     </div>
 
                     {/* Form Login/Register */}
