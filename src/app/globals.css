@@ -15,8 +15,6 @@
   /* Màu khi hover (zinc-400) */
 }
 
-@plugin "@tailwindcss/typography";
-
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
