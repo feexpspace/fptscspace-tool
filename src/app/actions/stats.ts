@@ -31,6 +31,40 @@ export interface StatsResult {
     channelBreakdown: ChannelBreakdown[];
 }
 
+export interface ChannelStat {
+    channelId: string;
+    channelOwnerName: string;
+    channelUsername: string;
+    followerCount: number;
+}
+
+export async function getAllChannelStats(userId: string, role: string): Promise<ChannelStat[]> {
+    try {
+        let channelIds: string[];
+        if (role === 'member') {
+            channelIds = await getChannelIdsForUsers([userId]);
+        } else {
+            const userIds = await getUserIdsForScope(role, userId);
+            channelIds = await getChannelIdsForUsers(userIds);
+        }
+        if (channelIds.length === 0) return [];
+
+        const { data } = await supabaseAdmin
+            .from('statistics')
+            .select('channel_id, channel_owner_name, channel_username, follower_count')
+            .in('channel_id', channelIds);
+
+        return (data || []).map(s => ({
+            channelId: s.channel_id,
+            channelOwnerName: s.channel_owner_name || '',
+            channelUsername: s.channel_username || '',
+            followerCount: s.follower_count || 0,
+        }));
+    } catch {
+        return [];
+    }
+}
+
 export async function getStats(
     userId: string,
     role: string,

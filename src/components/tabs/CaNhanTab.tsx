@@ -1,28 +1,20 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { ExternalLink, Loader2, RefreshCw, Link } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { getVideoList, VideoListResult } from "@/app/actions/videos";
-import { getTeamsList } from "@/app/actions/helpers";
-import { getMyChannels, syncMyChannels, syncAllChannels } from "@/app/actions/report";
-import { Team } from "@/types";
+import { useData } from "@/context/DataContext";
 import { Pagination } from "@/components/Pagination";
 
 export function CaNhanTab() {
-    const { user, role, isAdmin } = useAuth();
-    const [data, setData] = useState<VideoListResult | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [teams, setTeams] = useState<Team[]>([]);
+    const { user, isAdmin } = useAuth();
+    const { allVideos, channelTeamMap, teams, hasChannel, dataLoading, syncing, syncMsg, doSync } = useData();
     const [selectedTeam, setSelectedTeam] = useState("");
     const [selectedMonth, setSelectedMonth] = useState("");
     const [page, setPage] = useState(1);
-    const [syncing, setSyncing] = useState(false);
-    const [syncMsg, setSyncMsg] = useState("");
-    const [hasChannel, setHasChannel] = useState<boolean | null>(null);
     const pageSize = 20;
 
-    const monthOptions = (() => {
+    const monthOptions = useMemo(() => {
         const options: { value: string; label: string }[] = [];
         const now = new Date();
         for (let i = 0; i < 12; i++) {
@@ -32,62 +24,33 @@ export function CaNhanTab() {
             options.push({ value, label });
         }
         return options;
-    })();
+    }, []);
 
-    useEffect(() => {
-        if (isAdmin && user) {
-            getTeamsList(user.id, "admin").then(setTeams);
+    // Client-side filtering — instant, no server call
+    const filteredVideos = useMemo(() => {
+        let videos = allVideos;
+
+        if (selectedTeam) {
+            videos = videos.filter(v => channelTeamMap[v.channelId] === selectedTeam);
         }
-    }, [isAdmin, user]);
 
-    useEffect(() => {
-        if (user) {
-            getMyChannels(user.id).then(channels => setHasChannel(channels.length > 0));
+        if (selectedMonth) {
+            const [year, mon] = selectedMonth.split('-').map(Number);
+            videos = videos.filter(v => {
+                const d = v.createTime;
+                return d.getFullYear() === year && (d.getMonth() + 1) === mon;
+            });
         }
-    }, [user]);
 
-    const fetchVideos = useCallback(async () => {
-        if (!user || !role) return;
-        setLoading(true);
-        const result = await getVideoList(user.id, role, {
-            teamId: selectedTeam || undefined,
-            month: selectedMonth || undefined,
-            page,
-            pageSize,
-        });
-        setData(result);
-        setLoading(false);
-    }, [user, role, selectedTeam, selectedMonth, page]);
+        return videos;
+    }, [allVideos, channelTeamMap, selectedTeam, selectedMonth]);
 
-    useEffect(() => {
-        fetchVideos();
-    }, [fetchVideos]);
+    // Reset to page 1 on filter change
+    useEffect(() => { setPage(1); }, [selectedTeam, selectedMonth]);
 
-    // Reset page khi đổi filter
-    useEffect(() => {
-        setPage(1);
-    }, [selectedTeam, selectedMonth]);
+    const totalPages = Math.ceil(filteredVideos.length / pageSize);
+    const pagedVideos = filteredVideos.slice((page - 1) * pageSize, page * pageSize);
 
-    const totalPages = data ? Math.ceil(data.total / pageSize) : 0;
-
-    const handleSync = async () => {
-        if (!user) return;
-        setSyncing(true);
-        setSyncMsg("");
-        try {
-            const result = isAdmin
-                ? await syncAllChannels()
-                : await syncMyChannels(user.id);
-            setSyncMsg(result.message);
-            if (result.success) fetchVideos();
-        } catch {
-            setSyncMsg("Lỗi khi đồng bộ.");
-        } finally {
-            setSyncing(false);
-        }
-    };
-
-    // Extract hashtags từ caption
     const extractHashtags = (text: string) => {
         const matches = text.match(/#\w+/g);
         return matches ? matches.join(" ") : "";
@@ -121,14 +84,13 @@ export function CaNhanTab() {
                     </select>
                 )}
 
-                {data && (
+                {!dataLoading && (
                     <span className="text-xs text-zinc-400">
-                        {data.total} video
+                        {filteredVideos.length} video
                     </span>
                 )}
 
                 <div className="ml-auto flex items-center gap-2">
-                    {/* Connect TikTok nếu chưa kết nối (member) */}
                     {!isAdmin && hasChannel === false && (
                         <a
                             href={`/api/tiktok/login?userId=${user?.id}`}
@@ -139,11 +101,10 @@ export function CaNhanTab() {
                         </a>
                     )}
 
-                    {/* Sync button khi đã kết nối hoặc admin */}
                     {(isAdmin || hasChannel) && (
                         <button
-                            onClick={handleSync}
-                            disabled={syncing}
+                            onClick={doSync}
+                            disabled={syncing || dataLoading}
                             className="flex items-center gap-1.5 rounded-lg border border-zinc-200 px-3 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800"
                         >
                             <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
@@ -158,11 +119,11 @@ export function CaNhanTab() {
             </div>
 
             {/* Video Table */}
-            {loading ? (
+            {dataLoading ? (
                 <div className="flex items-center justify-center py-20">
                     <Loader2 className="h-8 w-8 animate-spin text-zinc-400" />
                 </div>
-            ) : data && data.videos.length > 0 ? (
+            ) : pagedVideos.length > 0 ? (
                 <>
                     <div className="overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-800">
                         <table className="w-full text-sm">
@@ -181,7 +142,7 @@ export function CaNhanTab() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {data.videos.map((video, index) => {
+                                {pagedVideos.map((video, index) => {
                                     const caption = video.title || video.description || "";
                                     const captionClean = caption.replace(/#\w+/g, "").trim();
                                     const hashtags = extractHashtags(caption);

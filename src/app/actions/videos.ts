@@ -20,6 +20,72 @@ export interface VideoListResult {
     pageSize: number;
 }
 
+export interface AllVideosData {
+    videos: Video[];
+    channelTeamMap: Record<string, string>; // channelId → teamId (for client-side team filter)
+}
+
+export async function getAllVideos(userId: string, role: string): Promise<AllVideosData> {
+    try {
+        let channelIds: string[];
+        if (role === 'member') {
+            channelIds = await getChannelIdsForUsers([userId]);
+        } else {
+            const userIds = await getUserIdsForScope(role, userId);
+            channelIds = await getChannelIdsForUsers(userIds);
+        }
+
+        if (channelIds.length === 0) return { videos: [], channelTeamMap: {} };
+
+        // Build channelId → teamId map for admin team filtering
+        const [{ data: channels }, { data: users }] = await Promise.all([
+            supabaseAdmin.from('channels').select('id, user_id').in('id', channelIds),
+            supabaseAdmin.from('users').select('id, team_id'),
+        ]);
+
+        const userTeamMap: Record<string, string> = {};
+        (users || []).forEach(u => { if (u.team_id) userTeamMap[u.id] = u.team_id; });
+
+        const channelTeamMap: Record<string, string> = {};
+        (channels || []).forEach(ch => {
+            if (ch.user_id && userTeamMap[ch.user_id]) channelTeamMap[ch.id] = userTeamMap[ch.user_id];
+        });
+
+        const { data } = await supabaseAdmin
+            .from('videos')
+            .select('*')
+            .in('channel_id', channelIds)
+            .order('create_time', { ascending: false });
+
+        const videos: Video[] = (data || []).map(row => ({
+            id: row.id,
+            videoId: row.video_id,
+            createTime: new Date(row.create_time),
+            coverImage: row.cover_image,
+            title: row.title,
+            description: row.description,
+            link: row.link,
+            duration: row.duration,
+            channelId: row.channel_id,
+            channelUsername: row.channel_username,
+            channelDisplayName: row.channel_display_name,
+            stats: {
+                view: row.view_count,
+                like: row.like_count,
+                comment: row.comment_count,
+                share: row.share_count,
+            },
+            editorId: row.editor_id,
+            editorName: row.editor_name,
+        }));
+
+        return { videos, channelTeamMap };
+    } catch (error) {
+        console.error("getAllVideos error:", error);
+        return { videos: [], channelTeamMap: {} };
+    }
+}
+
 export async function getVideoList(
     userId: string,
     role: string,
