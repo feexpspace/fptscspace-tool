@@ -135,7 +135,7 @@ export function CaNhanTab() {
             <div className="flex flex-wrap lg:flex-nowrap justify-between items-center gap-2 w-full">
                 {/* Filters */}
                 <div className="flex items-center gap-2 w-full lg:w-auto overflow-x-auto scrollbar-none pb-1 -mb-1">
-                    <div className="w-[125px] sm:w-44 shrink-0">
+                    <div className="shrink-0 min-w-min sm:w-44">
                         <CustomSelect
                             value={selectedMonth}
                             onChange={v => { setSelectedMonth(v); setPage(1); }}
@@ -147,7 +147,7 @@ export function CaNhanTab() {
 
                     {isAdmin && (
                         <>
-                            <div className="w-[120px] sm:w-44 shrink-0">
+                            <div className="shrink-0 min-w-min sm:w-44">
                                 <CustomSelect
                                     value={selectedTeam}
                                     onChange={v => { setSelectedTeam(v); setSelectedChannel(""); setPage(1); }}
@@ -156,7 +156,7 @@ export function CaNhanTab() {
                                 />
                             </div>
 
-                            <div className="w-[120px] sm:w-[200px] shrink-0">
+                            <div className="shrink-0 min-w-min sm:w-[200px]">
                                 <CustomSelect
                                     value={selectedChannel}
                                     onChange={v => { setSelectedChannel(v); setSelectedTeam(""); setPage(1); }}

@@ -136,8 +136,8 @@ export function ThongKeTab() {
             {/* Header section (Filters + Actions) */}
             <div className="flex flex-wrap lg:flex-nowrap justify-between items-center gap-2 w-full">
                 {/* Filters */}
-                <div className="flex items-center gap-1.5 sm:gap-2 w-full lg:w-auto overflow-x-auto scrollbar-none pb-1 -mb-1">
-                    <div className="w-[105px] sm:w-44 shrink-0">
+                <div className="flex items-center gap-2 w-full lg:w-auto overflow-x-auto scrollbar-none pb-1 -mb-1">
+                    <div className="shrink-0 min-w-min sm:w-44">
                         <CustomSelect
                             value={selectedMonth}
                             onChange={setSelectedMonth}
@@ -148,7 +148,7 @@ export function ThongKeTab() {
 
                     {isAdmin && (
                         <>
-                            <div className="w-[85px] sm:w-44 shrink-0">
+                            <div className="shrink-0 min-w-min sm:w-44">
                                 <CustomSelect
                                     value={selectedTeam}
                                     onChange={(val) => { setSelectedTeam(val); setSelectedChannel(""); }}
@@ -157,7 +157,7 @@ export function ThongKeTab() {
                                 />
                             </div>
 
-                            <div className="w-[100px] sm:w-[200px] shrink-0">
+                            <div className="shrink-0 min-w-min sm:w-[200px]">
                                 <CustomSelect
                                     value={selectedChannel}
                                     onChange={(val) => { setSelectedChannel(val); setSelectedTeam(""); }}

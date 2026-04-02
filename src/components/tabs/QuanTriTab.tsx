@@ -106,13 +106,15 @@ export function QuanTriTab() {
             {/* === Tổng quan kênh === */}
             <div className="space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                        <CustomSelect
-                            value={filterTeamId}
-                            onChange={v => setFilterTeamId(v)}
-                            options={[{ value: "", label: "Tất cả mảng" }, ...teams.map(t => ({ value: t.id, label: t.name }))]}
-                            className="bg-white dark:bg-zinc-900 w-48 shadow-none"
-                        />
+                    <div className="flex items-center gap-2">
+                        <div className="shrink-0 min-w-min sm:w-44">
+                            <CustomSelect
+                                value={filterTeamId}
+                                onChange={v => setFilterTeamId(v)}
+                                options={[{ value: "", label: "Tất cả mảng" }, ...teams.map(t => ({ value: t.id, label: t.name }))]}
+                                className="bg-white dark:bg-zinc-900 shadow-none"
+                            />
+                        </div>
                         {!loading && (
                             <span className="text-xs font-bold text-zinc-500 bg-zinc-100 dark:bg-zinc-800 dark:text-zinc-400 px-3 py-1.5 rounded-lg">
                                 {users.filter(u => u.status === 'approved').filter(u => {
@@ -171,7 +173,7 @@ export function QuanTriTab() {
                                                     onChange={tId => handleAssignTeam(u.id, tId)}
                                                     options={teams.map(t => ({ value: t.id, label: t.name }))}
                                                     placeholder="— Chưa có Mảng —"
-                                                    className="px-3 py-2 text-xs font-semibold bg-zinc-50 dark:bg-[#1a1a1a] shadow-none w-full"
+                                                    className="bg-zinc-50 dark:bg-[#1a1a1a] shadow-none w-full font-normal"
                                                 />
                                             </div>
                                         </td>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import type { CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDown, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -23,7 +24,7 @@ export function CustomSelect({ value, onChange, options, placeholder = "Chọn..
     const [open, setOpen] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
     const dropdownRef = useRef<HTMLDivElement>(null);
-    const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
+    const [dropdownStyle, setDropdownStyle] = useState<CSSProperties>({});
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
