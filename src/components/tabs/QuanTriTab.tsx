@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Plus, Trash2, X, Search, ChevronDown, ChevronUp, UserPlus, UserMinus, Pencil, Check, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { getAllUsersWithChannels, approveUser, UserWithChannels } from "@/app/actions/account";
+import { getAllUsersWithChannels, approveUser, deleteUserAccount, UserWithChannels } from "@/app/actions/account";
 import { Team } from "@/types";
 import { getTeamsList } from "@/app/actions/helpers";
 import {
@@ -385,6 +385,7 @@ export function QuanTriTab() {
                                 <th className="px-4 py-3 text-left font-medium text-zinc-500">Kênh TikTok</th>
                                 <th className="px-4 py-3 text-left font-medium text-zinc-500">Mảng</th>
                                 <th className="px-4 py-3 text-left font-medium text-zinc-500">Vai trò</th>
+                                <th className="px-4 py-3 w-10"></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -424,6 +425,23 @@ export function QuanTriTab() {
                                             }`}>
                                                 {u.role}
                                             </span>
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            {u.role !== 'admin' && (
+                                                <button
+                                                    disabled={actionLoading}
+                                                    onClick={async () => {
+                                                        if (!confirm(`Xóa tài khoản ${u.name}? Hành động này không thể hoàn tác.`)) return;
+                                                        setActionLoading(true);
+                                                        await deleteUserAccount(u.id);
+                                                        await refresh();
+                                                        setActionLoading(false);
+                                                    }}
+                                                    className="text-red-400 hover:text-red-600 disabled:opacity-50"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </button>
+                                            )}
                                         </td>
                                     </tr>
                                 );

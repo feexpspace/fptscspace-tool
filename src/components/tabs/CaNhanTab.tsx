@@ -20,7 +20,7 @@ export function CaNhanTab() {
     const [syncing, setSyncing] = useState(false);
     const [syncMsg, setSyncMsg] = useState("");
     const [hasChannel, setHasChannel] = useState<boolean | null>(null);
-    const pageSize = 50;
+    const pageSize = 20;
 
     const monthOptions = (() => {
         const options: { value: string; label: string }[] = [];

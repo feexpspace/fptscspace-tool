@@ -55,7 +55,11 @@ export default function LoginPage() {
         const res = await loginUser(email, password);
 
         if (res.error) {
-            setError("Email hoặc mật khẩu không chính xác.");
+            if (res.error === 'pending_approval') {
+                setError("Tài khoản đang chờ Admin duyệt. Vui lòng liên hệ Admin để được kích hoạt.");
+            } else {
+                setError("Email hoặc mật khẩu không chính xác.");
+            }
             setIsSubmitting(false);
         } else {
             router.push("/");
