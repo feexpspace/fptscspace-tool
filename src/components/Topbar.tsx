@@ -114,7 +114,7 @@ export function Topbar({ activeTab, onTabChange }: TopbarProps) {
                     <div className="relative" ref={dropdownRef}>
                         <button 
                             onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-                            className="flex items-center gap-2 rounded-xl p-1 border border-transparent hover:border-zinc-200 dark:hover:border-zinc-700 transition-all focus:outline-none"
+                            className="flex items-center gap-2 rounded-xl p-1 transition-all focus:outline-none"
                         >
                             <div className="h-9 w-9 shrink-0 rounded-xl bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-sm font-bold text-blue-600 dark:text-blue-400 ring-2 ring-white dark:ring-[#0a0a0a]">
                                 {user?.name?.charAt(0) || "U"}
