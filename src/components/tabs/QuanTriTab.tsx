@@ -7,6 +7,7 @@ import { getAllUsersWithChannels, approveUser, deleteUserAccount, UserWithChanne
 import { Team } from "@/types";
 import { getTeamsList } from "@/app/actions/helpers";
 import { createNewTeam, deleteTeam, updateTeamName, assignUserToTeam } from "@/app/actions/team";
+import { CustomSelect } from "@/components/CustomSelect";
 
 export function QuanTriTab() {
     const { user } = useAuth();
@@ -224,17 +225,16 @@ export function QuanTriTab() {
                                             )}
                                         </td>
                                         <td className="px-6 py-4">
-                                            <select
-                                                value={currentTeamId}
-                                                disabled={actionLoading}
-                                                onChange={e => handleAssignTeam(u.id, e.target.value)}
-                                                className="rounded-xl border border-zinc-200/80 bg-zinc-50 px-3 py-2 text-xs font-semibold shadow-sm outline-none dark:border-zinc-700 dark:bg-[#1a1a1a] dark:text-white disabled:opacity-50 hover:bg-zinc-100 transition-colors"
-                                            >
-                                                <option value="" className="font-medium">— Chưa có Mảng —</option>
-                                                {teams.map(t => (
-                                                    <option key={t.id} value={t.id} className="font-medium">{t.name}</option>
-                                                ))}
-                                            </select>
+                                            <div className="w-40 xl:w-48">
+                                                <CustomSelect
+                                                    value={currentTeamId}
+                                                    disabled={actionLoading}
+                                                    onChange={tId => handleAssignTeam(u.id, tId)}
+                                                    options={teams.map(t => ({ value: t.id, label: t.name }))}
+                                                    placeholder="— Chưa có Mảng —"
+                                                    className="px-3 py-2 text-xs font-semibold bg-zinc-50 dark:bg-[#1a1a1a] shadow-sm w-full"
+                                                />
+                                            </div>
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className={`inline-flex rounded-lg px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-widest ${
