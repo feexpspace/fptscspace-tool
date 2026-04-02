@@ -49,11 +49,41 @@ export function CustomSelect({ value, onChange, options, placeholder = "Chọn..
         function updatePosition() {
             if (ref.current) {
                 const rect = ref.current.getBoundingClientRect();
+                const spaceBelow = window.innerHeight - rect.bottom;
+                const spaceAbove = rect.top;
+                const dropdownHeight = 280; // approximate max height
+                const dropdownWidth = Math.max(rect.width, 200);
+
+                let topStyle = 'auto';
+                let bottomStyle = 'auto';
+                let originStyle = 'top left';
+                
+                if (spaceBelow < dropdownHeight && spaceAbove > spaceBelow) {
+                    bottomStyle = `${window.innerHeight - rect.top + 8}px`;
+                    originStyle = 'bottom left';
+                } else {
+                    topStyle = `${rect.bottom + 8}px`;
+                    originStyle = 'top left';
+                }
+
+                let leftStyle = 'auto';
+                let rightStyle = 'auto';
+
+                if (rect.left + dropdownWidth > window.innerWidth) {
+                    rightStyle = `${window.innerWidth - rect.right}px`;
+                    originStyle = originStyle.replace('left', 'right');
+                } else {
+                    leftStyle = `${rect.left}px`;
+                }
+
                 setDropdownStyle({
                     position: 'fixed',
-                    top: `${rect.bottom}px`,
-                    left: `${rect.left}px`,
-                    width: `${Math.max(rect.width, 200)}px`, // minimum width
+                    top: topStyle,
+                    bottom: bottomStyle,
+                    left: leftStyle,
+                    right: rightStyle,
+                    width: `${dropdownWidth}px`,
+                    transformOrigin: originStyle,
                     zIndex: 99999
                 });
             }
@@ -87,7 +117,7 @@ export function CustomSelect({ value, onChange, options, placeholder = "Chọn..
                 <div 
                     ref={dropdownRef} 
                     style={dropdownStyle} 
-                    className="mt-2 max-w-[300px] origin-top-right rounded-xl border border-zinc-200 bg-white p-1.5 shadow-[0_10px_40px_rgba(0,0,0,0.08)] dark:border-zinc-800 dark:bg-zinc-900 animate-in fade-in zoom-in-95 duration-100"
+                    className="max-w-[300px] rounded-xl border border-zinc-200 bg-white p-1.5 shadow-[0_10px_40px_rgba(0,0,0,0.12)] dark:border-zinc-800 dark:bg-zinc-900 animate-in fade-in zoom-in-95 duration-100"
                 >
                     <div className="max-h-64 overflow-auto py-1 custom-scrollbar">
                         <button
