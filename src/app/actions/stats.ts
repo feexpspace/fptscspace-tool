@@ -221,15 +221,61 @@ export async function getGlobalLeaderboard(month?: string): Promise<ChannelBreak
     try {
         const { data: channelsData } = await supabaseAdmin
             .from('channels')
-            .select('id');
+            .select('id, display_name, username, follower');
             
-        const channelIds = (channelsData || []).map(c => c.id);
-        if (channelIds.length === 0) return [];
+        if (!channelsData || channelsData.length === 0) return [];
+        const channelIds = channelsData.map(c => c.id);
 
-        const stats = await getStatsForChannels(channelIds, month);
-        
+        const channelMap = new Map<string, { displayName: string; username: string; follower: number; views: number; videos: number }>();
+        channelsData.forEach(c => {
+            channelMap.set(c.id, {
+                displayName: c.display_name || '',
+                username: c.username || '',
+                follower: c.follower || 0,
+                views: 0,
+                videos: 0
+            });
+        });
+
+        let videoQuery = supabaseAdmin
+            .from('videos')
+            .select('channel_id, view_count')
+            .in('channel_id', channelIds);
+
+        if (month) {
+            const [year, mon] = month.split('-').map(Number);
+            const startDate = new Date(year, mon - 1, 1).toISOString();
+            const endDate = new Date(year, mon, 0, 23, 59, 59).toISOString();
+            videoQuery = videoQuery.gte('create_time', startDate).lte('create_time', endDate);
+        }
+
+        const { data: videos } = await videoQuery;
+
+        (videos || []).forEach((v: any) => {
+            const ch = channelMap.get(v.channel_id);
+            if (ch) {
+                ch.views += (v.view_count || 0);
+                ch.videos += 1;
+            }
+        });
+
+        const breakdown: ChannelBreakdown[] = [];
+        channelMap.forEach((data, channelId) => {
+            if (!month || data.videos > 0) {
+                breakdown.push({
+                    channelId,
+                    channelName: data.displayName,
+                    channelUsername: data.username,
+                    followerCount: data.follower,
+                    videoCount: data.videos,
+                    totalViews: data.views,
+                    totalComments: 0,
+                    totalShares: 0
+                });
+            }
+        });
+
         // Sort by totalViews descending
-        const breakdown = stats.channelBreakdown;
         breakdown.sort((a, b) => b.totalViews - a.totalViews);
         
         return breakdown;

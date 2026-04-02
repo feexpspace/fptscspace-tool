@@ -39,16 +39,7 @@ export function BangXepHangTab() {
     return (
         <div className="space-y-6">
             {/* Header / Filter */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div>
-                    <h2 className="text-xl font-extrabold text-zinc-900 dark:text-white flex items-center gap-2">
-                        <Trophy className="h-6 w-6 text-yellow-500" />
-                        Bảng Xếp Hạng Kênh
-                    </h2>
-                    <p className="text-sm text-zinc-500 mt-1 dark:text-zinc-400">
-                        Top các kênh xuất sắc nhất theo lượt xem
-                    </p>
-                </div>
+            <div className="flex justify-end gap-4">
                 <div className="w-48">
                     <CustomSelect
                         value={selectedMonth}
