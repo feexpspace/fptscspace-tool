@@ -3,23 +3,19 @@
 @variant dark (&:where(.dark, .dark *));
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f8fafc;
+  --foreground: #0f172a;
 
   /* --- Định nghĩa màu Scrollbar cho Light Mode --- */
-  --scrollbar-track: #ffffff;
-  /* Nền thanh cuộn trùng màu nền web */
-  --scrollbar-thumb: #d4d4d8;
-  /* Màu thanh kéo (zinc-300) */
-  --scrollbar-thumb-hover: #a1a1aa;
-  /* Màu khi hover (zinc-400) */
+  --scrollbar-track: transparent;
+  --scrollbar-thumb: #cbd5e1;
+  --scrollbar-thumb-hover: #94a3b8;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-inter);
 }
 
 .dark {

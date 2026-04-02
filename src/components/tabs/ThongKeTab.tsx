@@ -107,7 +107,7 @@ export function ThongKeTab() {
                 <select
                     value={selectedMonth}
                     onChange={e => setSelectedMonth(e.target.value)}
-                    className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-white"
+                    className="rounded-xl border border-zinc-200 bg-white px-3.5 py-2.5 text-sm font-medium shadow-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-zinc-800 dark:bg-[#121212] dark:text-white"
                 >
                     <option value="">Tất cả thời gian</option>
                     {monthOptions.map(m => (
@@ -120,7 +120,7 @@ export function ThongKeTab() {
                         <select
                             value={selectedTeam}
                             onChange={e => { setSelectedTeam(e.target.value); setSelectedChannel(""); }}
-                            className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-white"
+                            className="rounded-xl border border-zinc-200 bg-white px-3.5 py-2.5 text-sm font-medium shadow-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-zinc-800 dark:bg-[#121212] dark:text-white"
                         >
                             <option value="">Tất cả Mảng</option>
                             {teams.map(t => (
@@ -131,7 +131,7 @@ export function ThongKeTab() {
                         <select
                             value={selectedChannel}
                             onChange={e => { setSelectedChannel(e.target.value); setSelectedTeam(""); }}
-                            className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-white"
+                            className="rounded-xl border border-zinc-200 bg-white px-3.5 py-2.5 text-sm font-medium shadow-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-zinc-800 dark:bg-[#121212] dark:text-white max-w-[200px] truncate"
                         >
                             <option value="">Tất cả kênh</option>
                             {allChannels.map(ch => (
@@ -147,7 +147,7 @@ export function ThongKeTab() {
                     {!isAdmin && hasChannel === false && (
                         <a
                             href={`/api/tiktok/login?userId=${user?.id}`}
-                            className="flex items-center gap-1.5 rounded-lg bg-zinc-900 px-3 py-2 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-900"
+                            className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 transition-colors"
                         >
                             <Link className="h-4 w-4" />
                             Kết nối TikTok
@@ -158,7 +158,7 @@ export function ThongKeTab() {
                         <button
                             onClick={doSync}
                             disabled={syncing || dataLoading}
-                            className="flex items-center gap-1.5 rounded-lg border border-zinc-200 px-3 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800"
+                            className="flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-700 shadow-sm hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-800/80 dark:bg-[#121212] dark:text-zinc-300 dark:hover:bg-[#1a1a1a] transition-all"
                         >
                             <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
                             {syncing ? "Đang đồng bộ..." : isAdmin ? "Đồng bộ tất cả" : "Đồng bộ"}
@@ -193,19 +193,19 @@ export function ThongKeTab() {
                         <div className="overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-800">
                             <table className="w-full text-sm">
                                 <thead>
-                                    <tr className="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900">
-                                        <th className="px-4 py-3 text-left font-medium text-zinc-500">Kênh</th>
-                                        <th className="px-4 py-3 text-right font-medium text-zinc-500">Followers</th>
-                                        <th className="px-4 py-3 text-right font-medium text-zinc-500">Video</th>
-                                        <th className="px-4 py-3 text-right font-medium text-zinc-500">Lượt xem</th>
-                                        <th className="px-4 py-3 text-right font-medium text-zinc-500">Bình luận</th>
-                                        <th className="px-4 py-3 text-right font-medium text-zinc-500">Chia sẻ</th>
+                                    <tr className="border-b border-zinc-200 bg-white dark:border-zinc-800/80 dark:bg-[#121212]">
+                                        <th className="px-5 py-4 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">Kênh</th>
+                                        <th className="px-5 py-4 text-right text-xs font-semibold text-zinc-500 uppercase tracking-wider">Followers</th>
+                                        <th className="px-5 py-4 text-right text-xs font-semibold text-zinc-500 uppercase tracking-wider">Video</th>
+                                        <th className="px-5 py-4 text-right text-xs font-semibold text-zinc-500 uppercase tracking-wider">Lượt xem</th>
+                                        <th className="px-5 py-4 text-right text-xs font-semibold text-zinc-500 uppercase tracking-wider">Bình luận</th>
+                                        <th className="px-5 py-4 text-right text-xs font-semibold text-zinc-500 uppercase tracking-wider">Chia sẻ</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {stats.channelBreakdown.map((ch) => (
-                                        <tr key={ch.channelId} className="border-b border-zinc-100 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900/50">
-                                            <td className="px-4 py-3">
+                                        <tr key={ch.channelId} className="border-b border-zinc-100 dark:border-zinc-800/50 hover:bg-zinc-50/50 dark:hover:bg-[#1a1a1a] transition-colors bg-white dark:bg-[#0a0a0a]">
+                                            <td className="px-5 py-4">
                                                 <div>
                                                     <span className="font-medium text-zinc-900 dark:text-white">{ch.channelName}</span>
                                                     {ch.channelUsername && (

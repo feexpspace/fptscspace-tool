@@ -101,7 +101,7 @@ function AuthForm() {
         return <div className="flex justify-center py-8"><Loader2 className="animate-spin h-6 w-6 text-zinc-400" /></div>;
     }
 
-    const inputCls = "w-full rounded-lg border border-zinc-300 p-3 outline-none focus:ring-2 focus:ring-black dark:bg-zinc-900 dark:border-zinc-700 dark:text-white dark:focus:ring-white";
+    const inputCls = "w-full rounded-xl border border-zinc-200 p-3.5 text-sm outline-none transition-all focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:bg-zinc-900/50 dark:border-zinc-800 dark:text-white dark:focus:border-blue-500 dark:focus:ring-blue-500";
 
     return (
         <div className="space-y-4">
@@ -116,7 +116,7 @@ function AuthForm() {
                 </p>
             </div>
 
-            <form onSubmit={mode === "login" ? handleLogin : mode === "register" ? handleRegister : handleReset} className="space-y-3">
+            <form onSubmit={mode === "login" ? handleLogin : mode === "register" ? handleRegister : handleReset} className="space-y-4">
                 {mode === "register" && (
                     <input type="text" placeholder="Họ và tên" required value={name}
                         className={inputCls} onChange={e => setName(e.target.value)} disabled={isSubmitting} />
@@ -128,9 +128,9 @@ function AuthForm() {
                 {mode !== "reset" && (
                     <div className="relative">
                         {mode === "login" && (
-                            <div className="flex justify-end mb-1">
+                            <div className="flex justify-end mb-1.5">
                                 <button type="button" onClick={() => switchMode("reset")}
-                                    className="text-xs text-zinc-500 hover:text-black dark:hover:text-white hover:underline">
+                                    className="text-xs font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors">
                                     Quên mật khẩu?
                                 </button>
                             </div>
@@ -157,11 +157,11 @@ function AuthForm() {
                     </div>
                 )}
 
-                {error && <div className="rounded-lg bg-red-50 p-3 text-sm text-red-500 dark:bg-red-900/20 text-center">{error}</div>}
-                {message && <div className="rounded-lg bg-green-50 p-3 text-sm text-green-600 dark:bg-green-900/20 text-center">{message}</div>}
+                {error && <div className="rounded-xl bg-red-50 p-3 text-sm text-red-500 dark:bg-red-900/20 border border-red-100 dark:border-red-900/30 text-center">{error}</div>}
+                {message && <div className="rounded-xl bg-green-50 p-3 text-sm text-green-600 dark:bg-green-900/20 border border-green-100 dark:border-green-900/30 text-center">{message}</div>}
 
                 <button type="submit" disabled={isSubmitting}
-                    className="flex w-full items-center justify-center rounded-lg bg-black py-3 font-medium text-white hover:bg-zinc-800 disabled:opacity-50 dark:bg-white dark:text-black transition-all">
+                    className="flex w-full items-center justify-center rounded-xl bg-blue-600 py-3.5 font-semibold text-white shadow-md shadow-blue-500/20 hover:bg-blue-700 disabled:opacity-50 dark:bg-blue-600 dark:text-white transition-all mt-6">
                     {isSubmitting ? <Loader2 className="animate-spin h-5 w-5" /> :
                         mode === "login" ? "Vào hệ thống" :
                         mode === "register" ? "Đăng ký tài khoản" : "Gửi link reset"}
@@ -176,17 +176,17 @@ function AuthForm() {
             </form>
 
             {mode === "login" && (
-                <p className="text-center text-sm text-zinc-600">
+                <p className="text-center text-sm text-zinc-600 dark:text-zinc-400 mt-6 pt-4 border-t border-zinc-100 dark:border-zinc-800/50">
                     Chưa có tài khoản?{" "}
-                    <button onClick={() => switchMode("register")} className="font-semibold text-black dark:text-white hover:underline">
+                    <button onClick={() => switchMode("register")} className="font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 transition-colors">
                         Đăng ký ngay
                     </button>
                 </p>
             )}
             {mode === "register" && (
-                <p className="text-center text-sm text-zinc-600">
+                <p className="text-center text-sm text-zinc-600 dark:text-zinc-400 mt-6 pt-4 border-t border-zinc-100 dark:border-zinc-800/50">
                     Đã có tài khoản?{" "}
-                    <button onClick={() => switchMode("login")} className="font-semibold text-black dark:text-white hover:underline">
+                    <button onClick={() => switchMode("login")} className="font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 transition-colors">
                         Đăng nhập
                     </button>
                 </p>

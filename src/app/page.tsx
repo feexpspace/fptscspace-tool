@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { Sidebar } from "@/components/Sidebar";
+import { Topbar } from "@/components/Topbar";
 import { ThongKeTab } from "@/components/tabs/ThongKeTab";
 import { CaNhanTab } from "@/components/tabs/CaNhanTab";
 import { QuanTriTab } from "@/components/tabs/QuanTriTab";
@@ -65,22 +65,28 @@ export default function HomePage() {
     }
 
     return (
-        <div className="flex h-screen bg-zinc-50 dark:bg-zinc-950">
-            <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
+        <div className="flex flex-col h-screen overflow-hidden bg-zinc-50 dark:bg-[#0a0a0a]">
+            {/* Top Navigation Bar */}
+            <Topbar activeTab={activeTab} onTabChange={setActiveTab} />
 
-            <main className="flex flex-1 flex-col overflow-hidden">
-                {/* Header */}
-                <div className="flex h-14 shrink-0 items-center border-b border-zinc-200 bg-white px-6 dark:border-zinc-800 dark:bg-black">
-                    <h1 className="text-lg font-bold text-zinc-900 dark:text-white">
-                        {TAB_TITLES[activeTab] || "FPTscSpace"}
-                    </h1>
-                </div>
+            {/* Main Content Area */}
+            <main className="flex-1 overflow-y-auto custom-scrollbar w-full">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10">
+                    <div className="flex flex-col space-y-8">
+                        {/* Header */}
+                        <div className="flex items-center justify-between">
+                            <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">
+                                {TAB_TITLES[activeTab] || "Tổng quan"}
+                            </h1>
+                        </div>
 
-                {/* Content */}
-                <div className="flex-1 overflow-y-auto p-6">
-                    <div className={activeTab !== "thong-ke" ? "hidden" : ""}><ThongKeTab /></div>
-                    <div className={activeTab !== "ca-nhan" ? "hidden" : ""}><CaNhanTab /></div>
-                    {isAdmin && <div className={activeTab !== "quan-tri" ? "hidden" : ""}><QuanTriTab /></div>}
+                        {/* Content */}
+                        <div className="w-full">
+                            <div className={activeTab !== "thong-ke" ? "hidden" : ""}><ThongKeTab /></div>
+                            <div className={activeTab !== "ca-nhan" ? "hidden" : ""}><CaNhanTab /></div>
+                            {isAdmin && <div className={activeTab !== "quan-tri" ? "hidden" : ""}><QuanTriTab /></div>}
+                        </div>
+                    </div>
                 </div>
             </main>
         </div>

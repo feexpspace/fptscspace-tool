@@ -13,10 +13,10 @@ export default function AuthLayout({
 
             {/* 1. MAIN CONTENT: Căn giữa màn hình */}
             <div className="flex-1 flex items-center justify-center p-4">
-                <div className="w-full max-w-md space-y-8 rounded-2xl bg-white dark:bg-black p-8 shadow-xl border border-zinc-200 dark:border-zinc-800 animate-in fade-in zoom-in-95 duration-300">
+                <div className="w-full max-w-md space-y-8 rounded-[2rem] bg-white dark:bg-[#121212] p-10 shadow-xl shadow-zinc-200/40 dark:shadow-none border border-zinc-100 dark:border-zinc-800/50 animate-in fade-in zoom-in-95 duration-300">
 
                     {/* Header: Logo & Title */}
-                    <div className="flex flex-col items-center space-y-2">
+                    <div className="flex flex-col items-center space-y-3">
                         <div className="flex flex-col items-center">
                             <div className="relative h-16 w-16 shrink-0 rounded-full overflow-hidden shadow-sm border border-zinc-100 dark:border-zinc-800">
                                 <Image
@@ -29,8 +29,8 @@ export default function AuthLayout({
                                 />
                             </div>
                         </div>
-                        <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 text-center">
-                            FPTscSpace Tool
+                        <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 text-center mt-2">
+                            FPTscSpace
                         </h1>
                         <div className="flex flex-col items-center">
                             <span className="text-xs text-zinc-500">v1.0.0</span>
