@@ -179,13 +179,13 @@ export function CaNhanTab() {
                                                     </span>
                                                 </td>
                                             )}
-                                            <td className="px-6 py-4 max-w-xs">
-                                                <span className="line-clamp-2 leading-relaxed text-zinc-600 dark:text-zinc-400 font-medium" title={captionClean}>
+                                            <td className="px-6 py-4 max-w-xs align-top">
+                                                <span className="line-clamp-2 hover:line-clamp-none leading-relaxed text-zinc-600 dark:text-zinc-400 font-medium cursor-pointer" title={captionClean}>
                                                     {captionClean || "—"}
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-4 max-w-[180px]">
-                                                <span className="line-clamp-1 leading-relaxed text-xs font-bold text-blue-500 dark:text-blue-400" title={hashtags}>
+                                            <td className="px-6 py-4 max-w-[180px] align-top">
+                                                <span className="line-clamp-1 hover:line-clamp-none leading-relaxed text-xs font-bold text-blue-500 dark:text-blue-400 cursor-pointer break-all md:break-words whitespace-pre-wrap" title={hashtags}>
                                                     {hashtags || "—"}
                                                 </span>
                                             </td>
