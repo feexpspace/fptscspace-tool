@@ -45,11 +45,11 @@ export function BangXepHangTab({ isActive = true }: { isActive?: boolean }) {
     return (
         <div className="space-y-6">
             {isActive && headerActionsEl && createPortal(
-                <div className="w-48">
+                <div className="w-[105px] sm:w-[150px] shrink-0">
                     <CustomSelect
                         value={selectedMonth}
                         onChange={setSelectedMonth}
-                        options={[{ value: "", label: "Tất cả thời gian" }, ...monthOptions]}
+                        options={monthOptions}
                         placeholder="Tất cả thời gian"
                     />
                 </div>,

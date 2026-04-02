@@ -71,7 +71,7 @@ export function Topbar({ activeTab, onTabChange }: TopbarProps) {
                     <div className="relative h-8 w-8 flex items-center justify-center font-bold text-blue-600 shrink-0 rounded-xl overflow-hidden shadow-sm border border-zinc-100 dark:border-zinc-800 bg-white">
                         <Image src="/logo.png" alt="Logo" fill className="object-cover" priority sizes="100px" />
                     </div>
-                    <span className="text-lg sm:text-xl font-bold tracking-tight text-zinc-900 dark:text-white hidden min-[380px]:block">
+                    <span className="text-xl font-bold tracking-tight text-zinc-900 dark:text-white hidden md:block">
                         FPTscSpace
                     </span>
                 </div>
@@ -83,14 +83,14 @@ export function Topbar({ activeTab, onTabChange }: TopbarProps) {
                             key={tab.id}
                             onClick={() => onTabChange(tab.id)}
                             className={cn(
-                                "flex items-center justify-center gap-2 rounded-xl text-[13px] font-bold transition-all duration-200 shrink-0",
+                                "flex items-center justify-center gap-1 sm:gap-2 rounded-xl text-[11px] sm:text-[13px] font-bold transition-all duration-200 shrink-0",
                                 activeTab === tab.id
-                                    ? "bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-white px-3 sm:px-5 py-2"
-                                    : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white px-2 sm:px-5 py-2"
+                                    ? "bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-white px-2 py-1.5 sm:px-5 sm:py-2"
+                                    : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white px-1.5 py-1.5 sm:px-5 sm:py-2"
                             )}
                             title={tab.name}
                         >
-                            <tab.icon className={cn("h-5 w-5", activeTab === tab.id ? "hidden sm:block" : "block sm:hidden")} />
+                            <tab.icon className={cn("h-4 w-4 sm:h-5 sm:w-5", activeTab === tab.id ? "hidden sm:block" : "block sm:hidden")} />
                             <span className={cn(activeTab === tab.id ? "block" : "hidden sm:block")}>{tab.name}</span>
                         </button>
                     ))}

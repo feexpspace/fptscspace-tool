@@ -41,13 +41,13 @@ export function CustomSelect({ value, onChange, options, placeholder = "Chọn..
                 onClick={() => !disabled && setOpen(!open)}
                 disabled={disabled}
                 className={cn(
-                    "flex items-center justify-between gap-3 rounded-xl border border-zinc-200/80 bg-white px-4 py-2.5 text-[13px] font-normal shadow-[0_2px_10px_rgba(0,0,0,0.02)] transition-all dark:border-zinc-800 dark:bg-zinc-900 dark:text-white hover:bg-zinc-50 dark:hover:bg-zinc-800/50 outline-none",
+                    "flex items-center justify-between gap-1.5 sm:gap-3 rounded-lg sm:rounded-xl border border-zinc-200/80 bg-white px-2 py-1.5 text-[11px] sm:px-4 sm:py-2.5 sm:text-[13px] font-normal shadow-[0_2px_10px_rgba(0,0,0,0.02)] transition-all dark:border-zinc-800 dark:bg-zinc-900 dark:text-white hover:bg-zinc-50 dark:hover:bg-zinc-800/50 outline-none",
                     disabled && "opacity-50 cursor-not-allowed hover:bg-white dark:hover:bg-zinc-900",
                     className
                 )}
             >
                 <span className="truncate">{selectedOption ? selectedOption.label : placeholder}</span>
-                <ChevronDown className={cn("h-4 w-4 shrink-0 text-zinc-400 transition-transform", open ? "rotate-180" : "")} />
+                <ChevronDown className={cn("h-3 w-3 sm:h-4 sm:w-4 shrink-0 text-zinc-400 transition-transform", open ? "rotate-180" : "")} />
             </button>
 
             {open && (

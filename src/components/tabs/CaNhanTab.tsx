@@ -183,10 +183,10 @@ export function CaNhanTab() {
                         <button
                             onClick={doSync}
                             disabled={syncing || dataLoading}
-                            className="flex items-center gap-1.5 rounded-xl bg-blue-600 px-3 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white shadow-[0_4px_14px_rgba(37,99,235,0.25)] hover:bg-blue-700 hover:shadow-[0_4px_14px_rgba(37,99,235,0.35)] active:scale-[0.98] disabled:opacity-50 transition-all whitespace-nowrap"
+                            className="flex items-center gap-1 sm:gap-1.5 rounded-lg sm:rounded-xl bg-blue-600 px-2 py-1.5 sm:px-5 sm:py-2.5 text-[10px] sm:text-sm font-semibold text-white shadow-[0_4px_14px_rgba(37,99,235,0.25)] hover:bg-blue-700 hover:shadow-[0_4px_14px_rgba(37,99,235,0.35)] active:scale-[0.98] disabled:opacity-50 transition-all whitespace-nowrap"
                         >
-                            <RefreshCw className={`h-3.5 w-3.5 sm:h-4 sm:w-4 stroke-[2] ${syncing ? "animate-spin" : ""}`} />
-                            {syncing ? "Đang đồng bộ..." : "Đồng bộ"}
+                            <RefreshCw className={`h-3 w-3 sm:h-4 sm:w-4 stroke-[2] ${syncing ? "animate-spin" : ""}`} />
+                            {syncing ? "Đồng bộ..." : "Đồng bộ"}
                         </button>
                     )}
                 </div>

@@ -136,8 +136,8 @@ export function ThongKeTab() {
             {/* Header section (Filters + Actions) */}
             <div className="flex flex-wrap lg:flex-nowrap justify-between items-center gap-2 w-full">
                 {/* Filters */}
-                <div className="flex items-center gap-2 w-full lg:w-auto overflow-x-auto scrollbar-none pb-1 -mb-1">
-                    <div className="w-[125px] sm:w-44 shrink-0">
+                <div className="flex items-center gap-1.5 sm:gap-2 w-full lg:w-auto overflow-x-auto scrollbar-none pb-1 -mb-1">
+                    <div className="w-[105px] sm:w-44 shrink-0">
                         <CustomSelect
                             value={selectedMonth}
                             onChange={setSelectedMonth}
@@ -148,7 +148,7 @@ export function ThongKeTab() {
 
                     {isAdmin && (
                         <>
-                            <div className="w-[120px] sm:w-44 shrink-0">
+                            <div className="w-[85px] sm:w-44 shrink-0">
                                 <CustomSelect
                                     value={selectedTeam}
                                     onChange={(val) => { setSelectedTeam(val); setSelectedChannel(""); }}
@@ -157,7 +157,7 @@ export function ThongKeTab() {
                                 />
                             </div>
 
-                            <div className="w-[120px] sm:w-[200px] shrink-0">
+                            <div className="w-[100px] sm:w-[200px] shrink-0">
                                 <CustomSelect
                                     value={selectedChannel}
                                     onChange={(val) => { setSelectedChannel(val); setSelectedTeam(""); }}
@@ -170,13 +170,13 @@ export function ThongKeTab() {
                 </div>
 
                 {/* Actions */}
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                     {!isAdmin && hasChannel === false && (
                         <a
                             href={`/api/tiktok/login?userId=${user?.id}`}
-                            className="flex items-center gap-1.5 rounded-xl bg-blue-600 px-3 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white shadow-[0_4px_14px_rgba(37,99,235,0.25)] hover:bg-blue-700 hover:shadow-[0_4px_14px_rgba(37,99,235,0.35)] active:scale-[0.98] transition-all whitespace-nowrap"
+                            className="flex items-center gap-1 sm:gap-1.5 rounded-lg sm:rounded-xl bg-blue-600 px-2 py-1.5 sm:px-5 sm:py-2.5 text-[10px] sm:text-sm font-semibold text-white shadow-[0_4px_14px_rgba(37,99,235,0.25)] hover:bg-blue-700 hover:shadow-[0_4px_14px_rgba(37,99,235,0.35)] active:scale-[0.98] transition-all whitespace-nowrap"
                         >
-                            <Link className="h-3.5 w-3.5 sm:h-4 sm:w-4 stroke-[2]" />
+                            <Link className="h-3 w-3 sm:h-4 sm:w-4 stroke-[2]" />
                             Kết nối
                         </a>
                     )}
@@ -184,10 +184,10 @@ export function ThongKeTab() {
                         <button
                             onClick={doSync}
                             disabled={syncing || dataLoading}
-                            className="flex items-center gap-1.5 rounded-xl bg-blue-600 px-3 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white shadow-[0_4px_14px_rgba(37,99,235,0.25)] hover:bg-blue-700 hover:shadow-[0_4px_14px_rgba(37,99,235,0.35)] active:scale-[0.98] disabled:opacity-50 transition-all whitespace-nowrap"
+                            className="flex items-center gap-1 sm:gap-1.5 rounded-lg sm:rounded-xl bg-blue-600 px-2 py-1.5 sm:px-5 sm:py-2.5 text-[10px] sm:text-sm font-semibold text-white shadow-[0_4px_14px_rgba(37,99,235,0.25)] hover:bg-blue-700 hover:shadow-[0_4px_14px_rgba(37,99,235,0.35)] active:scale-[0.98] disabled:opacity-50 transition-all whitespace-nowrap"
                         >
-                            <RefreshCw className={`h-3.5 w-3.5 sm:h-4 sm:w-4 stroke-[2] ${syncing ? "animate-spin" : ""}`} />
-                            {syncing ? "Đang đồng bộ..." : "Đồng bộ"}
+                            <RefreshCw className={`h-3 w-3 sm:h-4 sm:w-4 stroke-[2] ${syncing ? "animate-spin" : ""}`} />
+                            {syncing ? "Đồng bộ..." : "Đồng bộ"}
                         </button>
                     )}
                 </div>
