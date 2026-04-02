@@ -1,14 +1,15 @@
 // src/app/auth/login/page.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { loginUser, resetPassword } from "@/lib/auth-service";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { ArrowLeft, Loader2 } from "lucide-react";
 
-export default function LoginPage() {
+function LoginForm() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
@@ -18,6 +19,13 @@ export default function LoginPage() {
 
     const router = useRouter();
     const { user, loading } = useAuth();
+    const searchParams = useSearchParams();
+
+    useEffect(() => {
+        if (searchParams.get('registered') === '1') {
+            setMessage("Đăng ký thành công! Tài khoản đang chờ Admin duyệt.");
+        }
+    }, [searchParams]);
 
     useEffect(() => {
         if (!loading && user) {
@@ -162,5 +170,13 @@ export default function LoginPage() {
                 )}
             </div>
         </div>
+    );
+}
+
+export default function LoginPage() {
+    return (
+        <Suspense>
+            <LoginForm />
+        </Suspense>
     );
 }

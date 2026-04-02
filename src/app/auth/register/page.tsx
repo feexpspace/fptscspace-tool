@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from "react";
-import { registerUser } from "@/lib/auth-service";
+import { registerUserAction } from "@/app/actions/auth";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -13,9 +13,9 @@ export default function RegisterPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        const { error } = await registerUser(formData.email, formData.password, formData.name);
-        if (error) setError(error);
-        else router.push("/auth/login");
+        const result = await registerUserAction(formData.email, formData.password, formData.name);
+        if (result.error) setError(result.error);
+        else router.push("/auth/login?registered=1");
     };
 
     return (
