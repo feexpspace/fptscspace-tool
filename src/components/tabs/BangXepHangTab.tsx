@@ -6,7 +6,7 @@ import { Trophy, Medal, Star } from "lucide-react";
 import { getGlobalLeaderboard, ChannelBreakdown } from "@/app/actions/stats";
 import { CustomSelect } from "@/components/CustomSelect";
 
-export function BangXepHangTab() {
+export function BangXepHangTab({ isActive = true }: { isActive?: boolean }) {
     const [leaderboard, setLeaderboard] = useState<ChannelBreakdown[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedMonth, setSelectedMonth] = useState("");
@@ -44,7 +44,7 @@ export function BangXepHangTab() {
 
     return (
         <div className="space-y-6">
-            {headerActionsEl && createPortal(
+            {isActive && headerActionsEl && createPortal(
                 <div className="w-48">
                     <CustomSelect
                         value={selectedMonth}

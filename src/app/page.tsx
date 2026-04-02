@@ -87,7 +87,7 @@ export default function HomePage() {
                         <div className="w-full">
                             <div className={activeTab !== "thong-ke" ? "hidden" : ""}><ThongKeTab /></div>
                             <div className={activeTab !== "ca-nhan" ? "hidden" : ""}><CaNhanTab /></div>
-                            <div className={activeTab !== "bang-xep-hang" ? "hidden" : ""}><BangXepHangTab /></div>
+                            <div className={activeTab !== "bang-xep-hang" ? "hidden" : ""}><BangXepHangTab isActive={activeTab === "bang-xep-hang"} /></div>
                             {isAdmin && <div className={activeTab !== "quan-tri" ? "hidden" : ""}><QuanTriTab /></div>}
                         </div>
                     </div>
