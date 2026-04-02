@@ -241,6 +241,28 @@ export async function syncTikTokVideos(userId: string, channelId: string) {
     }
 }
 
+export async function syncMyChannels(userId: string): Promise<{ success: boolean; message: string }> {
+    try {
+        const { data: channels } = await supabaseAdmin
+            .from('channels')
+            .select('id')
+            .eq('user_id', userId);
+
+        if (!channels || channels.length === 0) {
+            return { success: false, message: "Chưa kết nối kênh TikTok nào." };
+        }
+
+        const results = await Promise.all(
+            channels.map(c => syncTikTokVideos(userId, c.id))
+        );
+        const synced = results.filter(r => r.success).length;
+        return { success: true, message: `Đồng bộ thành công ${synced}/${channels.length} kênh.` };
+    } catch (error) {
+        console.error("syncMyChannels error:", error);
+        return { success: false, message: "Lỗi khi đồng bộ." };
+    }
+}
+
 export async function getVideosFromDB(channelId: string, year: number, month: number) {
     try {
         const startDate = new Date(year, month - 1, 1).toISOString();
