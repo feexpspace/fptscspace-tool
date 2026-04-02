@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { User, UserRole } from '@/types/index';
 
@@ -27,6 +27,7 @@ const AuthContext = createContext<AuthContextType>({
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
+    const lastUserIdRef = useRef<string | null>(null);
 
     const fetchUserProfile = async (userId: string) => {
         const { data } = await supabase
@@ -36,13 +37,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             .maybeSingle();
 
         if (data) {
-            setUser({
-                id: data.id,
-                email: data.email,
-                name: data.name,
-                role: data.role as UserRole,
-                teamId: data.team_id || '',
-                status: data.status || 'pending',
+            // Preserve object reference if nothing changed — prevents unnecessary re-renders
+            setUser(prev => {
+                if (
+                    prev?.id === data.id &&
+                    prev?.role === data.role &&
+                    prev?.status === data.status &&
+                    prev?.teamId === (data.team_id || '')
+                ) return prev;
+                return {
+                    id: data.id,
+                    email: data.email,
+                    name: data.name,
+                    role: data.role as UserRole,
+                    teamId: data.team_id || '',
+                    status: data.status || 'pending',
+                };
             });
         } else {
             setUser(null);
@@ -53,6 +63,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     useEffect(() => {
         // Check initial session
         supabase.auth.getSession().then(({ data: { session } }) => {
+            const uid = session?.user?.id || null;
+            lastUserIdRef.current = uid;
             if (session?.user) {
                 fetchUserProfile(session.user.id);
             } else {
@@ -60,8 +72,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             }
         });
 
-        // Listen for auth changes
+        // Listen for auth changes — skip TOKEN_REFRESHED for same user
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            const uid = session?.user?.id || null;
+            if (uid === lastUserIdRef.current) return; // Same user, no need to re-fetch
+            lastUserIdRef.current = uid;
             if (session?.user) {
                 fetchUserProfile(session.user.id);
             } else {

@@ -1,26 +1,18 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useState, useMemo } from "react";
 import { Eye, MessageCircle, Share2, Users, Video, Tv, RefreshCw, Link } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { getStats, StatsResult } from "@/app/actions/stats";
-import { getTeamsList } from "@/app/actions/helpers";
-import { getMyChannels, syncMyChannels, syncAllChannels } from "@/app/actions/report";
-import { Team } from "@/types";
+import { useData } from "@/context/DataContext";
 import { StatCard } from "@/components/StatCard";
 
 export function ThongKeTab() {
-    const { user, role, isAdmin } = useAuth();
-    const [stats, setStats] = useState<StatsResult | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [teams, setTeams] = useState<Team[]>([]);
+    const { user, isAdmin } = useAuth();
+    const { allVideos, channelTeamMap, allStats, teams, hasChannel, dataLoading, syncing, syncMsg, doSync } = useData();
     const [selectedTeam, setSelectedTeam] = useState("");
     const [selectedMonth, setSelectedMonth] = useState("");
-    const [syncing, setSyncing] = useState(false);
-    const [syncMsg, setSyncMsg] = useState("");
-    const [hasChannel, setHasChannel] = useState<boolean | null>(null);
 
-    const monthOptions = (() => {
+    const monthOptions = useMemo(() => {
         const options: { value: string; label: string }[] = [];
         const now = new Date();
         for (let i = 0; i < 12; i++) {
@@ -30,48 +22,70 @@ export function ThongKeTab() {
             options.push({ value, label });
         }
         return options;
-    })();
+    }, []);
 
-    useEffect(() => {
-        if (isAdmin && user) {
-            getTeamsList(user.id, "admin").then(setTeams);
+    // Client-side stats computation — instant filter, no server call
+    const stats = useMemo(() => {
+        // Determine which channels are in scope (team filter)
+        let scopedChannelIds: Set<string>;
+        if (selectedTeam) {
+            scopedChannelIds = new Set(
+                Object.entries(channelTeamMap)
+                    .filter(([, tid]) => tid === selectedTeam)
+                    .map(([cid]) => cid)
+            );
+        } else {
+            scopedChannelIds = new Set(allStats.map(s => s.channelId));
+            // Also include channels that have videos but no stats row yet
+            allVideos.forEach(v => scopedChannelIds.add(v.channelId));
         }
-    }, [isAdmin, user]);
 
-    useEffect(() => {
-        if (user && !isAdmin) {
-            getMyChannels(user.id).then(channels => setHasChannel(channels.length > 0));
-        } else if (isAdmin) {
-            setHasChannel(true);
+        const scopedStats = allStats.filter(s => scopedChannelIds.has(s.channelId));
+
+        // Filter videos by scope + month
+        let videosForPeriod = allVideos.filter(v => scopedChannelIds.has(v.channelId));
+        if (selectedMonth) {
+            const [year, mon] = selectedMonth.split('-').map(Number);
+            videosForPeriod = videosForPeriod.filter(v => {
+                return v.createTime.getFullYear() === year && (v.createTime.getMonth() + 1) === mon;
+            });
         }
-    }, [user, isAdmin]);
 
-    const fetchStats = useCallback(async () => {
-        if (!user || !role) return;
-        setLoading(true);
-        const result = await getStats(user.id, role, {
-            teamId: selectedTeam || undefined,
-            month: selectedMonth || undefined,
+        const totalViews = videosForPeriod.reduce((s, v) => s + (v.stats?.view || 0), 0);
+        const totalComments = videosForPeriod.reduce((s, v) => s + (v.stats?.comment || 0), 0);
+        const totalShares = videosForPeriod.reduce((s, v) => s + (v.stats?.share || 0), 0);
+        const totalVideos = videosForPeriod.length;
+        const totalFollowers = scopedStats.reduce((s, ch) => s + ch.followerCount, 0);
+
+        // Per-channel aggregation for breakdown table
+        const byChannel = new Map<string, { views: number; comments: number; shares: number; videos: number }>();
+        videosForPeriod.forEach(v => {
+            const cur = byChannel.get(v.channelId) || { views: 0, comments: 0, shares: 0, videos: 0 };
+            cur.views += v.stats?.view || 0;
+            cur.comments += v.stats?.comment || 0;
+            cur.shares += v.stats?.share || 0;
+            cur.videos += 1;
+            byChannel.set(v.channelId, cur);
         });
-        setStats(result);
-        setLoading(false);
-    }, [user, role, selectedTeam, selectedMonth]);
 
-    useEffect(() => {
-        fetchStats();
-    }, [fetchStats]);
+        const channelBreakdown = scopedStats
+            .map(s => {
+                const agg = byChannel.get(s.channelId) || { views: 0, comments: 0, shares: 0, videos: 0 };
+                return {
+                    channelId: s.channelId,
+                    channelName: s.channelOwnerName,
+                    channelUsername: s.channelUsername,
+                    followerCount: s.followerCount,
+                    videoCount: agg.videos,
+                    totalViews: agg.views,
+                    totalComments: agg.comments,
+                    totalShares: agg.shares,
+                };
+            })
+            .filter(ch => ch.videoCount > 0 || !selectedMonth); // hide empty channels when month filtered
 
-    const handleSync = async () => {
-        if (!user) return;
-        setSyncing(true);
-        setSyncMsg("");
-        const result = isAdmin
-            ? await syncAllChannels()
-            : await syncMyChannels(user.id);
-        setSyncMsg(result.message);
-        if (result.success) fetchStats();
-        setSyncing(false);
-    };
+        return { totalViews, totalComments, totalShares, totalFollowers, totalVideos, activeChannels: scopedStats.length, channelBreakdown };
+    }, [allVideos, allStats, channelTeamMap, selectedTeam, selectedMonth]);
 
     return (
         <div className="space-y-6">
@@ -102,7 +116,6 @@ export function ThongKeTab() {
                 )}
 
                 <div className="ml-auto flex items-center gap-2">
-                    {/* Connect TikTok (member chưa kết nối) */}
                     {!isAdmin && hasChannel === false && (
                         <a
                             href={`/api/tiktok/login?userId=${user?.id}`}
@@ -113,11 +126,10 @@ export function ThongKeTab() {
                         </a>
                     )}
 
-                    {/* Sync button (admin hoặc member đã kết nối) */}
                     {(isAdmin || hasChannel) && (
                         <button
-                            onClick={handleSync}
-                            disabled={syncing}
+                            onClick={doSync}
+                            disabled={syncing || dataLoading}
                             className="flex items-center gap-1.5 rounded-lg border border-zinc-200 px-3 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800"
                         >
                             <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
@@ -132,11 +144,11 @@ export function ThongKeTab() {
             </div>
 
             {/* Stat Cards */}
-            {loading ? (
+            {dataLoading ? (
                 <div className="flex items-center justify-center py-20">
                     <div className="h-8 w-8 animate-spin rounded-full border-2 border-zinc-300 border-t-zinc-900 dark:border-zinc-600 dark:border-t-white" />
                 </div>
-            ) : stats && (
+            ) : (
                 <>
                     <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6">
                         <StatCard title="Lượt xem" value={stats.totalViews} icon={Eye} color="blue" />
@@ -149,7 +161,6 @@ export function ThongKeTab() {
                         )}
                     </div>
 
-                    {/* Channel Breakdown Table (admin) */}
                     {isAdmin && stats.channelBreakdown.length > 0 && (
                         <div className="overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-800">
                             <table className="w-full text-sm">
