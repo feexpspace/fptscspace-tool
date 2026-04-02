@@ -241,6 +241,37 @@ export async function syncTikTokVideos(userId: string, channelId: string) {
     }
 }
 
+export async function getMyChannels(userId: string): Promise<{ id: string; displayName: string; username: string }[]> {
+    const { data } = await supabaseAdmin
+        .from('channels')
+        .select('id, display_name, username')
+        .eq('user_id', userId);
+    return (data || []).map(c => ({ id: c.id, displayName: c.display_name, username: c.username }));
+}
+
+export async function syncAllChannels(): Promise<{ success: boolean; message: string }> {
+    try {
+        const { data: channels } = await supabaseAdmin
+            .from('channels')
+            .select('id, user_id');
+
+        if (!channels || channels.length === 0) {
+            return { success: false, message: "Chưa có kênh nào trong hệ thống." };
+        }
+
+        const results = await Promise.all(
+            channels
+                .filter(c => c.user_id)
+                .map(c => syncTikTokVideos(c.user_id, c.id))
+        );
+        const synced = results.filter(r => r.success).length;
+        return { success: true, message: `Đồng bộ ${synced}/${channels.length} kênh thành công.` };
+    } catch (error) {
+        console.error("syncAllChannels error:", error);
+        return { success: false, message: "Lỗi khi đồng bộ toàn bộ." };
+    }
+}
+
 export async function syncMyChannels(userId: string): Promise<{ success: boolean; message: string }> {
     try {
         const { data: channels } = await supabaseAdmin

@@ -18,6 +18,7 @@ export const registerUser = async (email: string, pass: string, name: string, ro
             email,
             name,
             role,
+            status: 'pending',
         });
 
         if (insertError) throw insertError;

@@ -4,12 +4,15 @@ export type UserRole = 'admin' | 'manager' | 'member';
 /**
  * 1. User: Thông tin tài khoản hệ thống
  */
+export type UserStatus = 'pending' | 'approved';
+
 export interface User {
     id: string;
     email: string;
     name: string;
     role: UserRole;
     teamId: string;
+    status: UserStatus;
 }
 
 /**

@@ -25,6 +25,7 @@ export async function searchAvailableUsers(searchTerm: string) {
                 name: u.name,
                 role: u.role,
                 teamId: u.team_id || '',
+                status: u.status || 'approved',
             }));
 
         return users;
@@ -53,6 +54,7 @@ export async function searchManagers(searchTerm: string) {
                 name: u.name,
                 role: u.role,
                 teamId: u.team_id || '',
+                status: u.status || 'approved',
             }));
 
         return users;

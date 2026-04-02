@@ -11,6 +11,7 @@ interface AuthContextType {
     isAdmin: boolean;
     isManager: boolean;
     isMember: boolean;
+    isPending: boolean;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -20,6 +21,7 @@ const AuthContext = createContext<AuthContextType>({
     isAdmin: false,
     isManager: false,
     isMember: false,
+    isPending: false,
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -40,6 +42,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 name: data.name,
                 role: data.role as UserRole,
                 teamId: data.team_id || '',
+                status: data.status || 'pending',
             });
         } else {
             setUser(null);
@@ -74,9 +77,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const isAdmin = role === 'admin';
     const isManager = role === 'manager';
     const isMember = role === 'member';
+    const isPending = user?.status === 'pending';
 
     return (
-        <AuthContext.Provider value={{ user, loading, role, isAdmin, isManager, isMember }}>
+        <AuthContext.Provider value={{ user, loading, role, isAdmin, isManager, isMember, isPending }}>
             {!loading && children}
         </AuthContext.Provider>
     );

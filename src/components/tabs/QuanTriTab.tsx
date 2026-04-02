@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, Trash2, X, Search, ChevronDown, ChevronUp, UserPlus, UserMinus, Pencil, Check } from "lucide-react";
+import { Plus, Trash2, X, Search, ChevronDown, ChevronUp, UserPlus, UserMinus, Pencil, Check, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { getAllUsersWithChannels, UserWithChannels } from "@/app/actions/account";
+import { getAllUsersWithChannels, approveUser, UserWithChannels } from "@/app/actions/account";
 import { Team } from "@/types";
 import { getTeamsList } from "@/app/actions/helpers";
 import {
@@ -149,6 +149,41 @@ export function QuanTriTab() {
 
     return (
         <div className="space-y-6">
+            {/* === SECTION: Tài khoản chờ duyệt === */}
+            {users.filter(u => u.status === 'pending').length > 0 && (
+                <div>
+                    <h2 className="mb-3 text-lg font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+                        <span>Chờ duyệt</span>
+                        <span className="rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-bold text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-400">
+                            {users.filter(u => u.status === 'pending').length}
+                        </span>
+                    </h2>
+                    <div className="space-y-2">
+                        {users.filter(u => u.status === 'pending').map(u => (
+                            <div key={u.id} className="flex items-center justify-between rounded-xl border border-yellow-200 bg-yellow-50 px-4 py-3 dark:border-yellow-900/40 dark:bg-yellow-900/10">
+                                <div>
+                                    <p className="font-medium text-zinc-900 dark:text-white">{u.name}</p>
+                                    <p className="text-xs text-zinc-500">{u.email}</p>
+                                </div>
+                                <button
+                                    disabled={actionLoading}
+                                    onClick={async () => {
+                                        setActionLoading(true);
+                                        await approveUser(u.id);
+                                        await refresh();
+                                        setActionLoading(false);
+                                    }}
+                                    className="flex items-center gap-1.5 rounded-lg bg-green-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
+                                >
+                                    <ShieldCheck className="h-4 w-4" />
+                                    Duyệt
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             {/* === SECTION: Quản lý Mảng === */}
             <div>
                 <div className="mb-4 flex items-center justify-between">
