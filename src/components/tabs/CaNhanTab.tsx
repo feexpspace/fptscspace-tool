@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { ExternalLink, Loader2, RefreshCw, Link } from "lucide-react";
+import { ExternalLink, Loader2, RefreshCw, Link, ChevronUp, ChevronDown } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useData } from "@/context/DataContext";
 import { Pagination } from "@/components/Pagination";
@@ -13,6 +13,7 @@ export function CaNhanTab() {
     const [selectedChannel, setSelectedChannel] = useState(""); // admin: filter by channel
     const [selectedTeam, setSelectedTeam] = useState("");       // admin: filter by team
     const [selectedMonth, setSelectedMonth] = useState("");
+    const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({ key: 'date', direction: 'desc' });
     const [page, setPage] = useState(1);
     const pageSize = 20;
 
@@ -61,8 +62,35 @@ export function CaNhanTab() {
             });
         }
 
+        // Apply sorting
+        videos.sort((a, b) => {
+            let aValue: number = 0;
+            let bValue: number = 0;
+            
+            if (sortConfig.key === 'date') {
+                aValue = a.createTime.getTime();
+                bValue = b.createTime.getTime();
+            } else if (sortConfig.key === 'view') {
+                aValue = a.stats?.view || 0;
+                bValue = b.stats?.view || 0;
+            } else if (sortConfig.key === 'like') {
+                aValue = a.stats?.like || 0;
+                bValue = b.stats?.like || 0;
+            } else if (sortConfig.key === 'comment') {
+                aValue = a.stats?.comment || 0;
+                bValue = b.stats?.comment || 0;
+            } else if (sortConfig.key === 'share') {
+                aValue = a.stats?.share || 0;
+                bValue = b.stats?.share || 0;
+            }
+
+            if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+            if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+            return 0;
+        });
+
         return videos;
-    }, [allVideos, channelTeamMap, selectedChannel, selectedTeam, selectedMonth, isAdmin]);
+    }, [allVideos, channelTeamMap, selectedChannel, selectedTeam, selectedMonth, isAdmin, sortConfig]);
 
     useEffect(() => { setPage(1); }, [selectedChannel, selectedTeam, selectedMonth]);
 
@@ -72,6 +100,22 @@ export function CaNhanTab() {
     const extractHashtags = (text: string) => {
         const matches = text.match(/#\w+/g);
         return matches ? matches.join(" ") : "";
+    };
+
+    const handleSort = (key: string) => {
+        let direction: 'asc' | 'desc' = 'desc';
+        if (sortConfig.key === key && sortConfig.direction === 'desc') {
+            direction = 'asc';
+        }
+        setSortConfig({ key, direction });
+        setPage(1);
+    };
+
+    const SortIcon = ({ sortKey }: { sortKey: string }) => {
+        if (sortConfig.key !== sortKey) return <ChevronDown className="h-3 w-3 opacity-20 transition-opacity group-hover:opacity-100" />;
+        return sortConfig.direction === 'asc' 
+            ? <ChevronUp className="h-3 w-3 text-blue-500" /> 
+            : <ChevronDown className="h-3 w-3 text-blue-500" />;
     };
 
     return (
@@ -146,16 +190,26 @@ export function CaNhanTab() {
                         <table className="w-full text-sm">
                             <thead>
                                 <tr className="border-b border-zinc-100 dark:border-zinc-800/80">
-                                    <th className="px-6 py-5 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-[#1a1a1a]/50 w-12">STT</th>
-                                    <th className="px-6 py-5 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-[#1a1a1a]/50 w-28">Thời gian</th>
+                                    <th className="px-6 py-5 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-[#1a1a1a]/50 w-12" />
+                                    <th className="px-6 py-5 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-[#1a1a1a]/50 w-28 cursor-pointer group hover:bg-zinc-100 dark:hover:bg-[#222]" onClick={() => handleSort('date')}>
+                                        <div className="flex items-center gap-1.5">Thời gian <SortIcon sortKey="date" /></div>
+                                    </th>
                                     {isAdmin && <th className="px-6 py-5 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-[#1a1a1a]/50">Kênh</th>}
                                     <th className="px-6 py-5 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-[#1a1a1a]/50">Caption</th>
                                     <th className="px-6 py-5 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-[#1a1a1a]/50">Hashtag</th>
                                     <th className="px-6 py-5 text-center text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-[#1a1a1a]/50 w-10">Link</th>
-                                    <th className="px-6 py-5 text-right text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-[#1a1a1a]/50">Lượt xem</th>
-                                    <th className="px-6 py-5 text-right text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-[#1a1a1a]/50">Like</th>
-                                    <th className="px-6 py-5 text-right text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-[#1a1a1a]/50">Comment</th>
-                                    <th className="px-6 py-5 text-right text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-[#1a1a1a]/50">Share</th>
+                                    <th className="px-6 py-5 text-right text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-[#1a1a1a]/50 cursor-pointer group hover:bg-zinc-100 dark:hover:bg-[#222]" onClick={() => handleSort('view')}>
+                                        <div className="flex items-center justify-end gap-1.5"><SortIcon sortKey="view" /> Lượt xem</div>
+                                    </th>
+                                    <th className="px-6 py-5 text-right text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-[#1a1a1a]/50 cursor-pointer group hover:bg-zinc-100 dark:hover:bg-[#222]" onClick={() => handleSort('like')}>
+                                        <div className="flex items-center justify-end gap-1.5"><SortIcon sortKey="like" /> Like</div>
+                                    </th>
+                                    <th className="px-6 py-5 text-right text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-[#1a1a1a]/50 cursor-pointer group hover:bg-zinc-100 dark:hover:bg-[#222]" onClick={() => handleSort('comment')}>
+                                        <div className="flex items-center justify-end gap-1.5"><SortIcon sortKey="comment" /> Comment</div>
+                                    </th>
+                                    <th className="px-6 py-5 text-right text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-[#1a1a1a]/50 cursor-pointer group hover:bg-zinc-100 dark:hover:bg-[#222]" onClick={() => handleSort('share')}>
+                                        <div className="flex items-center justify-end gap-1.5"><SortIcon sortKey="share" /> Share</div>
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody>
