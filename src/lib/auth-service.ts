@@ -39,6 +39,19 @@ export const loginUser = async (email: string, pass: string) => {
         });
 
         if (error) throw error;
+
+        // Check if account is pending approval
+        const { data: profile } = await supabase
+            .from('users')
+            .select('status')
+            .eq('id', data.user.id)
+            .maybeSingle();
+
+        if (profile?.status === 'pending') {
+            await supabase.auth.signOut();
+            return { user: null, error: 'pending_approval' };
+        }
+
         return { user: data.user, error: null };
     } catch (error: unknown) {
         const msg = error instanceof Error ? error.message : "Đã có lỗi xảy ra";

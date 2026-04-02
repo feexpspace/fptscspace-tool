@@ -78,9 +78,9 @@ export default function HomePage() {
 
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto p-6">
-                    {activeTab === "thong-ke" && <ThongKeTab />}
-                    {activeTab === "ca-nhan" && <CaNhanTab />}
-                    {activeTab === "quan-tri" && isAdmin && <QuanTriTab />}
+                    <div className={activeTab !== "thong-ke" ? "hidden" : ""}><ThongKeTab /></div>
+                    <div className={activeTab !== "ca-nhan" ? "hidden" : ""}><CaNhanTab /></div>
+                    {isAdmin && <div className={activeTab !== "quan-tri" ? "hidden" : ""}><QuanTriTab /></div>}
                 </div>
             </main>
         </div>
