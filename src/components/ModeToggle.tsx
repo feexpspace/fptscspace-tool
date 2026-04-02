@@ -34,12 +34,12 @@ export function ModeToggle({ isCollapsed }: ModeToggleProps) {
             onClick={toggleTheme}
             title={isCollapsed ? (isDark ? "Light Mode" : "Dark Mode") : ""}
             className={cn(
-                // Base styles: Copy y nguyên từ Sidebar item
-                "flex w-full items-center rounded-lg py-2.5 text-sm font-medium transition-colors",
+                // Base styles
+                "flex items-center justify-center rounded-xl p-2.5 text-sm font-medium transition-colors focus:outline-none",
                 // Hover & Text colors
-                "text-zinc-500 hover:bg-zinc-50 hover:text-black dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-white",
-                // Collapsed logic: Copy y nguyên từ Sidebar item
-                isCollapsed ? "justify-center px-0" : "gap-3 px-2"
+                "text-zinc-500 hover:bg-zinc-100 hover:text-black dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white",
+                // Collapsed logic
+                isCollapsed ? "w-9 h-9" : "w-full gap-3 px-3"
             )}
         >
             <div className="relative h-5 w-5 shrink-0">

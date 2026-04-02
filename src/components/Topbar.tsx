@@ -91,7 +91,7 @@ export function Topbar({ activeTab, onTabChange }: TopbarProps) {
                             key={tab.id}
                             onClick={() => onTabChange(tab.id)}
                             className={cn(
-                                "flex items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold transition-all duration-200",
+                                "flex items-center gap-2 rounded-xl px-5 py-2 text-[13px] font-bold transition-all duration-200",
                                 activeTab === tab.id
                                     ? "bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-white"
                                     : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white"
@@ -114,9 +114,9 @@ export function Topbar({ activeTab, onTabChange }: TopbarProps) {
                     <div className="relative" ref={dropdownRef}>
                         <button 
                             onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-                            className="flex items-center gap-2 rounded-full p-1 border border-transparent hover:border-zinc-200 dark:hover:border-zinc-700 transition-all"
+                            className="flex items-center gap-2 rounded-xl p-1 border border-transparent hover:border-zinc-200 dark:hover:border-zinc-700 transition-all focus:outline-none"
                         >
-                            <div className="h-9 w-9 shrink-0 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-sm font-bold text-blue-600 dark:text-blue-400 ring-2 ring-white dark:ring-[#0a0a0a]">
+                            <div className="h-9 w-9 shrink-0 rounded-xl bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-sm font-bold text-blue-600 dark:text-blue-400 ring-2 ring-white dark:ring-[#0a0a0a]">
                                 {user?.name?.charAt(0) || "U"}
                             </div>
                             <div className="hidden lg:flex flex-col items-start mr-1">

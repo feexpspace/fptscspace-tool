@@ -5,6 +5,7 @@ import { Eye, MessageCircle, Share2, Users, Video, Tv, RefreshCw, Link, ChevronD
 import { useAuth } from "@/context/AuthContext";
 import { useData } from "@/context/DataContext";
 import { StatCard } from "@/components/StatCard";
+import { CustomSelect } from "@/components/CustomSelect";
 
 export function ThongKeTab() {
     const { user, isAdmin } = useAuth();
@@ -106,49 +107,29 @@ export function ThongKeTab() {
             <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 w-full">
                 {/* Filters */}
                 <div className="flex flex-wrap items-center gap-3">
-                    <div className="relative">
-                        <select
-                            value={selectedMonth}
-                            onChange={e => setSelectedMonth(e.target.value)}
-                            className="appearance-none rounded-xl border border-zinc-200/80 bg-white pl-4 pr-10 py-2.5 text-[13px] font-medium shadow-[0_2px_10px_rgba(0,0,0,0.02)] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-zinc-800 dark:bg-[#121212] dark:text-white transition-all"
-                        >
-                            <option value="">Tất cả thời gian</option>
-                            {monthOptions.map(m => (
-                                <option key={m.value} value={m.value}>{m.label}</option>
-                            ))}
-                        </select>
-                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 pointer-events-none" />
-                    </div>
+                    <CustomSelect
+                        value={selectedMonth}
+                        onChange={setSelectedMonth}
+                        options={monthOptions}
+                        placeholder="Tất cả thời gian"
+                    />
 
                     {isAdmin && (
                         <>
-                            <div className="relative">
-                                <select
-                                    value={selectedTeam}
-                                    onChange={e => { setSelectedTeam(e.target.value); setSelectedChannel(""); }}
-                                    className="appearance-none rounded-xl border border-zinc-200/80 bg-white pl-4 pr-10 py-2.5 text-[13px] font-medium shadow-[0_2px_10px_rgba(0,0,0,0.02)] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-zinc-800 dark:bg-[#121212] dark:text-white transition-all"
-                                >
-                                    <option value="">Tất cả mảng</option>
-                                    {teams.map(t => (
-                                        <option key={t.id} value={t.id}>{t.name}</option>
-                                    ))}
-                                </select>
-                                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 pointer-events-none" />
-                            </div>
+                            <CustomSelect
+                                value={selectedTeam}
+                                onChange={(val) => { setSelectedTeam(val); setSelectedChannel(""); }}
+                                options={teams.map(t => ({ value: t.id, label: t.name }))}
+                                placeholder="Tất cả mảng"
+                            />
 
-                            <div className="relative">
-                                <select
-                                    value={selectedChannel}
-                                    onChange={e => { setSelectedChannel(e.target.value); setSelectedTeam(""); }}
-                                    className="appearance-none rounded-xl border border-zinc-200/80 bg-white pl-4 pr-10 py-2.5 text-[13px] font-medium shadow-[0_2px_10px_rgba(0,0,0,0.02)] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-zinc-800 dark:bg-[#121212] dark:text-white max-w-[200px] truncate transition-all"
-                                >
-                                    <option value="">Tất cả kênh</option>
-                                    {allChannels.map(ch => (
-                                        <option key={ch.id} value={ch.id}>{ch.displayName}</option>
-                                    ))}
-                                </select>
-                                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 pointer-events-none" />
-                            </div>
+                            <CustomSelect
+                                value={selectedChannel}
+                                onChange={(val) => { setSelectedChannel(val); setSelectedTeam(""); }}
+                                options={allChannels.map(ch => ({ value: ch.id, label: ch.displayName }))}
+                                placeholder="Tất cả kênh"
+                                className="max-w-[200px]"
+                            />
                         </>
                     )}
                 </div>
@@ -158,7 +139,7 @@ export function ThongKeTab() {
                     {!isAdmin && hasChannel === false && (
                         <a
                             href={`/api/tiktok/login?userId=${user?.id}`}
-                            className="flex items-center gap-2 rounded-full bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_4px_14px_rgba(37,99,235,0.25)] hover:bg-blue-700 hover:shadow-[0_4px_14px_rgba(37,99,235,0.35)] active:scale-[0.98] transition-all"
+                            className="flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_4px_14px_rgba(37,99,235,0.25)] hover:bg-blue-700 hover:shadow-[0_4px_14px_rgba(37,99,235,0.35)] active:scale-[0.98] transition-all"
                         >
                             <Link className="h-4 w-4 stroke-[2]" />
                             Kết nối TikTok
@@ -168,7 +149,7 @@ export function ThongKeTab() {
                         <button
                             onClick={doSync}
                             disabled={syncing || dataLoading}
-                            className="flex items-center gap-2 rounded-full bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_4px_14px_rgba(37,99,235,0.25)] hover:bg-blue-700 hover:shadow-[0_4px_14px_rgba(37,99,235,0.35)] active:scale-[0.98] disabled:opacity-50 transition-all"
+                            className="flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_4px_14px_rgba(37,99,235,0.25)] hover:bg-blue-700 hover:shadow-[0_4px_14px_rgba(37,99,235,0.35)] active:scale-[0.98] disabled:opacity-50 transition-all"
                         >
                             <RefreshCw className={`h-4 w-4 stroke-[2] ${syncing ? "animate-spin" : ""}`} />
                             {syncing ? "Đang đồng bộ..." : isAdmin ? "Đồng bộ tất cả" : "Đồng bộ"}
@@ -202,7 +183,7 @@ export function ThongKeTab() {
                     </div>
 
                     {isAdmin && stats.channelBreakdown.length > 0 && (
-                        <div className="overflow-x-auto rounded-[1.5rem] border border-zinc-100/50 bg-white shadow-[0_4px_24px_rgba(0,0,0,0.03)] dark:border-zinc-800/50 dark:bg-[#121212]">
+                        <div className="overflow-x-auto rounded-xl border border-zinc-100/50 bg-white shadow-[0_4px_24px_rgba(0,0,0,0.03)] dark:border-zinc-800/50 dark:bg-[#121212]">
                             <table className="w-full text-sm">
                                 <thead>
                                     <tr className="border-b border-zinc-100 dark:border-zinc-800/80">
