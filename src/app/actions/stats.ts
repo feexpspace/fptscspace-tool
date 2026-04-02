@@ -99,12 +99,17 @@ async function getStatsForChannels(channelIds: string[], month?: string): Promis
 }
 
 async function getMonthlyStatsForChannels(channelIds: string[], month: string): Promise<StatsResult> {
-    const [{ data: monthlyStats }, { data: latestStats }] = await Promise.all([
+    const [year, mon] = month.split('-').map(Number);
+    const startDate = new Date(year, mon - 1, 1).toISOString();
+    const endDate = new Date(year, mon, 0, 23, 59, 59).toISOString();
+
+    const [{ data: videos }, { data: latestStats }] = await Promise.all([
         supabaseAdmin
-            .from('monthly_statistics')
-            .select('*')
+            .from('videos')
+            .select('channel_id, channel_display_name, channel_username, view_count, like_count, comment_count, share_count')
             .in('channel_id', channelIds)
-            .eq('month', month),
+            .gte('create_time', startDate)
+            .lte('create_time', endDate),
         supabaseAdmin
             .from('statistics')
             .select('channel_id, follower_count, channel_owner_name, channel_username')
@@ -120,36 +125,54 @@ async function getMonthlyStatsForChannels(channelIds: string[], month: string): 
         });
     });
 
+    // Aggregate videos by channel
+    const byChannel = new Map<string, { views: number; comments: number; shares: number; videos: number; displayName: string; username: string }>();
+    for (const v of videos || []) {
+        const existing = byChannel.get(v.channel_id);
+        if (existing) {
+            existing.views += v.view_count || 0;
+            existing.comments += v.comment_count || 0;
+            existing.shares += v.share_count || 0;
+            existing.videos += 1;
+        } else {
+            byChannel.set(v.channel_id, {
+                views: v.view_count || 0,
+                comments: v.comment_count || 0,
+                shares: v.share_count || 0,
+                videos: 1,
+                displayName: v.channel_display_name || '',
+                username: v.channel_username || '',
+            });
+        }
+    }
+
     let totalViews = 0, totalComments = 0, totalShares = 0, totalFollowers = 0, totalVideos = 0;
     const channelBreakdown: ChannelBreakdown[] = [];
-    const activeChannelIds = new Set<string>();
-
-    for (const ms of monthlyStats || []) {
-        totalViews += ms.total_views || 0;
-        totalComments += ms.total_comments || 0;
-        totalShares += ms.total_shares || 0;
-        totalVideos += ms.video_count || 0;
-
-        if (ms.video_count > 0) activeChannelIds.add(ms.channel_id);
-
-        const latest = latestStatsMap.get(ms.channel_id);
-        channelBreakdown.push({
-            channelId: ms.channel_id,
-            channelName: latest?.channelOwnerName || '',
-            channelUsername: latest?.channelUsername || '',
-            followerCount: latest?.followerCount || ms.follower_count || 0,
-            videoCount: ms.video_count || 0,
-            totalViews: ms.total_views || 0,
-            totalComments: ms.total_comments || 0,
-            totalShares: ms.total_shares || 0,
-        });
-    }
 
     latestStatsMap.forEach(s => { totalFollowers += s.followerCount; });
 
+    byChannel.forEach((agg, channelId) => {
+        totalViews += agg.views;
+        totalComments += agg.comments;
+        totalShares += agg.shares;
+        totalVideos += agg.videos;
+
+        const latest = latestStatsMap.get(channelId);
+        channelBreakdown.push({
+            channelId,
+            channelName: latest?.channelOwnerName || agg.displayName,
+            channelUsername: latest?.channelUsername || agg.username,
+            followerCount: latest?.followerCount || 0,
+            videoCount: agg.videos,
+            totalViews: agg.views,
+            totalComments: agg.comments,
+            totalShares: agg.shares,
+        });
+    });
+
     return {
         totalViews, totalComments, totalShares, totalFollowers, totalVideos,
-        activeChannels: activeChannelIds.size,
+        activeChannels: byChannel.size,
         channelBreakdown,
     };
 }
