@@ -124,7 +124,7 @@ export function QuanTriTab() {
                         )}
                     </div>
                 </div>
-                <div className="overflow-x-auto rounded-xl border border-zinc-100/50 bg-white shadow-[0_4px_24px_rgba(0,0,0,0.03)] dark:border-zinc-800/50 dark:bg-[#121212]">
+                <div className="rounded-xl border border-zinc-100/50 bg-white shadow-[0_4px_24px_rgba(0,0,0,0.03)] dark:border-zinc-800/50 dark:bg-[#121212]">
                     <table className="w-full text-sm">
                         <thead>
                             <tr className="border-b border-zinc-100 dark:border-zinc-800/80">
@@ -163,8 +163,8 @@ export function QuanTriTab() {
                                                 <span className="text-xs font-medium text-zinc-400 italic">—</span>
                                             )}
                                         </td>
-                                        <td className="px-6 py-4">
-                                            <div className="w-40 xl:w-48">
+                                        <td className="px-6 py-4 max-w-[200px] relative hover:z-50">
+                                            <div className="w-40 relative">
                                                 <CustomSelect
                                                     value={currentTeamId}
                                                     disabled={actionLoading}
