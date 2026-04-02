@@ -1,14 +1,11 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { doc, onSnapshot, Unsubscribe } from 'firebase/firestore';
-import { auth, db } from '@/lib/firebase';
+import { supabase } from '@/lib/supabase';
 import { User, UserRole } from '@/types/index';
 
 interface AuthContextType {
     user: User | null;
-    firebaseUser: FirebaseUser | null;
     loading: boolean;
     role: UserRole | null;
     isAdmin: boolean;
@@ -18,7 +15,6 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType>({
     user: null,
-    firebaseUser: null,
     loading: true,
     role: null,
     isAdmin: false,
@@ -27,53 +23,51 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-    const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
 
+    const fetchUserProfile = async (userId: string) => {
+        const { data } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', userId)
+            .single();
+
+        if (data) {
+            setUser({
+                id: data.id,
+                email: data.email,
+                name: data.name,
+                role: data.role as UserRole,
+                teamId: data.team_id || '',
+            });
+        } else {
+            setUser(null);
+        }
+        setLoading(false);
+    };
+
     useEffect(() => {
-        let unsubscribeFirestore: Unsubscribe | null = null;
-
-        const unsubscribeAuth = onAuthStateChanged(auth, (fUser) => {
-            setFirebaseUser(fUser);
-
-            if (unsubscribeFirestore) {
-                (unsubscribeFirestore as Unsubscribe)();
-                unsubscribeFirestore = null;
+        // Check initial session
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            if (session?.user) {
+                fetchUserProfile(session.user.id);
+            } else {
+                setLoading(false);
             }
+        });
 
-            if (fUser) {
-                setLoading(true);
-
-                unsubscribeFirestore = onSnapshot(
-                    doc(db, "users", fUser.uid),
-                    (docSnapshot) => {
-                        if (docSnapshot.exists()) {
-                            const userData = docSnapshot.data() as User;
-                            setUser(userData);
-                        } else {
-                            setUser(null);
-                        }
-                        setLoading(false);
-                    },
-                    (error) => {
-                        console.error("Firestore error:", error);
-                        setUser(null);
-                        setLoading(false);
-                    }
-                );
+        // Listen for auth changes
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            if (session?.user) {
+                fetchUserProfile(session.user.id);
             } else {
                 setUser(null);
                 setLoading(false);
             }
         });
 
-        return () => {
-            unsubscribeAuth();
-            if (unsubscribeFirestore) {
-                (unsubscribeFirestore as Unsubscribe)();
-            }
-        };
+        return () => subscription.unsubscribe();
     }, []);
 
     const role = user?.role || null;
@@ -82,15 +76,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const isMember = role === 'member';
 
     return (
-        <AuthContext.Provider value={{
-            user,
-            firebaseUser,
-            loading,
-            role,
-            isAdmin,
-            isManager,
-            isMember
-        }}>
+        <AuthContext.Provider value={{ user, loading, role, isAdmin, isManager, isMember }}>
             {!loading && children}
         </AuthContext.Provider>
     );

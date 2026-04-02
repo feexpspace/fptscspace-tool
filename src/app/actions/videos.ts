@@ -1,11 +1,9 @@
 // src/app/actions/videos.ts
 'use server'
 
-import { adminDb } from "@/lib/firebase-admin";
-import { Timestamp } from "firebase-admin/firestore";
+import { supabaseAdmin } from "@/lib/supabase-server";
 import { Video } from "@/types";
 import { getChannelIdsForUsers, getUserIdsForScope } from "./helpers";
-import { chunkArray } from "@/lib/utils";
 
 interface VideoFilters {
     teamId?: string;
@@ -22,9 +20,6 @@ export interface VideoListResult {
     pageSize: number;
 }
 
-/**
- * Lấy danh sách video - cho cả admin và member
- */
 export async function getVideoList(
     userId: string,
     role: string,
@@ -34,7 +29,6 @@ export async function getVideoList(
         const page = filters.page || 1;
         const pageSize = filters.pageSize || 50;
 
-        // Xác định danh sách channelIds
         let channelIds: string[] = [];
 
         if (filters.channelId) {
@@ -42,7 +36,6 @@ export async function getVideoList(
         } else if (role === 'member') {
             channelIds = await getChannelIdsForUsers([userId]);
         } else {
-            // Admin
             const userIds = await getUserIdsForScope(role, userId, filters.teamId);
             channelIds = await getChannelIdsForUsers(userIds);
         }
@@ -51,59 +44,46 @@ export async function getVideoList(
             return { videos: [], total: 0, page, pageSize };
         }
 
-        // Build date range từ month filter
-        let startDate: Date | undefined;
-        let endDate: Date | undefined;
+        let query = supabaseAdmin
+            .from('videos')
+            .select('*', { count: 'exact' })
+            .in('channel_id', channelIds)
+            .order('create_time', { ascending: false });
 
         if (filters.month) {
             const [year, month] = filters.month.split('-').map(Number);
-            startDate = new Date(year, month - 1, 1);
-            endDate = new Date(year, month, 0, 23, 59, 59);
+            const startDate = new Date(year, month - 1, 1).toISOString();
+            const endDate = new Date(year, month, 0, 23, 59, 59).toISOString();
+            query = query.gte('create_time', startDate).lte('create_time', endDate);
         }
 
-        // Query videos theo chunks
-        const chunks = chunkArray(channelIds, 10);
-        const allVideos: Video[] = [];
+        const from = (page - 1) * pageSize;
+        const to = from + pageSize - 1;
+        const { data, count } = await query.range(from, to);
 
-        for (const chunk of chunks) {
-            let query: FirebaseFirestore.Query = adminDb.collection("videos")
-                .where("channelId", "in", chunk);
+        const videos: Video[] = (data || []).map(row => ({
+            id: row.id,
+            videoId: row.video_id,
+            createTime: new Date(row.create_time),
+            coverImage: row.cover_image,
+            title: row.title,
+            description: row.description,
+            link: row.link,
+            duration: row.duration,
+            channelId: row.channel_id,
+            channelUsername: row.channel_username,
+            channelDisplayName: row.channel_display_name,
+            stats: {
+                view: row.view_count,
+                like: row.like_count,
+                comment: row.comment_count,
+                share: row.share_count,
+            },
+            editorId: row.editor_id,
+            editorName: row.editor_name,
+        }));
 
-            if (startDate && endDate) {
-                query = query
-                    .where("createTime", ">=", Timestamp.fromDate(startDate))
-                    .where("createTime", "<=", Timestamp.fromDate(endDate));
-            }
-
-            query = query.orderBy("createTime", "desc");
-
-            const snapshot = await query.get();
-            const videos = snapshot.docs.map(doc => {
-                const data = doc.data();
-                return {
-                    id: doc.id,
-                    ...data,
-                    createTime: (data.createTime as Timestamp).toDate(),
-                } as Video;
-            });
-            allVideos.push(...videos);
-        }
-
-        // Sort tất cả theo createTime desc (vì merge từ nhiều chunks)
-        allVideos.sort((a, b) => b.createTime.getTime() - a.createTime.getTime());
-
-        // Pagination
-        const total = allVideos.length;
-        const start = (page - 1) * pageSize;
-        const paginatedVideos = allVideos.slice(start, start + pageSize);
-
-        return {
-            videos: paginatedVideos,
-            total,
-            page,
-            pageSize,
-        };
-
+        return { videos, total: count || 0, page, pageSize };
     } catch (error) {
         console.error("Error fetching videos:", error);
         return { videos: [], total: 0, page: 1, pageSize: 50 };
