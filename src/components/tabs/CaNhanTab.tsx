@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { ExternalLink, Loader2, RefreshCw } from "lucide-react";
+import { ExternalLink, Loader2, RefreshCw, Link } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { getVideoList, VideoListResult } from "@/app/actions/videos";
 import { getTeamsList } from "@/app/actions/helpers";
-import { syncMyChannels } from "@/app/actions/report";
+import { getMyChannels, syncMyChannels, syncAllChannels } from "@/app/actions/report";
 import { Team } from "@/types";
 import { Pagination } from "@/components/Pagination";
 
@@ -19,6 +19,7 @@ export function CaNhanTab() {
     const [page, setPage] = useState(1);
     const [syncing, setSyncing] = useState(false);
     const [syncMsg, setSyncMsg] = useState("");
+    const [hasChannel, setHasChannel] = useState<boolean | null>(null);
     const pageSize = 50;
 
     const monthOptions = (() => {
@@ -38,6 +39,12 @@ export function CaNhanTab() {
             getTeamsList(user.id, "admin").then(setTeams);
         }
     }, [isAdmin, user]);
+
+    useEffect(() => {
+        if (user) {
+            getMyChannels(user.id).then(channels => setHasChannel(channels.length > 0));
+        }
+    }, [user]);
 
     const fetchVideos = useCallback(async () => {
         if (!user || !role) return;
@@ -68,7 +75,9 @@ export function CaNhanTab() {
         setSyncing(true);
         setSyncMsg("");
         try {
-            const result = await syncMyChannels(user.id);
+            const result = isAdmin
+                ? await syncAllChannels()
+                : await syncMyChannels(user.id);
             setSyncMsg(result.message);
             if (result.success) fetchVideos();
         } catch {
@@ -118,17 +127,33 @@ export function CaNhanTab() {
                     </span>
                 )}
 
-                <button
-                    onClick={handleSync}
-                    disabled={syncing}
-                    className="ml-auto flex items-center gap-1.5 rounded-lg border border-zinc-200 px-3 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800"
-                >
-                    <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
-                    {syncing ? "Đang đồng bộ..." : "Đồng bộ"}
-                </button>
+                <div className="ml-auto flex items-center gap-2">
+                    {/* Connect TikTok nếu chưa kết nối (member) */}
+                    {!isAdmin && hasChannel === false && (
+                        <a
+                            href={`/api/tiktok/login?userId=${user?.id}`}
+                            className="flex items-center gap-1.5 rounded-lg bg-zinc-900 px-3 py-2 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-900"
+                        >
+                            <Link className="h-4 w-4" />
+                            Kết nối TikTok
+                        </a>
+                    )}
+
+                    {/* Sync button khi đã kết nối hoặc admin */}
+                    {(isAdmin || hasChannel) && (
+                        <button
+                            onClick={handleSync}
+                            disabled={syncing}
+                            className="flex items-center gap-1.5 rounded-lg border border-zinc-200 px-3 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800"
+                        >
+                            <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
+                            {syncing ? "Đang đồng bộ..." : isAdmin ? "Đồng bộ tất cả" : "Đồng bộ"}
+                        </button>
+                    )}
+                </div>
 
                 {syncMsg && (
-                    <span className="text-xs text-zinc-500">{syncMsg}</span>
+                    <span className="w-full text-xs text-zinc-500">{syncMsg}</span>
                 )}
             </div>
 

@@ -20,6 +20,7 @@ export async function getAllUsersWithChannels(): Promise<{ success: boolean, dat
             name: u.name,
             role: u.role,
             teamId: u.team_id || '',
+            status: u.status || 'pending',
         }));
 
         const channels: Channel[] = (channelsData || []).map(c => ({
@@ -50,6 +51,20 @@ export async function getAllUsersWithChannels(): Promise<{ success: boolean, dat
     } catch (error) {
         console.error("Lỗi lấy danh sách user:", error);
         return { success: false, error: "Lỗi server khi lấy dữ liệu người dùng." };
+    }
+}
+
+export async function approveUser(userId: string) {
+    try {
+        await supabaseAdmin
+            .from('users')
+            .update({ status: 'approved' })
+            .eq('id', userId);
+        revalidatePath('/');
+        return { success: true };
+    } catch (error) {
+        console.error("Lỗi duyệt user:", error);
+        return { success: false, error: "Lỗi server khi duyệt tài khoản." };
     }
 }
 

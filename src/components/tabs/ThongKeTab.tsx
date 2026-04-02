@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Eye, MessageCircle, Share2, Users, Video, Tv } from "lucide-react";
+import { Eye, MessageCircle, Share2, Users, Video, Tv, RefreshCw, Link } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { getStats, StatsResult } from "@/app/actions/stats";
 import { getTeamsList } from "@/app/actions/helpers";
+import { getMyChannels, syncMyChannels, syncAllChannels } from "@/app/actions/report";
 import { Team } from "@/types";
 import { StatCard } from "@/components/StatCard";
 
@@ -15,8 +16,10 @@ export function ThongKeTab() {
     const [teams, setTeams] = useState<Team[]>([]);
     const [selectedTeam, setSelectedTeam] = useState("");
     const [selectedMonth, setSelectedMonth] = useState("");
+    const [syncing, setSyncing] = useState(false);
+    const [syncMsg, setSyncMsg] = useState("");
+    const [hasChannel, setHasChannel] = useState<boolean | null>(null);
 
-    // Tạo danh sách tháng gần đây
     const monthOptions = (() => {
         const options: { value: string; label: string }[] = [];
         const now = new Date();
@@ -35,6 +38,14 @@ export function ThongKeTab() {
         }
     }, [isAdmin, user]);
 
+    useEffect(() => {
+        if (user && !isAdmin) {
+            getMyChannels(user.id).then(channels => setHasChannel(channels.length > 0));
+        } else if (isAdmin) {
+            setHasChannel(true);
+        }
+    }, [user, isAdmin]);
+
     const fetchStats = useCallback(async () => {
         if (!user || !role) return;
         setLoading(true);
@@ -50,9 +61,21 @@ export function ThongKeTab() {
         fetchStats();
     }, [fetchStats]);
 
+    const handleSync = async () => {
+        if (!user) return;
+        setSyncing(true);
+        setSyncMsg("");
+        const result = isAdmin
+            ? await syncAllChannels()
+            : await syncMyChannels(user.id);
+        setSyncMsg(result.message);
+        if (result.success) fetchStats();
+        setSyncing(false);
+    };
+
     return (
         <div className="space-y-6">
-            {/* Filters */}
+            {/* Filters + Actions */}
             <div className="flex flex-wrap items-center gap-3">
                 <select
                     value={selectedMonth}
@@ -76,6 +99,35 @@ export function ThongKeTab() {
                             <option key={t.id} value={t.id}>{t.name}</option>
                         ))}
                     </select>
+                )}
+
+                <div className="ml-auto flex items-center gap-2">
+                    {/* Connect TikTok (member chưa kết nối) */}
+                    {!isAdmin && hasChannel === false && (
+                        <a
+                            href={`/api/tiktok/login?userId=${user?.id}`}
+                            className="flex items-center gap-1.5 rounded-lg bg-zinc-900 px-3 py-2 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-900"
+                        >
+                            <Link className="h-4 w-4" />
+                            Kết nối TikTok
+                        </a>
+                    )}
+
+                    {/* Sync button (admin hoặc member đã kết nối) */}
+                    {(isAdmin || hasChannel) && (
+                        <button
+                            onClick={handleSync}
+                            disabled={syncing}
+                            className="flex items-center gap-1.5 rounded-lg border border-zinc-200 px-3 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800"
+                        >
+                            <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
+                            {syncing ? "Đang đồng bộ..." : isAdmin ? "Đồng bộ tất cả" : "Đồng bộ"}
+                        </button>
+                    )}
+                </div>
+
+                {syncMsg && (
+                    <span className="w-full text-xs text-zinc-500">{syncMsg}</span>
                 )}
             </div>
 
