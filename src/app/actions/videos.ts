@@ -51,13 +51,27 @@ export async function getAllVideos(userId: string, role: string): Promise<AllVid
             if (ch.user_id && userTeamMap[ch.user_id]) channelTeamMap[ch.id] = userTeamMap[ch.user_id];
         });
 
-        const { data } = await supabaseAdmin
-            .from('videos')
-            .select('*')
-            .in('channel_id', channelIds)
-            .order('create_time', { ascending: false });
+        let allData: any[] = [];
+        let start = 0;
+        const limit = 1000;
+        
+        while (true) {
+            const { data, error } = await supabaseAdmin
+                .from('videos')
+                .select('*')
+                .in('channel_id', channelIds)
+                .order('create_time', { ascending: false })
+                .range(start, start + limit - 1);
+                
+            if (error) throw error;
+            if (!data || data.length === 0) break;
+            
+            allData = allData.concat(data);
+            if (data.length < limit) break;
+            start += limit;
+        }
 
-        const videos: Video[] = (data || []).map(row => ({
+        const videos: Video[] = allData.map(row => ({
             id: row.id,
             videoId: row.video_id,
             createTime: new Date(row.create_time),

@@ -139,18 +139,40 @@ async function getStatsForChannels(channelIds: string[], month?: string): Promis
     };
 }
 
+async function fetchAllAggregatedVideos(channelIds: string[], startDate?: string, endDate?: string) {
+    let allData: any[] = [];
+    let start = 0;
+    const limit = 1000;
+    while (true) {
+        let query = supabaseAdmin
+            .from('videos')
+            .select('channel_id, channel_display_name, channel_username, view_count, like_count, comment_count, share_count')
+            .in('channel_id', channelIds)
+            .range(start, start + limit - 1);
+        
+        if (startDate && endDate) {
+            query = query.gte('create_time', startDate).lte('create_time', endDate);
+        }
+        
+        const { data, error } = await query;
+        if (error || !data || data.length === 0) break;
+        
+        allData = allData.concat(data);
+        if (data.length < limit) break;
+        start += limit;
+    }
+    return allData;
+}
+
 async function getMonthlyStatsForChannels(channelIds: string[], month: string): Promise<StatsResult> {
     const [year, mon] = month.split('-').map(Number);
     const startDate = new Date(year, mon - 1, 1).toISOString();
     const endDate = new Date(year, mon, 0, 23, 59, 59).toISOString();
 
-    const [{ data: videos }, { data: latestStats }] = await Promise.all([
-        supabaseAdmin
-            .from('videos')
-            .select('channel_id, channel_display_name, channel_username, view_count, like_count, comment_count, share_count')
-            .in('channel_id', channelIds)
-            .gte('create_time', startDate)
-            .lte('create_time', endDate),
+    const videosPromise = fetchAllAggregatedVideos(channelIds, startDate, endDate);
+    
+    const [videos, { data: latestStats }] = await Promise.all([
+        videosPromise,
         supabaseAdmin
             .from('statistics')
             .select('channel_id, follower_count, channel_owner_name, channel_username')
@@ -239,19 +261,16 @@ export async function getGlobalLeaderboard(month?: string): Promise<ChannelBreak
             });
         });
 
-        let videoQuery = supabaseAdmin
-            .from('videos')
-            .select('channel_id, view_count')
-            .in('channel_id', channelIds);
+        let startDate: string | undefined;
+        let endDate: string | undefined;
 
         if (month) {
             const [year, mon] = month.split('-').map(Number);
-            const startDate = new Date(year, mon - 1, 1).toISOString();
-            const endDate = new Date(year, mon, 0, 23, 59, 59).toISOString();
-            videoQuery = videoQuery.gte('create_time', startDate).lte('create_time', endDate);
+            startDate = new Date(year, mon - 1, 1).toISOString();
+            endDate = new Date(year, mon, 0, 23, 59, 59).toISOString();
         }
 
-        const { data: videos } = await videoQuery;
+        const videos = await fetchAllAggregatedVideos(channelIds, startDate, endDate);
 
         (videos || []).forEach((v: any) => {
             const ch = channelMap.get(v.channel_id);
