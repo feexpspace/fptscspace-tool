@@ -32,7 +32,7 @@ export function CustomSelect({
 }: CustomSelectProps) {
     const [open, setOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
-    const [isVisible, setIsVisible] = useState(false); // controls CSS animation
+    const [isVisible, setIsVisible] = useState(false);
     const triggerRef = useRef<HTMLDivElement>(null);
     const dropdownRef = useRef<HTMLDivElement>(null);
     const searchRef = useRef<HTMLInputElement>(null);
@@ -111,10 +111,14 @@ export function CustomSelect({
         };
     }, [open]);
 
-    // Animate-in after mount
+    // Animate-in — use double-rAF to ensure browser paints closed state first
     useEffect(() => {
         if (open) {
-            requestAnimationFrame(() => setIsVisible(true));
+            let id: number;
+            const r1 = requestAnimationFrame(() => {
+                id = requestAnimationFrame(() => setIsVisible(true));
+            });
+            return () => { cancelAnimationFrame(r1); cancelAnimationFrame(id); };
         } else {
             setIsVisible(false);
         }
@@ -144,18 +148,25 @@ export function CustomSelect({
 
     return (
         <div className="relative inline-block text-left w-full" ref={triggerRef}>
-            {/* Trigger Button */}
+            {/* Trigger Button — outline-only state change (no bg shift) to prevent layout jump */}
             <button
                 type="button"
                 onClick={open ? closeDropdown : openDropdown}
                 disabled={disabled}
                 className={cn(
-                    "flex w-full items-center justify-between gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-[12px] sm:text-[13px] font-medium text-zinc-700 shadow-sm transition-colors",
-                    "hover:bg-zinc-50 hover:border-zinc-300",
-                    "focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400/30",
-                    "dark:border-zinc-700/80 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800 dark:hover:border-zinc-600",
-                    disabled && "opacity-50 cursor-not-allowed hover:bg-white dark:hover:bg-zinc-900 hover:border-zinc-200 dark:hover:border-zinc-700/80",
-                    open && "border-zinc-300 bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800",
+                    // Base — consistent text-[12px] everywhere, no shadow
+                    "flex w-full items-center justify-between gap-2 rounded-lg border bg-white px-3 py-2 text-[12px] font-medium text-zinc-700 transition-colors",
+                    "focus:outline-none",
+                    // Normal border
+                    !open && "border-zinc-200 dark:border-zinc-700/80",
+                    // Hover
+                    "hover:border-zinc-300 dark:hover:border-zinc-600",
+                    // Dark bg
+                    "dark:bg-zinc-900 dark:text-zinc-200",
+                    // Open state — only border color changes, bg stays same to avoid reflow
+                    open && "border-zinc-300 dark:border-zinc-600",
+                    // Disabled
+                    disabled && "opacity-50 cursor-not-allowed",
                     className
                 )}
             >
@@ -172,17 +183,17 @@ export function CustomSelect({
                 />
             </button>
 
-            {/* Dropdown Panel — rendered in portal */}
+            {/* Dropdown Panel — portal, no shadow */}
             {mounted && open && createPortal(
                 <div
                     ref={dropdownRef}
                     style={{
                         ...dropdownStyle,
                         opacity: isVisible ? 1 : 0,
-                        transform: isVisible ? "translateY(0)" : "translateY(-6px)",
+                        transform: isVisible ? "translateY(0)" : "translateY(-5px)",
                         transition: "opacity 160ms ease, transform 160ms ease",
                     }}
-                    className="rounded-xl border border-zinc-200/80 bg-white dark:border-zinc-700/80 dark:bg-[#1c1c1e] shadow-[0_8px_32px_rgba(0,0,0,0.10)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] flex flex-col overflow-hidden"
+                    className="rounded-xl border border-zinc-200/80 bg-white dark:border-zinc-700/80 dark:bg-[#1c1c1e] flex flex-col overflow-hidden"
                 >
                     {/* Search Bar */}
                     {showSearch && (
@@ -216,13 +227,13 @@ export function CustomSelect({
 
                     {/* Options List */}
                     <div className="max-h-60 overflow-y-auto custom-scrollbar p-1.5">
-                        {/* Placeholder / clear option (only when not searching) */}
+                        {/* Placeholder / clear option */}
                         {!searchQuery && (
                             <button
                                 onMouseDown={e => e.preventDefault()}
                                 onClick={() => handleSelect("")}
                                 className={cn(
-                                    "flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-[12px] transition-colors",
+                                    "flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-[12px] transition-colors",
                                     value === ""
                                         ? "bg-zinc-100 dark:bg-zinc-800 font-semibold text-zinc-900 dark:text-white"
                                         : "text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800/70 hover:text-zinc-900 dark:hover:text-zinc-200"
@@ -240,7 +251,7 @@ export function CustomSelect({
                                 onMouseDown={e => e.preventDefault()}
                                 onClick={() => handleSelect(option.value)}
                                 className={cn(
-                                    "flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-[12px] transition-colors",
+                                    "flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-[12px] transition-colors",
                                     value === option.value
                                         ? "bg-zinc-100 dark:bg-zinc-800 font-semibold text-zinc-900 dark:text-white"
                                         : "font-normal text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800/70 hover:text-zinc-900 dark:hover:text-zinc-100"

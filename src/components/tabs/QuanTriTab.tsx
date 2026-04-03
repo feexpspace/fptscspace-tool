@@ -222,7 +222,6 @@ export function QuanTriTab() {
                                     value={filterTeamId}
                                     onChange={v => setFilterTeamId(v)}
                                     options={[{ value: "", label: "Tất cả mảng" }, ...teams.map(t => ({ value: t.id, label: t.name }))]}
-                                    className="bg-white dark:bg-zinc-900 shadow-none"
                                 />
                             </div>
                             {!loading && (
@@ -294,7 +293,6 @@ export function QuanTriTab() {
                                                         onChange={tId => handleAssignTeam(u.id, tId)}
                                                         options={teams.map(t => ({ value: t.id, label: t.name }))}
                                                         placeholder="— Chưa có Mảng —"
-                                                        className="bg-zinc-50 dark:bg-[#1a1a1a] shadow-none w-full font-normal"
                                                     />
                                                 </div>
                                             </td>
