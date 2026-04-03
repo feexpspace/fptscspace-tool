@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { ExternalLink, Loader2, RefreshCw, Link, ChevronUp, ChevronDown } from "lucide-react";
+import { ExternalLink, RefreshCw, Link, ChevronUp, ChevronDown, Eye, Heart, MessageCircle, Share2, Film } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useData } from "@/context/DataContext";
 import { Pagination } from "@/components/Pagination";
@@ -131,23 +131,22 @@ export function CaNhanTab() {
 
     return (
         <div className="space-y-6">
-            {/* Header section (Filters + Actions) */}
-            <div className="flex flex-wrap lg:flex-nowrap justify-between items-center gap-2 w-full">
-                {/* Filters */}
-                <div className="flex items-center gap-2 w-full lg:w-auto overflow-x-auto scrollbar-none pb-1 -mb-1">
-                    <div className="shrink-0 min-w-min sm:w-44">
+            {/* Header section — luôn 1 hàng */}
+            <div className="flex items-center gap-2 w-full">
+                {/* Filters — flex-1 */}
+                <div className="flex items-center gap-2 flex-1 overflow-x-auto scrollbar-none">
+                    <div className="shrink-0 min-w-[130px] flex-1 max-w-[180px]">
                         <CustomSelect
                             value={selectedMonth}
                             onChange={v => { setSelectedMonth(v); setPage(1); }}
                             options={monthOptions}
                             placeholder="Tất cả thời gian"
-                            className="bg-white dark:bg-zinc-900 shadow-none border-zinc-200 dark:border-zinc-800"
                         />
                     </div>
 
                     {isAdmin && (
                         <>
-                            <div className="shrink-0 min-w-min sm:w-44">
+                            <div className="shrink-0 min-w-[120px] flex-1 max-w-[180px]">
                                 <CustomSelect
                                     value={selectedTeam}
                                     onChange={v => { setSelectedTeam(v); setSelectedChannel(""); setPage(1); }}
@@ -156,7 +155,7 @@ export function CaNhanTab() {
                                 />
                             </div>
 
-                            <div className="shrink-0 min-w-min sm:w-[200px]">
+                            <div className="shrink-0 min-w-[130px] flex-1 max-w-[200px]">
                                 <CustomSelect
                                     value={selectedChannel}
                                     onChange={v => { setSelectedChannel(v); setSelectedTeam(""); setPage(1); }}
@@ -168,14 +167,14 @@ export function CaNhanTab() {
                     )}
                 </div>
 
-                {/* Actions */}
+                {/* Actions — shrink-0 */}
                 <div className="flex items-center gap-2 shrink-0">
                     {!isAdmin && hasChannel === false && !metaLoading && (
                         <a
                             href={`/api/tiktok/login?userId=${user?.id}`}
-                            className="flex items-center gap-1.5 rounded-xl bg-blue-600 px-3 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white shadow-[0_4px_14px_rgba(37,99,235,0.25)] hover:bg-blue-700 hover:shadow-[0_4px_14px_rgba(37,99,235,0.35)] active:scale-[0.98] transition-all whitespace-nowrap"
+                            className="flex items-center gap-1 rounded-lg bg-blue-600 px-3 py-2 text-[12px] font-semibold text-white hover:bg-blue-700 active:scale-[0.98] transition-all whitespace-nowrap"
                         >
-                            <Link className="h-3.5 w-3.5 sm:h-4 sm:w-4 stroke-[2]" />
+                            <Link className="h-3.5 w-3.5 stroke-[2]" />
                             Kết nối
                         </a>
                     )}
@@ -183,42 +182,47 @@ export function CaNhanTab() {
                         <button
                             onClick={doSync}
                             disabled={syncing || videosLoading}
-                            className="flex items-center cursor-pointer gap-1 sm:gap-1.5 rounded-lg sm:rounded-xl bg-blue-600 px-2 py-1.5 sm:px-5 sm:py-2.5 text-[10px] sm:text-sm font-semibold text-white shadow-[0_4px_14px_rgba(37,99,235,0.25)] hover:bg-blue-700 hover:shadow-[0_4px_14px_rgba(37,99,235,0.35)] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all whitespace-nowrap"
+                            className="flex items-center cursor-pointer gap-1 rounded-lg bg-blue-600 px-3 py-2 text-[12px] font-semibold text-white hover:bg-blue-700 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all whitespace-nowrap"
                         >
-                            <RefreshCw className={`h-3 w-3 sm:h-4 sm:w-4 stroke-[2] ${syncing ? "animate-spin" : ""}`} />
+                            <RefreshCw className={`h-3.5 w-3.5 stroke-[2] ${syncing ? "animate-spin" : ""}`} />
                             {syncing ? "Đồng bộ..." : "Đồng bộ"}
                         </button>
                     )}
                 </div>
             </div>
 
-            {/* Stats Summary row — luôn hiện, skeleton khi đang load */}
+            {/* Stats Summary row */}
             <div className="flex items-center flex-wrap gap-2 pt-1 border-t border-zinc-100 dark:border-zinc-800/80">
                 {videosLoading ? (
-                    // Skeleton badges
                     <>
-                        {[80, 100, 72, 96, 80].map((w, i) => (
-                            <div key={i} className={`h-6 rounded-lg bg-zinc-100 dark:bg-zinc-800 animate-pulse`} style={{ width: w }} />
+                        {[56, 80, 72, 80, 72].map((w, i) => (
+                            <div key={i} className="h-6 rounded-lg bg-zinc-100 dark:bg-zinc-800 animate-pulse" style={{ width: w }} />
                         ))}
                     </>
                 ) : (
                     <>
-                        <span className="text-xs font-bold text-zinc-500 bg-zinc-100 dark:bg-zinc-800 dark:text-zinc-400 px-3 py-1.5 rounded-lg whitespace-nowrap">
-                            {filteredVideos.length} video
+                        {/* Video count */}
+                        <span className="inline-flex items-center gap-1.5 text-xs font-bold text-zinc-500 bg-zinc-100 dark:bg-zinc-800 dark:text-zinc-400 px-2.5 py-1.5 rounded-lg whitespace-nowrap">
+                            <Film className="h-3.5 w-3.5" />
+                            <span>{filteredVideos.length}</span>
                         </span>
                         {filteredVideos.length > 0 && (
                             <>
-                                <span className="text-xs font-bold text-blue-500 bg-blue-50 dark:bg-blue-900/30 dark:text-blue-400 px-3 py-1.5 rounded-lg whitespace-nowrap">
-                                    {statsSummary.views.toLocaleString('vi-VN')} View
+                                <span className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-500 bg-blue-50 dark:bg-blue-900/30 dark:text-blue-400 px-2.5 py-1.5 rounded-lg whitespace-nowrap">
+                                    <Eye className="h-3.5 w-3.5" />
+                                    <span>{statsSummary.views.toLocaleString('vi-VN')}</span>
                                 </span>
-                                <span className="text-xs font-bold text-red-500 bg-red-50 dark:bg-red-900/30 dark:text-red-400 px-3 py-1.5 rounded-lg whitespace-nowrap">
-                                    {statsSummary.likes.toLocaleString('vi-VN')} Like
+                                <span className="inline-flex items-center gap-1.5 text-xs font-bold text-red-500 bg-red-50 dark:bg-red-900/30 dark:text-red-400 px-2.5 py-1.5 rounded-lg whitespace-nowrap">
+                                    <Heart className="h-3.5 w-3.5" />
+                                    <span>{statsSummary.likes.toLocaleString('vi-VN')}</span>
                                 </span>
-                                <span className="text-xs font-bold text-green-500 bg-green-50 dark:bg-green-900/30 dark:text-green-400 px-3 py-1.5 rounded-lg whitespace-nowrap">
-                                    {statsSummary.comments.toLocaleString('vi-VN')} Comment
+                                <span className="inline-flex items-center gap-1.5 text-xs font-bold text-green-500 bg-green-50 dark:bg-green-900/30 dark:text-green-400 px-2.5 py-1.5 rounded-lg whitespace-nowrap">
+                                    <MessageCircle className="h-3.5 w-3.5" />
+                                    <span>{statsSummary.comments.toLocaleString('vi-VN')}</span>
                                 </span>
-                                <span className="text-xs font-bold text-purple-500 bg-purple-50 dark:bg-purple-900/30 dark:text-purple-400 px-3 py-1.5 rounded-lg whitespace-nowrap">
-                                    {statsSummary.shares.toLocaleString('vi-VN')} Share
+                                <span className="inline-flex items-center gap-1.5 text-xs font-bold text-purple-500 bg-purple-50 dark:bg-purple-900/30 dark:text-purple-400 px-2.5 py-1.5 rounded-lg whitespace-nowrap">
+                                    <Share2 className="h-3.5 w-3.5" />
+                                    <span>{statsSummary.shares.toLocaleString('vi-VN')}</span>
                                 </span>
                             </>
                         )}
@@ -271,16 +275,16 @@ export function CaNhanTab() {
                                     <th className="px-3 py-4 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50">Hashtag</th>
                                     <th className="px-3 py-4 text-center text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50 w-10">Link</th>
                                     <th className="px-3 py-4 text-right text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50 cursor-pointer group hover:bg-zinc-100 dark:hover:bg-zinc-800" onClick={() => handleSort('view')}>
-                                        <div className="flex items-center justify-end gap-1.5"><SortIcon sortKey="view" /> Lượt xem</div>
+                                        <div className="flex items-center justify-end gap-1.5"><SortIcon sortKey="view" /> <Eye className="h-3.5 w-3.5" /></div>
                                     </th>
                                     <th className="px-3 py-4 text-right text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50 cursor-pointer group hover:bg-zinc-100 dark:hover:bg-zinc-800" onClick={() => handleSort('like')}>
-                                        <div className="flex items-center justify-end gap-1.5"><SortIcon sortKey="like" /> Like</div>
+                                        <div className="flex items-center justify-end gap-1.5"><SortIcon sortKey="like" /> <Heart className="h-3.5 w-3.5" /></div>
                                     </th>
                                     <th className="px-3 py-4 text-right text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50 cursor-pointer group hover:bg-zinc-100 dark:hover:bg-zinc-800" onClick={() => handleSort('comment')}>
-                                        <div className="flex items-center justify-end gap-1.5"><SortIcon sortKey="comment" /> Comment</div>
+                                        <div className="flex items-center justify-end gap-1.5"><SortIcon sortKey="comment" /> <MessageCircle className="h-3.5 w-3.5" /></div>
                                     </th>
                                     <th className="px-3 py-4 text-right text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50 cursor-pointer group hover:bg-zinc-100 dark:hover:bg-zinc-800" onClick={() => handleSort('share')}>
-                                        <div className="flex items-center justify-end gap-1.5"><SortIcon sortKey="share" /> Share</div>
+                                        <div className="flex items-center justify-end gap-1.5"><SortIcon sortKey="share" /> <Share2 className="h-3.5 w-3.5" /></div>
                                     </th>
                                 </tr>
                             </thead>

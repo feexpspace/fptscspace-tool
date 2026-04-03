@@ -22,7 +22,7 @@ export function BangXepHangTab({ isActive = true }: { isActive?: boolean }) {
         for (let i = 0; i < 12; i++) {
             const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
             const value = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}`;
-            const label = `Tháng ${d.getMonth() + 1}/${d.getFullYear()}`;
+            const label = `T${d.getMonth() + 1}/${d.getFullYear()}`;
             options.push({ value, label });
         }
         return options;
@@ -45,12 +45,12 @@ export function BangXepHangTab({ isActive = true }: { isActive?: boolean }) {
     return (
         <div className="space-y-6">
             {isActive && headerActionsEl && createPortal(
-                <div className="w-[105px] sm:w-[150px] shrink-0">
+                <div className="w-[90px] sm:w-[130px] shrink-0">
                     <CustomSelect
                         value={selectedMonth}
                         onChange={setSelectedMonth}
                         options={monthOptions}
-                        placeholder="Tất cả thời gian"
+                        placeholder="Tất cả"
                     />
                 </div>,
                 headerActionsEl
