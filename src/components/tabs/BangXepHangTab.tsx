@@ -62,9 +62,9 @@ export function BangXepHangTab({ isActive = true }: { isActive?: boolean }) {
                 <table className="w-full text-[11px] sm:text-[12px] relative">
                     <thead>
                         <tr className="border-b border-zinc-100 dark:border-zinc-800/80">
-                            <th className="px-6 py-5 text-center w-20 text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50">Top</th>
-                            <th className="px-6 py-5 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50">Kênh</th>
-                            <th className="px-6 py-5 text-right text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50">View</th>
+                            <th className="px-2 sm:px-6 py-4 sm:py-5 text-center w-12 sm:w-20 text-[10px] sm:text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50">Top</th>
+                            <th className="px-2 sm:px-6 py-4 sm:py-5 text-left text-[10px] sm:text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50">Kênh</th>
+                            <th className="px-3 sm:px-6 py-4 sm:py-5 text-right text-[10px] sm:text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50">View</th>
                             <th className="px-6 py-5 text-right text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50 hidden sm:table-cell">Follow</th>
                             <th className="px-6 py-5 text-right text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50 hidden sm:table-cell">Video</th>
                         </tr>
@@ -89,28 +89,28 @@ export function BangXepHangTab({ isActive = true }: { isActive?: boolean }) {
                                 const rank = index + 1;
                                 return (
                                     <tr key={ch.channelId} className="border-b border-zinc-50/50 last:border-0 dark:border-zinc-800/30 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 transition-colors">
-                                        <td className="px-6 py-5 text-center">
+                                        <td className="px-2 sm:px-6 py-4 sm:py-5 text-center">
                                             {rank === 1 ? (
-                                                <div className="mx-auto flex h-8 w-8 items-center justify-center rounded-full bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400 font-bold shadow-sm ring-1 ring-yellow-200 dark:ring-yellow-800/50">
-                                                    <Trophy className="h-4 w-4" />
+                                                <div className="mx-auto flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-full bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400 font-bold shadow-sm ring-1 ring-yellow-200 dark:ring-yellow-800/50">
+                                                    <Trophy className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                                                 </div>
                                             ) : rank === 2 ? (
-                                                <div className="mx-auto flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300 font-bold shadow-sm ring-1 ring-slate-200 dark:ring-slate-700">
-                                                    <Medal className="h-4 w-4" />
+                                                <div className="mx-auto flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-full bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300 font-bold shadow-sm ring-1 ring-slate-200 dark:ring-slate-700">
+                                                    <Medal className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                                                 </div>
                                             ) : rank === 3 ? (
-                                                <div className="mx-auto flex h-8 w-8 items-center justify-center rounded-full bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400 font-bold shadow-sm ring-1 ring-orange-200 dark:ring-orange-800/50">
-                                                    <Medal className="h-4 w-4" />
+                                                <div className="mx-auto flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-full bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400 font-bold shadow-sm ring-1 ring-orange-200 dark:ring-orange-800/50">
+                                                    <Medal className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                                                 </div>
                                             ) : (
-                                                <div className="font-bold text-zinc-400 dark:text-zinc-500">
+                                                <div className="font-bold text-zinc-400 dark:text-zinc-500 text-[10px] sm:text-[11px]">
                                                     {rank}
                                                 </div>
                                             )}
                                         </td>
-                                        <td className="px-6 py-5">
-                                            <div className="flex items-center gap-3">
-                                                <div className="h-9 w-9 shrink-0 rounded-xl ring-2 ring-white dark:ring-[#0a0a0a] overflow-hidden bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
+                                        <td className="px-2 sm:px-6 py-4 sm:py-5">
+                                            <div className="flex items-center gap-2 sm:gap-3">
+                                                <div className="h-7 w-7 sm:h-9 sm:w-9 shrink-0 rounded-xl ring-2 ring-white dark:ring-[#0a0a0a] overflow-hidden bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
                                                     {ch.avatar ? (
                                                         <Image
                                                             src={ch.avatar}
@@ -127,16 +127,16 @@ export function BangXepHangTab({ isActive = true }: { isActive?: boolean }) {
                                                     )}
                                                 </div>
                                                 <div>
-                                                    <span className={`font-bold ${rank <= 3 ? 'text-zinc-900 dark:text-white' : 'text-zinc-700 dark:text-zinc-300'}`}>
+                                                    <span className={`font-bold line-clamp-1 ${rank <= 3 ? 'text-zinc-900 dark:text-white' : 'text-zinc-700 dark:text-zinc-300'}`}>
                                                         {ch.channelName}
                                                     </span>
                                                     {ch.channelUsername && (
-                                                        <span className="block mt-0.5 text-zinc-500 dark:text-zinc-400">@{ch.channelUsername}</span>
+                                                        <span className="block mt-0.5 text-zinc-500 dark:text-zinc-400 line-clamp-1">@{ch.channelUsername}</span>
                                                     )}
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-5 text-right">
+                                        <td className="px-3 sm:px-6 py-4 sm:py-5 text-right">
                                             <span className={`font-bold ${rank === 1 ? 'text-blue-600 dark:text-blue-400' : 'text-zinc-900 dark:text-white'}`}>
                                                 {ch.totalViews.toLocaleString("vi-VN")}
                                             </span>

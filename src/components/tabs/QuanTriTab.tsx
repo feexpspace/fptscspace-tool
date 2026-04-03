@@ -375,7 +375,8 @@ export function QuanTriTab() {
                                 <CustomSelect
                                     value={filterTeamId}
                                     onChange={v => setFilterTeamId(v)}
-                                    options={[{ value: "", label: "Tất cả mảng" }, ...teams.map(t => ({ value: t.id, label: t.name }))]}
+                                    placeholder="Tất cả mảng"
+                                    options={teams.map(t => ({ value: t.id, label: t.name }))}
                                 />
                             </div>
                             {!loading && (
