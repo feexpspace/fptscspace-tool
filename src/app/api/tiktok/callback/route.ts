@@ -55,13 +55,35 @@ export async function GET(request: Request) {
 
         const tiktokUser = userDataRes.data.user;
 
+        // Helper: tải avatar từ TikTok CDN và upload lên Supabase Storage
+        async function uploadAvatarToStorage(tikTokAvatarUrl: string, chId: string): Promise<string> {
+            try {
+                const imgRes = await fetch(tikTokAvatarUrl);
+                if (!imgRes.ok) return tikTokAvatarUrl;
+                const buffer = await imgRes.arrayBuffer();
+                const contentType = imgRes.headers.get("content-type") || "image/jpeg";
+                const ext = contentType.includes("png") ? "png" : "jpg";
+                const fileName = `${chId}.${ext}`;
+                const { error: uploadErr } = await supabaseAdmin.storage
+                    .from("avatars")
+                    .upload(fileName, new Uint8Array(buffer), { contentType, upsert: true });
+                if (uploadErr) return tikTokAvatarUrl;
+                const { data: { publicUrl } } = supabaseAdmin.storage
+                    .from("avatars")
+                    .getPublicUrl(fileName);
+                return publicUrl;
+            } catch {
+                return tikTokAvatarUrl; // fallback về TikTok URL
+            }
+        }
+
         // 3. Prepare Channel Data
         const channelPayload: Omit<Channel, 'id'> & { open_id: string; union_id: string; display_name: string; is_verified: boolean; video_count: number; user_id: string } = {
             openId: tiktokUser.open_id,
             open_id: tiktokUser.open_id,
             unionId: tiktokUser.union_id || "",
             union_id: tiktokUser.union_id || "",
-            avatar: tiktokUser.avatar_url_100,
+            avatar: tiktokUser.avatar_url_100, // sẽ được thay bằng Supabase URL bên dưới
             displayName: tiktokUser.display_name,
             display_name: tiktokUser.display_name,
             username: tiktokUser.username || tiktokUser.display_name.replace(/\s+/g, '').toLowerCase(),
@@ -77,7 +99,7 @@ export async function GET(request: Request) {
             user_id: userId,
         };
 
-        // 4. Upsert Channel
+        // 4. Upsert Channel — cần channelId trước để đặt tên file avatar
         const { data: existingChannels } = await supabaseAdmin
             .from('channels')
             .select('id')
@@ -87,23 +109,8 @@ export async function GET(request: Request) {
 
         if (existingChannels && existingChannels.length > 0) {
             channelId = existingChannels[0].id;
-            await supabaseAdmin
-                .from('channels')
-                .update({
-                    union_id: channelPayload.union_id,
-                    avatar: channelPayload.avatar,
-                    display_name: channelPayload.display_name,
-                    username: channelPayload.username,
-                    is_verified: channelPayload.is_verified,
-                    follower: channelPayload.follower,
-                    following: channelPayload.following,
-                    likes: channelPayload.like,
-                    video_count: channelPayload.video_count,
-                    user_id: channelPayload.user_id,
-                    updated_at: new Date().toISOString(),
-                })
-                .eq('id', channelId);
         } else {
+            // Insert channel tạm để có ID (avatar cập nhật sau)
             const { data: newChannel } = await supabaseAdmin
                 .from('channels')
                 .insert({
@@ -122,10 +129,34 @@ export async function GET(request: Request) {
                 })
                 .select('id')
                 .single();
-
             if (!newChannel) throw new Error("Failed to create channel");
             channelId = newChannel.id;
         }
+
+        // Upload avatar lên Supabase Storage (sau khi có channelId)
+        const storedAvatarUrl = tiktokUser.avatar_url_100
+            ? await uploadAvatarToStorage(tiktokUser.avatar_url_100, channelId)
+            : "";
+
+        // Update channel với avatar URL từ Storage (hoặc TikTok nếu upload lỗi)
+        await supabaseAdmin
+            .from('channels')
+            .update({
+                union_id: channelPayload.union_id,
+                avatar: storedAvatarUrl || channelPayload.avatar,
+                display_name: channelPayload.display_name,
+                username: channelPayload.username,
+                is_verified: channelPayload.is_verified,
+                follower: channelPayload.follower,
+                following: channelPayload.following,
+                likes: channelPayload.like,
+                video_count: channelPayload.video_count,
+                user_id: channelPayload.user_id,
+                updated_at: new Date().toISOString(),
+            })
+            .eq('id', channelId);
+
+
 
         // 5. Upsert Token
         await supabaseAdmin

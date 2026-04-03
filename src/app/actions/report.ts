@@ -53,10 +53,38 @@ export async function syncTikTokVideos(userId: string, channelId: string) {
         const tiktokUser = userInfoData.data?.user;
 
         if (tiktokUser) {
+            // -- Upload avatar lên Supabase Storage để cache, tránh load từ TikTok CDN --
+            let avatarUrl: string = tiktokUser.avatar_url_100;
+            if (tiktokUser.avatar_url_100) {
+                try {
+                    const imgRes = await fetch(tiktokUser.avatar_url_100);
+                    if (imgRes.ok) {
+                        const buffer = await imgRes.arrayBuffer();
+                        const bytes = new Uint8Array(buffer);
+                        const contentType = imgRes.headers.get("content-type") || "image/jpeg";
+                        const ext = contentType.includes("png") ? "png" : "jpg";
+                        const fileName = `${channelId}.${ext}`;
+
+                        const { error: uploadErr } = await supabaseAdmin.storage
+                            .from("avatars")
+                            .upload(fileName, bytes, { contentType, upsert: true });
+
+                        if (!uploadErr) {
+                            const { data: { publicUrl } } = supabaseAdmin.storage
+                                .from("avatars")
+                                .getPublicUrl(fileName);
+                            avatarUrl = publicUrl;
+                        }
+                    }
+                } catch (avatarErr) {
+                    console.warn("Avatar upload failed, using TikTok URL:", avatarErr);
+                }
+            }
+
             await supabaseAdmin
                 .from('channels')
                 .update({
-                    avatar: tiktokUser.avatar_url_100,
+                    avatar: avatarUrl,
                     display_name: tiktokUser.display_name,
                     username: tiktokUser.username,
                     follower: tiktokUser.follower_count,
