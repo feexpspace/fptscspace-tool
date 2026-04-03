@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
+import Image from "next/image";
 import { Trophy, Medal, Star } from "lucide-react";
 import { getGlobalLeaderboard, ChannelBreakdown } from "@/app/actions/stats";
 import { CustomSelect } from "@/components/CustomSelect";
@@ -109,6 +110,22 @@ export function BangXepHangTab({ isActive = true }: { isActive?: boolean }) {
                                         </td>
                                         <td className="px-6 py-5">
                                             <div className="flex items-center gap-3">
+                                                <div className="h-9 w-9 shrink-0 rounded-xl ring-2 ring-white dark:ring-[#0a0a0a] overflow-hidden bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
+                                                    {ch.avatar ? (
+                                                        <Image
+                                                            src={ch.avatar}
+                                                            alt={ch.channelName}
+                                                            width={36}
+                                                            height={36}
+                                                            className="h-full w-full object-cover"
+                                                            unoptimized
+                                                        />
+                                                    ) : (
+                                                        <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
+                                                            {ch.channelName?.charAt(0) || "C"}
+                                                        </span>
+                                                    )}
+                                                </div>
                                                 <div>
                                                     <span className={`font-bold ${rank <= 3 ? 'text-zinc-900 dark:text-white' : 'text-zinc-700 dark:text-zinc-300'}`}>
                                                         {ch.channelName}

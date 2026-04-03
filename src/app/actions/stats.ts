@@ -19,6 +19,7 @@ export interface ChannelBreakdown {
     totalViews: number;
     totalComments: number;
     totalShares: number;
+    avatar?: string;
 }
 
 export interface StatsResult {
@@ -221,19 +222,20 @@ export async function getGlobalLeaderboard(month?: string): Promise<ChannelBreak
     try {
         const { data: channelsData } = await supabaseAdmin
             .from('channels')
-            .select('id, display_name, username, follower');
+            .select('id, display_name, username, follower, avatar');
             
         if (!channelsData || channelsData.length === 0) return [];
         const channelIds = channelsData.map(c => c.id);
 
-        const channelMap = new Map<string, { displayName: string; username: string; follower: number; views: number; videos: number }>();
+        const channelMap = new Map<string, { displayName: string; username: string; follower: number; views: number; videos: number; avatar: string }>();
         channelsData.forEach(c => {
             channelMap.set(c.id, {
                 displayName: c.display_name || '',
                 username: c.username || '',
                 follower: c.follower || 0,
                 views: 0,
-                videos: 0
+                videos: 0,
+                avatar: c.avatar || ''
             });
         });
 
@@ -270,7 +272,8 @@ export async function getGlobalLeaderboard(month?: string): Promise<ChannelBreak
                     videoCount: data.videos,
                     totalViews: data.views,
                     totalComments: 0,
-                    totalShares: 0
+                    totalShares: 0,
+                    avatar: data.avatar
                 });
             }
         });
