@@ -174,7 +174,7 @@ export function ThongKeTab() {
                     {!isAdmin && hasChannel === false && (
                         <a
                             href={`/api/tiktok/login?userId=${user?.id}`}
-                            className="flex items-center cursor-pointer gap-1 rounded-lg bg-blue-600 px-3 py-2 text-[12px] font-semibold text-white hover:bg-blue-700 active:scale-[0.98] transition-all whitespace-nowrap"
+                            className="flex items-center cursor-pointer gap-1 rounded-lg bg-blue-600 h-[34px] px-3 text-[12px] font-semibold text-white hover:bg-blue-700 active:scale-[0.98] transition-all whitespace-nowrap"
                         >
                             <Link className="h-3.5 w-3.5 stroke-[2]" />
                             Kết nối
@@ -184,7 +184,7 @@ export function ThongKeTab() {
                         <button
                             onClick={doSync}
                             disabled={syncing || dataLoading}
-                            className="flex items-center cursor-pointer gap-1 rounded-lg bg-blue-600 px-3 py-2 text-[12px] font-semibold text-white hover:bg-blue-700 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all whitespace-nowrap"
+                            className="flex items-center cursor-pointer gap-1 rounded-lg bg-blue-600 h-[34px] px-3 text-[12px] font-semibold text-white hover:bg-blue-700 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all whitespace-nowrap"
                         >
                             <RefreshCw className={`h-3.5 w-3.5 stroke-[2] ${syncing ? "animate-spin" : ""}`} />
                             {syncing ? "Đồng bộ..." : "Đồng bộ"}

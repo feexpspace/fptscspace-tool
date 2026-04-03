@@ -144,12 +144,12 @@ export async function syncTikTokVideos(userId: string, channelId: string) {
     }
 }
 
-export async function getMyChannels(userId: string): Promise<{ id: string; displayName: string; username: string }[]> {
+export async function getMyChannels(userId: string): Promise<{ id: string; displayName: string; username: string; avatar?: string }[]> {
     const { data } = await supabaseAdmin
         .from('channels')
-        .select('id, display_name, username')
+        .select('id, display_name, username, avatar')
         .eq('user_id', userId);
-    return (data || []).map(c => ({ id: c.id, displayName: c.display_name, username: c.username }));
+    return (data || []).map(c => ({ id: c.id, displayName: c.display_name, username: c.username, avatar: c.avatar ?? undefined }));
 }
 
 export async function syncAllChannels(): Promise<{ success: boolean; message: string }> {

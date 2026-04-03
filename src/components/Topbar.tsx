@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
+import { useData } from "@/context/DataContext";
 import { logoutUser } from "@/lib/auth-service";
 import { ModeToggle } from "./ModeToggle";
 
@@ -42,6 +43,7 @@ interface TopbarProps {
 
 export function Topbar({ activeTab, onTabChange }: TopbarProps) {
     const { user, role, isAdmin } = useAuth();
+    const { myChannelAvatar } = useData();
     const router = useRouter();
     const [userDropdownOpen, setUserDropdownOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -109,8 +111,22 @@ export function Topbar({ activeTab, onTabChange }: TopbarProps) {
                             onClick={() => setUserDropdownOpen(!userDropdownOpen)}
                             className="flex items-center gap-2 rounded-xl p-1 transition-all focus:outline-none"
                         >
-                            <div className="h-9 w-9 shrink-0 rounded-xl bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-sm font-bold text-blue-600 dark:text-blue-400 ring-2 ring-white dark:ring-[#0a0a0a]">
-                                {user?.name?.charAt(0) || "U"}
+                            {/* Avatar: ảnh TikTok nếu có, fallback chữ cái */}
+                            <div className="h-9 w-9 shrink-0 rounded-xl ring-2 ring-white dark:ring-[#0a0a0a] overflow-hidden bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
+                                {myChannelAvatar ? (
+                                    <Image
+                                        src={myChannelAvatar}
+                                        alt={user?.name || "Avatar"}
+                                        width={36}
+                                        height={36}
+                                        className="h-full w-full object-cover"
+                                        unoptimized
+                                    />
+                                ) : (
+                                    <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
+                                        {user?.name?.charAt(0) || "U"}
+                                    </span>
+                                )}
                             </div>
                             <div className="hidden lg:flex flex-col items-start mr-1">
                                 <span className="text-sm font-bold text-zinc-900 dark:text-white leading-tight">

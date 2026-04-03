@@ -12,6 +12,7 @@ export interface ChannelInfo {
     id: string;
     displayName: string;
     username: string;
+    avatar?: string;
 }
 
 interface DataContextType {
@@ -20,6 +21,7 @@ interface DataContextType {
     allStats: ChannelStat[];
     teams: Team[];
     myChannels: ChannelInfo[];
+    myChannelAvatar: string | null; // avatar của kênh TikTok đầu tiên
     hasChannel: boolean | null;
     // Granular loading states
     metaLoading: boolean;   // teams, stats, channels — loads first (fast)
@@ -36,6 +38,7 @@ const DataContext = createContext<DataContextType>({
     allStats: [],
     teams: [],
     myChannels: [],
+    myChannelAvatar: null,
     hasChannel: null,
     metaLoading: true,
     videosLoading: true,
@@ -103,10 +106,12 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     }, [user?.id, role, isAdmin, fetchData]);
 
     const dataLoading = metaLoading || videosLoading;
+    // Avatar từ kênh TikTok đầu tiên (member)
+    const myChannelAvatar = myChannels[0]?.avatar ?? null;
 
     return (
         <DataContext.Provider value={{
-            allVideos, channelTeamMap, allStats, teams, myChannels, hasChannel,
+            allVideos, channelTeamMap, allStats, teams, myChannels, myChannelAvatar, hasChannel,
             metaLoading, videosLoading, dataLoading, syncing, syncMsg, doSync,
         }}>
             {children}

@@ -144,7 +144,7 @@ export function CustomSelect({
                 onClick={open ? closeDropdown : openDropdown}
                 disabled={disabled}
                 className={cn(
-                    "flex w-full items-center justify-between gap-2 rounded-lg border bg-white px-3 py-2 text-[12px] font-medium text-zinc-700 transition-colors focus:outline-none",
+                    "flex w-full h-[34px] items-center justify-between gap-2 rounded-lg border bg-white px-3 text-[12px] font-medium text-zinc-700 transition-colors focus:outline-none",
                     open ? "border-zinc-300 dark:border-zinc-600" : "border-zinc-200 dark:border-zinc-700/80",
                     "hover:border-zinc-300 dark:hover:border-zinc-600",
                     "dark:bg-zinc-900 dark:text-zinc-200",
