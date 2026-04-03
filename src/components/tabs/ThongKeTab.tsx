@@ -9,7 +9,7 @@ import { CustomSelect } from "@/components/CustomSelect";
 
 export function ThongKeTab() {
     const { user, isAdmin } = useAuth();
-    const { allVideos, channelTeamMap, allStats, teams, hasChannel, dataLoading, syncing, syncMsg, doSync } = useData();
+    const { allVideos, channelTeamMap, allStats, teams, hasChannel, metaLoading, videosLoading, dataLoading, syncing, syncMsg, doSync } = useData();
     const [selectedTeam, setSelectedTeam] = useState("");
     const [selectedChannel, setSelectedChannel] = useState("");
     const [selectedMonth, setSelectedMonth] = useState("");
@@ -195,9 +195,25 @@ export function ThongKeTab() {
 
 
             {/* Stat Cards */}
-            {dataLoading ? (
-                <div className="flex items-center justify-center py-20">
-                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-zinc-300 border-t-zinc-900 dark:border-zinc-600 dark:border-t-white" />
+            {metaLoading ? (
+                // Skeleton stat cards
+                <div className="space-y-4">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
+                        {Array.from({ length: 3 }).map((_, i) => (
+                            <div key={i} className="rounded-xl border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 space-y-3">
+                                <div className="h-3 w-16 rounded bg-zinc-100 dark:bg-zinc-800 animate-pulse" />
+                                <div className="h-7 w-24 rounded bg-zinc-200/70 dark:bg-zinc-700/50 animate-pulse" />
+                            </div>
+                        ))}
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {Array.from({ length: 4 }).map((_, i) => (
+                            <div key={i} className="rounded-xl border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 space-y-3">
+                                <div className="h-3 w-14 rounded bg-zinc-100 dark:bg-zinc-800 animate-pulse" />
+                                <div className="h-7 w-20 rounded bg-zinc-200/70 dark:bg-zinc-700/50 animate-pulse" />
+                            </div>
+                        ))}
+                    </div>
                 </div>
             ) : (
                 <>

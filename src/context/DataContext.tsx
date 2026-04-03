@@ -19,9 +19,12 @@ interface DataContextType {
     channelTeamMap: Record<string, string>;
     allStats: ChannelStat[];
     teams: Team[];
-    myChannels: ChannelInfo[]; // channels belonging to current user (for connect check + filter)
+    myChannels: ChannelInfo[];
     hasChannel: boolean | null;
-    dataLoading: boolean;
+    // Granular loading states
+    metaLoading: boolean;   // teams, stats, channels — loads first (fast)
+    videosLoading: boolean; // videos — loads second (can be slow)
+    dataLoading: boolean;   // combined: true if either is loading
     syncing: boolean;
     syncMsg: string;
     doSync: () => Promise<void>;
@@ -34,6 +37,8 @@ const DataContext = createContext<DataContextType>({
     teams: [],
     myChannels: [],
     hasChannel: null,
+    metaLoading: true,
+    videosLoading: true,
     dataLoading: true,
     syncing: false,
     syncMsg: "",
@@ -48,26 +53,33 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     const [teams, setTeams] = useState<Team[]>([]);
     const [myChannels, setMyChannels] = useState<ChannelInfo[]>([]);
     const [hasChannel, setHasChannel] = useState<boolean | null>(null);
-    const [dataLoading, setDataLoading] = useState(false);
+    const [metaLoading, setMetaLoading] = useState(false);
+    const [videosLoading, setVideosLoading] = useState(false);
     const [syncing, setSyncing] = useState(false);
     const [syncMsg, setSyncMsg] = useState("");
     const loadedForRef = useRef<string | null>(null);
 
     const fetchData = useCallback(async (uid: string, userRole: string, admin: boolean) => {
-        setDataLoading(true);
-        const [videosData, statsData, teamsData, channels] = await Promise.all([
-            getAllVideos(uid, userRole),
+        // Phase 1: Load meta (stats, teams, channels) — fast, show immediately
+        setMetaLoading(true);
+        setVideosLoading(true);
+
+        const [statsData, teamsData, channels] = await Promise.all([
             getAllChannelStats(uid, userRole),
             admin ? getTeamsList(uid, "admin") : Promise.resolve([]),
-            getMyChannels(uid), // always check user's own channels
+            getMyChannels(uid),
         ]);
-        setAllVideos(videosData.videos);
-        setChannelTeamMap(videosData.channelTeamMap);
         setAllStats(statsData);
         setTeams(teamsData);
         setMyChannels(channels);
         setHasChannel(channels.length > 0);
-        setDataLoading(false);
+        setMetaLoading(false);
+
+        // Phase 2: Load videos — can be slow, show skeleton in UI meanwhile
+        const videosData = await getAllVideos(uid, userRole);
+        setAllVideos(videosData.videos);
+        setChannelTeamMap(videosData.channelTeamMap);
+        setVideosLoading(false);
     }, []);
 
     useEffect(() => {
@@ -90,8 +102,13 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         setSyncing(false);
     }, [user?.id, role, isAdmin, fetchData]);
 
+    const dataLoading = metaLoading || videosLoading;
+
     return (
-        <DataContext.Provider value={{ allVideos, channelTeamMap, allStats, teams, myChannels, hasChannel, dataLoading, syncing, syncMsg, doSync }}>
+        <DataContext.Provider value={{
+            allVideos, channelTeamMap, allStats, teams, myChannels, hasChannel,
+            metaLoading, videosLoading, dataLoading, syncing, syncMsg, doSync,
+        }}>
             {children}
         </DataContext.Provider>
     );

@@ -104,3 +104,29 @@ export async function deleteUserAccount(userId: string) {
         return { success: false, error: "Lỗi server khi xóa người dùng." };
     }
 }
+
+// Ngắt kết nối TikTok: Chỉ xóa token, giữ channel + video cũ
+export async function disconnectTikTokToken(channelId: string) {
+    try {
+        await supabaseAdmin.from('tokens').delete().eq('channel_id', channelId);
+        revalidatePath('/');
+        return { success: true };
+    } catch (error) {
+        console.error("Lỗi ngắt kết nối TikTok (token):", error);
+        return { success: false, error: "Lỗi server khi ngắt kết nối." };
+    }
+}
+
+// Ngắt kết nối TikTok: Xóa hoàn toàn token + channel + video
+export async function disconnectTikTokFull(channelId: string) {
+    try {
+        await supabaseAdmin.from('tokens').delete().eq('channel_id', channelId);
+        await supabaseAdmin.from('videos').delete().eq('channel_id', channelId);
+        await supabaseAdmin.from('channels').delete().eq('id', channelId);
+        revalidatePath('/');
+        return { success: true };
+    } catch (error) {
+        console.error("Lỗi ngắt kết nối TikTok (full):", error);
+        return { success: false, error: "Lỗi server khi xóa kênh." };
+    }
+}

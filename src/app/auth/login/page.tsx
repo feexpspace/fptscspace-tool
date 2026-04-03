@@ -2,17 +2,16 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
-import { loginUser, resetPassword } from "@/lib/auth-service";
+import { useSearchParams } from "next/navigation";
+import { loginUser } from "@/lib/auth-service";
 import { ensureEmailConfirmed } from "@/app/actions/auth";
 import { registerUserAction } from "@/app/actions/auth";
 import { useAuth } from "@/context/AuthContext";
-import { Eye, EyeOff, ArrowLeft, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 
-type Mode = "login" | "register" | "reset";
+type Mode = "login" | "register";
 
 function AuthForm() {
-    const router = useRouter();
     const { user, loading } = useAuth();
     const searchParams = useSearchParams();
     const [mode, setMode] = useState<Mode>("login");
@@ -82,21 +81,6 @@ function AuthForm() {
         }
     };
 
-    const handleReset = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!email) { setError("Vui lòng nhập địa chỉ email."); return; }
-        setIsSubmitting(true);
-        setError("");
-        try {
-            await resetPassword(email);
-            setMessage("Link đặt lại mật khẩu đã được gửi vào email của bạn.");
-        } catch {
-            setError("Không thể gửi email. Vui lòng thử lại sau.");
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
     if (loading || user) {
         return <div className="flex justify-center py-8"><Loader2 className="animate-spin h-6 w-6 text-zinc-400" /></div>;
     }
@@ -107,16 +91,14 @@ function AuthForm() {
         <div className="space-y-4">
             <div className="text-center">
                 <h2 className="text-2xl font-bold">
-                    {mode === "login" ? "Đăng nhập" : mode === "register" ? "Tạo tài khoản" : "Đặt lại mật khẩu"}
+                    {mode === "login" ? "Đăng nhập" : "Tạo tài khoản"}
                 </h2>
                 <p className="text-sm text-zinc-500">
-                    {mode === "login" ? "Truy cập hệ thống quản lý TikTok"
-                        : mode === "register" ? "Đăng ký để tham gia hệ thống"
-                        : "Nhập email để nhận link tạo mật khẩu mới"}
+                    {mode === "login" ? "Truy cập hệ thống quản lý TikTok" : "Đăng ký để tham gia hệ thống"}
                 </p>
             </div>
 
-            <form onSubmit={mode === "login" ? handleLogin : mode === "register" ? handleRegister : handleReset} className="space-y-4">
+            <form onSubmit={mode === "login" ? handleLogin : handleRegister} className="space-y-4">
                 {mode === "register" && (
                     <input type="text" placeholder="Họ và tên" required value={name}
                         className={inputCls} onChange={e => setName(e.target.value)} disabled={isSubmitting} />
@@ -125,26 +107,14 @@ function AuthForm() {
                 <input type="email" placeholder="Email" required value={email}
                     className={inputCls} onChange={e => setEmail(e.target.value)} disabled={isSubmitting} />
 
-                {mode !== "reset" && (
-                    <div className="relative">
-                        {mode === "login" && (
-                            <div className="flex justify-end mb-1.5">
-                                <button type="button" onClick={() => switchMode("reset")}
-                                    className="text-xs font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors">
-                                    Quên mật khẩu?
-                                </button>
-                            </div>
-                        )}
-                        <div className="relative">
-                            <input type={showPassword ? "text" : "password"} placeholder="Mật khẩu" required value={password}
-                                className={`${inputCls} pr-10`} onChange={e => setPassword(e.target.value)} disabled={isSubmitting} />
-                            <button type="button" onClick={() => setShowPassword(!showPassword)}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600">
-                                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                            </button>
-                        </div>
-                    </div>
-                )}
+                <div className="relative">
+                    <input type={showPassword ? "text" : "password"} placeholder="Mật khẩu" required value={password}
+                        className={`${inputCls} pr-10`} onChange={e => setPassword(e.target.value)} disabled={isSubmitting} />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600">
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                </div>
 
                 {mode === "register" && (
                     <div className="relative">
@@ -163,16 +133,8 @@ function AuthForm() {
                 <button type="submit" disabled={isSubmitting}
                     className="flex w-full items-center justify-center rounded-xl bg-blue-600 py-3.5 font-semibold text-white shadow-md shadow-blue-500/20 hover:bg-blue-700 disabled:opacity-50 dark:bg-blue-600 dark:text-white transition-all mt-6">
                     {isSubmitting ? <Loader2 className="animate-spin h-5 w-5" /> :
-                        mode === "login" ? "Vào hệ thống" :
-                        mode === "register" ? "Đăng ký tài khoản" : "Gửi link reset"}
+                        mode === "login" ? "Vào hệ thống" : "Đăng ký tài khoản"}
                 </button>
-
-                {mode === "reset" && (
-                    <button type="button" onClick={() => switchMode("login")}
-                        className="flex w-full items-center justify-center gap-2 text-sm text-zinc-500 hover:text-black dark:hover:text-white mt-1">
-                        <ArrowLeft className="h-4 w-4" /> Quay lại đăng nhập
-                    </button>
-                )}
             </form>
 
             {mode === "login" && (

@@ -9,7 +9,7 @@ import { CustomSelect } from "@/components/CustomSelect";
 
 export function CaNhanTab() {
     const { user, isAdmin } = useAuth();
-    const { allVideos, channelTeamMap, teams, myChannels, hasChannel, dataLoading, syncing, doSync } = useData();
+    const { allVideos, channelTeamMap, teams, myChannels, hasChannel, videosLoading, metaLoading, syncing, doSync } = useData();
     const [selectedChannel, setSelectedChannel] = useState(""); // admin: filter by channel
     const [selectedTeam, setSelectedTeam] = useState("");       // admin: filter by team
     const [selectedMonth, setSelectedMonth] = useState("");
@@ -170,7 +170,7 @@ export function CaNhanTab() {
 
                 {/* Actions */}
                 <div className="flex items-center gap-2 shrink-0">
-                    {!isAdmin && hasChannel === false && (
+                    {!isAdmin && hasChannel === false && !metaLoading && (
                         <a
                             href={`/api/tiktok/login?userId=${user?.id}`}
                             className="flex items-center gap-1.5 rounded-xl bg-blue-600 px-3 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white shadow-[0_4px_14px_rgba(37,99,235,0.25)] hover:bg-blue-700 hover:shadow-[0_4px_14px_rgba(37,99,235,0.35)] active:scale-[0.98] transition-all whitespace-nowrap"
@@ -182,7 +182,7 @@ export function CaNhanTab() {
                     {(isAdmin || hasChannel) && (
                         <button
                             onClick={doSync}
-                            disabled={syncing || dataLoading}
+                            disabled={syncing || videosLoading}
                             className="flex items-center cursor-pointer gap-1 sm:gap-1.5 rounded-lg sm:rounded-xl bg-blue-600 px-2 py-1.5 sm:px-5 sm:py-2.5 text-[10px] sm:text-sm font-semibold text-white shadow-[0_4px_14px_rgba(37,99,235,0.25)] hover:bg-blue-700 hover:shadow-[0_4px_14px_rgba(37,99,235,0.35)] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all whitespace-nowrap"
                         >
                             <RefreshCw className={`h-3 w-3 sm:h-4 sm:w-4 stroke-[2] ${syncing ? "animate-spin" : ""}`} />
@@ -192,35 +192,69 @@ export function CaNhanTab() {
                 </div>
             </div>
 
-            {/* Stats Summary row */}
-            {!dataLoading && (
-                <div className="flex items-center flex-wrap gap-2 pt-1 border-t border-zinc-100 dark:border-zinc-800/80">
-                    <span className="text-xs font-bold text-zinc-500 bg-zinc-100 dark:bg-zinc-800 dark:text-zinc-400 px-3 py-1.5 rounded-lg whitespace-nowrap">
-                        {filteredVideos.length} video
-                    </span>
-                    {filteredVideos.length > 0 && (
-                        <>
-                            <span className="text-xs font-bold text-blue-500 bg-blue-50 dark:bg-blue-900/30 dark:text-blue-400 px-3 py-1.5 rounded-lg whitespace-nowrap">
-                                {statsSummary.views.toLocaleString('vi-VN')} View
-                            </span>
-                            <span className="text-xs font-bold text-red-500 bg-red-50 dark:bg-red-900/30 dark:text-red-400 px-3 py-1.5 rounded-lg whitespace-nowrap">
-                                {statsSummary.likes.toLocaleString('vi-VN')} Like
-                            </span>
-                            <span className="text-xs font-bold text-green-500 bg-green-50 dark:bg-green-900/30 dark:text-green-400 px-3 py-1.5 rounded-lg whitespace-nowrap">
-                                {statsSummary.comments.toLocaleString('vi-VN')} Comment
-                            </span>
-                            <span className="text-xs font-bold text-purple-500 bg-purple-50 dark:bg-purple-900/30 dark:text-purple-400 px-3 py-1.5 rounded-lg whitespace-nowrap">
-                                {statsSummary.shares.toLocaleString('vi-VN')} Share
-                            </span>
-                        </>
-                    )}
-                </div>
-            )}
+            {/* Stats Summary row — luôn hiện, skeleton khi đang load */}
+            <div className="flex items-center flex-wrap gap-2 pt-1 border-t border-zinc-100 dark:border-zinc-800/80">
+                {videosLoading ? (
+                    // Skeleton badges
+                    <>
+                        {[80, 100, 72, 96, 80].map((w, i) => (
+                            <div key={i} className={`h-6 rounded-lg bg-zinc-100 dark:bg-zinc-800 animate-pulse`} style={{ width: w }} />
+                        ))}
+                    </>
+                ) : (
+                    <>
+                        <span className="text-xs font-bold text-zinc-500 bg-zinc-100 dark:bg-zinc-800 dark:text-zinc-400 px-3 py-1.5 rounded-lg whitespace-nowrap">
+                            {filteredVideos.length} video
+                        </span>
+                        {filteredVideos.length > 0 && (
+                            <>
+                                <span className="text-xs font-bold text-blue-500 bg-blue-50 dark:bg-blue-900/30 dark:text-blue-400 px-3 py-1.5 rounded-lg whitespace-nowrap">
+                                    {statsSummary.views.toLocaleString('vi-VN')} View
+                                </span>
+                                <span className="text-xs font-bold text-red-500 bg-red-50 dark:bg-red-900/30 dark:text-red-400 px-3 py-1.5 rounded-lg whitespace-nowrap">
+                                    {statsSummary.likes.toLocaleString('vi-VN')} Like
+                                </span>
+                                <span className="text-xs font-bold text-green-500 bg-green-50 dark:bg-green-900/30 dark:text-green-400 px-3 py-1.5 rounded-lg whitespace-nowrap">
+                                    {statsSummary.comments.toLocaleString('vi-VN')} Comment
+                                </span>
+                                <span className="text-xs font-bold text-purple-500 bg-purple-50 dark:bg-purple-900/30 dark:text-purple-400 px-3 py-1.5 rounded-lg whitespace-nowrap">
+                                    {statsSummary.shares.toLocaleString('vi-VN')} Share
+                                </span>
+                            </>
+                        )}
+                    </>
+                )}
+            </div>
 
             {/* Video Table */}
-            {dataLoading ? (
-                <div className="flex items-center justify-center py-20">
-                    <Loader2 className="h-8 w-8 animate-spin text-zinc-400" />
+            {videosLoading ? (
+                // Skeleton table rows
+                <div className="overflow-x-auto rounded-xl border border-zinc-100/50 bg-white shadow-[0_4px_24px_rgba(0,0,0,0.03)] dark:border-zinc-800/50 dark:bg-zinc-900">
+                    <table className="w-full text-[11px] sm:text-[12px]">
+                        <thead>
+                            <tr className="border-b border-zinc-100 dark:border-zinc-800/80">
+                                {['40px','80px',isAdmin ? '100px' : null,'1fr','120px','56px','80px','72px','80px','72px'].filter(Boolean).map((w, i) => (
+                                    <th key={i} className="px-3 py-4 bg-zinc-50/50 dark:bg-zinc-900/50" style={{ width: w ?? 'auto' }}>
+                                        <div className="h-3 rounded bg-zinc-200/70 dark:bg-zinc-700/50 animate-pulse" />
+                                    </th>
+                                ))}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {Array.from({ length: 8 }).map((_, i) => (
+                                <tr key={i} className="border-b border-zinc-50/50 last:border-0 dark:border-zinc-800/30">
+                                    {[40, 70, ...(isAdmin ? [90] : []), 180, 100, 40, 60, 50, 60, 50].map((w, j) => (
+                                        <td key={j} className="px-3 py-4">
+                                            <div
+                                                className="h-3.5 rounded bg-zinc-100 dark:bg-zinc-800 animate-pulse"
+                                                style={{ width: w, opacity: 1 - i * 0.08 }}
+                                            />
+                                        </td>
+                                    ))}
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
                 </div>
             ) : pagedVideos.length > 0 ? (
                 <>
