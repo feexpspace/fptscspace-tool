@@ -2,6 +2,7 @@
 
 import { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useCountUp } from "@/hooks/useCountUp";
 
 interface StatCardProps {
     title: string;
@@ -37,6 +38,8 @@ const iconNormalMap: Record<string, string> = {
 };
 
 export function StatCard({ title, value, icon: Icon, color, className, featured }: StatCardProps) {
+    const animatedValue = useCountUp(value, 3000);
+
     if (featured) {
         return (
             <div className={cn(
@@ -52,7 +55,7 @@ export function StatCard({ title, value, icon: Icon, color, className, featured 
                 </div>
                 <div className="min-w-0 relative z-10">
                     <p className="text-2xl md:text-3xl xl:text-[32px] font-bold tracking-tight mb-1.5 truncate text-white">
-                        {value.toLocaleString("vi-VN")}
+                        {animatedValue.toLocaleString("vi-VN")}
                     </p>
                     <p className="text-[13px] md:text-sm font-medium capitalize truncate text-blue-100">
                         {title}
@@ -91,7 +94,7 @@ export function StatCard({ title, value, icon: Icon, color, className, featured 
                     "text-zinc-900 dark:text-white",
                     "group-hover:text-white"
                 )}>
-                    {value.toLocaleString("vi-VN")}
+                    {animatedValue.toLocaleString("vi-VN")}
                 </p>
                 <p className={cn(
                     "text-[13px] md:text-sm font-medium capitalize truncate transition-colors duration-200",
