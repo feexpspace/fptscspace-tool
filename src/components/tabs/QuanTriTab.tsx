@@ -1,13 +1,167 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Plus, Trash2, X, ChevronDown, ChevronUp, Pencil, Check, ShieldCheck, Unlink, WifiOff } from "lucide-react";
+import { useEffect, useState, useRef, useCallback, type CSSProperties } from "react";
+import { createPortal } from "react-dom";
+import { Trash2, X, Pencil, Check, ShieldCheck, Unlink, WifiOff, Plus, ChevronDown } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { getAllUsersWithChannels, approveUser, deleteUserAccount, UserWithChannels, disconnectTikTokToken, disconnectTikTokFull } from "@/app/actions/account";
 import { Team } from "@/types";
 import { getTeamsList } from "@/app/actions/helpers";
 import { createNewTeam, deleteTeam, updateTeamName, assignUserToTeam } from "@/app/actions/team";
 import { CustomSelect } from "@/components/CustomSelect";
+import { cn } from "@/lib/utils";
+
+// Palette màu cho từng mảng (round-robin)
+const TEAM_COLORS = [
+    { bg: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",   ring: "hover:ring-blue-400" },
+    { bg: "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300", ring: "hover:ring-violet-400" },
+    { bg: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300", ring: "hover:ring-emerald-400" },
+    { bg: "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300", ring: "hover:ring-orange-400" },
+    { bg: "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300",   ring: "hover:ring-rose-400" },
+    { bg: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300", ring: "hover:ring-yellow-400" },
+    { bg: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300",   ring: "hover:ring-cyan-400" },
+    { bg: "bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300",   ring: "hover:ring-pink-400" },
+];
+
+// Tag + popover chọn mảng
+interface TeamTagProps {
+    teams: Team[];
+    currentTeamId: string;
+    disabled?: boolean;
+    onAssign: (teamId: string) => void;
+}
+
+function TeamTag({ teams, currentTeamId, disabled, onAssign }: TeamTagProps) {
+    const [open, setOpen] = useState(false);
+    const [isVisible, setIsVisible] = useState(false);
+    const triggerRef = useRef<HTMLButtonElement>(null);
+    const popoverRef = useRef<HTMLDivElement>(null);
+    const posRef = useRef<CSSProperties>({});
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => { setMounted(true); }, []);
+
+    const currentTeam = teams.find(t => t.id === currentTeamId);
+    const colorIdx = teams.findIndex(t => t.id === currentTeamId);
+    const palette = TEAM_COLORS[colorIdx % TEAM_COLORS.length];
+
+    const computePos = useCallback(() => {
+        if (!triggerRef.current) return;
+        const rect = triggerRef.current.getBoundingClientRect();
+        const w = 200;
+        const overflowR = rect.left + w > window.innerWidth;
+        posRef.current = {
+            position: "fixed",
+            top: `${rect.bottom + 6}px`,
+            left: overflowR ? "auto" : `${rect.left}px`,
+            right: overflowR ? `${window.innerWidth - rect.right}px` : "auto",
+            width: `${w}px`,
+            zIndex: 99999,
+        };
+    }, []);
+
+    const openPopover = useCallback(() => {
+        if (disabled) return;
+        computePos();
+        setOpen(true);
+        requestAnimationFrame(() => requestAnimationFrame(() => setIsVisible(true)));
+    }, [disabled, computePos]);
+
+    const closePopover = useCallback(() => {
+        setIsVisible(false);
+        setTimeout(() => setOpen(false), 150);
+    }, []);
+
+    useEffect(() => {
+        if (!open) return;
+        const handler = (e: MouseEvent) => {
+            if (triggerRef.current?.contains(e.target as Node) || popoverRef.current?.contains(e.target as Node)) return;
+            closePopover();
+        };
+        document.addEventListener("mousedown", handler);
+        return () => document.removeEventListener("mousedown", handler);
+    }, [open, closePopover]);
+
+    const select = (teamId: string) => {
+        onAssign(teamId);
+        closePopover();
+    };
+
+    return (
+        <div className="flex items-center">
+            {currentTeam ? (
+                // Tag màu — bấm để đổi
+                <button
+                    ref={triggerRef}
+                    onClick={open ? closePopover : openPopover}
+                    disabled={disabled}
+                    className={cn(
+                        "inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[12px] font-semibold ring-0 ring-offset-0 hover:ring-2 transition-all",
+                        palette.bg,
+                        palette.ring,
+                        disabled && "opacity-50 cursor-not-allowed"
+                    )}
+                >
+                    {currentTeam.name}
+                    <ChevronDown className={cn("h-3 w-3 opacity-60 transition-transform", open && "rotate-180")} />
+                </button>
+            ) : (
+                // Chưa có — nút "+Mảng"
+                <button
+                    ref={triggerRef}
+                    onClick={open ? closePopover : openPopover}
+                    disabled={disabled}
+                    className="inline-flex items-center gap-1 rounded-lg border border-dashed border-zinc-300 dark:border-zinc-600 px-2.5 py-1.5 text-[11px] font-medium text-zinc-400 hover:border-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+                >
+                    <Plus className="h-3 w-3" />
+                    Mảng
+                </button>
+            )}
+
+            {/* Popover */}
+            {mounted && open && createPortal(
+                <div
+                    ref={popoverRef}
+                    style={{
+                        ...posRef.current,
+                        opacity: isVisible ? 1 : 0,
+                        transform: isVisible ? "translateY(0)" : "translateY(-5px)",
+                        transition: "opacity 150ms ease, transform 150ms ease",
+                    }}
+                    className="rounded-xl border border-zinc-200/80 dark:border-zinc-700/80 bg-white dark:bg-[#1c1c1e] overflow-hidden"
+                >
+                    <div className="p-1.5">
+                        {/* Option xóa mảng */}
+                        {currentTeamId && (
+                            <button
+                                onClick={() => select("")}
+                                className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-[12px] text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+                            >
+                                <X className="h-3 w-3" />
+                                Bỏ khỏi mảng
+                            </button>
+                        )}
+                        {teams.map((t, i) => {
+                            const pal = TEAM_COLORS[i % TEAM_COLORS.length];
+                            const selected = t.id === currentTeamId;
+                            return (
+                                <button
+                                    key={t.id}
+                                    onClick={() => select(t.id)}
+                                    className="flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-[12px] transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                                >
+                                    <span className={cn("rounded-md px-2 py-0.5 text-[11px] font-semibold", pal.bg)}>{t.name}</span>
+                                    {selected && <Check className="h-3.5 w-3.5 text-zinc-500 stroke-[2.5]" />}
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>,
+                document.body
+            )}
+        </div>
+    );
+}
 
 // Modal xác nhận ngắt kết nối TikTok
 interface DisconnectModalProps {
@@ -285,16 +439,13 @@ export function QuanTriTab() {
                                                     <span className="text-xs font-medium text-zinc-400 italic">—</span>
                                                 )}
                                             </td>
-                                            <td className="px-6 py-4 max-w-[200px] relative hover:z-50">
-                                                <div className="w-40 relative">
-                                                    <CustomSelect
-                                                        value={currentTeamId}
-                                                        disabled={actionLoading}
-                                                        onChange={tId => handleAssignTeam(u.id, tId)}
-                                                        options={teams.map(t => ({ value: t.id, label: t.name }))}
-                                                        placeholder="— Chưa có Mảng —"
-                                                    />
-                                                </div>
+                                            <td className="px-6 py-4">
+                                                <TeamTag
+                                                    teams={teams}
+                                                    currentTeamId={currentTeamId}
+                                                    disabled={actionLoading}
+                                                    onAssign={tId => handleAssignTeam(u.id, tId)}
+                                                />
                                             </td>
                                             <td className="px-6 py-4">
                                                 <span className={`inline-flex rounded-lg px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-widest ${
