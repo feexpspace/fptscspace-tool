@@ -2,12 +2,13 @@
 
 import { useEffect, useState, useRef, useCallback, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
-import { Trash2, X, Pencil, Check, ShieldCheck, Unlink, WifiOff, Plus, ChevronDown } from "lucide-react";
+import { Trash2, X, Pencil, Check, ShieldCheck, Unlink, WifiOff, Plus, ChevronDown, FolderKanban, PlayCircle, StopCircle } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { getAllUsersWithChannels, approveUser, deleteUserAccount, UserWithChannels, disconnectTikTokToken, disconnectTikTokFull } from "@/app/actions/account";
-import { Team } from "@/types";
+import { getAllUsersWithChannels, approveUser, deleteUserAccount, UserWithChannels, disconnectTikTokToken, disconnectTikTokFull, updateUserSchoolInfo } from "@/app/actions/account";
+import { Team, Project } from "@/types";
 import { getTeamsList } from "@/app/actions/helpers";
-import { createNewTeam, deleteTeam, updateTeamName, assignUserToTeam } from "@/app/actions/team";
+import { assignUserToTeam } from "@/app/actions/team";
+import { getProjects, createProject, updateProject, deleteProject } from "@/app/actions/project";
 import { CustomSelect } from "@/components/CustomSelect";
 import { cn } from "@/lib/utils";
 
@@ -90,7 +91,6 @@ function TeamTag({ teams, currentTeamId, disabled, onAssign }: TeamTagProps) {
     return (
         <div className="flex items-center">
             {currentTeam ? (
-                // Tag màu — bấm để đổi
                 <button
                     ref={triggerRef}
                     onClick={open ? closePopover : openPopover}
@@ -106,7 +106,6 @@ function TeamTag({ teams, currentTeamId, disabled, onAssign }: TeamTagProps) {
                     <ChevronDown className={cn("h-3 w-3 opacity-60 transition-transform", open && "rotate-180")} />
                 </button>
             ) : (
-                // Chưa có — nút "+Mảng"
                 <button
                     ref={triggerRef}
                     onClick={open ? closePopover : openPopover}
@@ -118,7 +117,6 @@ function TeamTag({ teams, currentTeamId, disabled, onAssign }: TeamTagProps) {
                 </button>
             )}
 
-            {/* Popover */}
             {mounted && open && createPortal(
                 <div
                     ref={popoverRef}
@@ -131,7 +129,6 @@ function TeamTag({ teams, currentTeamId, disabled, onAssign }: TeamTagProps) {
                     className="rounded-xl border border-zinc-200/80 dark:border-zinc-700/80 bg-white dark:bg-[#1c1c1e] overflow-hidden"
                 >
                     <div className="p-1.5">
-                        {/* Option xóa mảng */}
                         {currentTeamId && (
                             <button
                                 onClick={() => select("")}
@@ -163,6 +160,148 @@ function TeamTag({ teams, currentTeamId, disabled, onAssign }: TeamTagProps) {
     );
 }
 
+// Tag inline edit cho Trường / Cơ sở
+interface InfoTagProps {
+    label: string;
+    value?: string;
+    disabled?: boolean;
+    onSave: (val: string) => void;
+    color?: string;
+}
+
+function InfoTag({ label, value, disabled, onSave, color = "bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300" }: InfoTagProps) {
+    const [open, setOpen] = useState(false);
+    const [isVisible, setIsVisible] = useState(false);
+    const [inputVal, setInputVal] = useState(value || "");
+    const triggerRef = useRef<HTMLButtonElement>(null);
+    const popoverRef = useRef<HTMLDivElement>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
+    const posRef = useRef<CSSProperties>({});
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => { setMounted(true); }, []);
+
+    const computePos = useCallback(() => {
+        if (!triggerRef.current) return;
+        const rect = triggerRef.current.getBoundingClientRect();
+        const w = 200;
+        const overflowR = rect.left + w > window.innerWidth;
+        posRef.current = {
+            position: "fixed",
+            top: `${rect.bottom + 6}px`,
+            left: overflowR ? "auto" : `${rect.left}px`,
+            right: overflowR ? `${window.innerWidth - rect.right}px` : "auto",
+            width: `${w}px`,
+            zIndex: 99999,
+        };
+    }, []);
+
+    const openPopover = useCallback(() => {
+        if (disabled) return;
+        setInputVal(value || "");
+        computePos();
+        setOpen(true);
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+            setIsVisible(true);
+            inputRef.current?.focus();
+        }));
+    }, [disabled, value, computePos]);
+
+    const closePopover = useCallback(() => {
+        setIsVisible(false);
+        setTimeout(() => setOpen(false), 150);
+    }, []);
+
+    useEffect(() => {
+        if (!open) return;
+        const handler = (e: MouseEvent) => {
+            if (triggerRef.current?.contains(e.target as Node) || popoverRef.current?.contains(e.target as Node)) return;
+            closePopover();
+        };
+        document.addEventListener("mousedown", handler);
+        return () => document.removeEventListener("mousedown", handler);
+    }, [open, closePopover]);
+
+    const handleSave = () => {
+        onSave(inputVal.trim());
+        closePopover();
+    };
+
+    return (
+        <div className="flex items-center">
+            {value ? (
+                <button
+                    ref={triggerRef}
+                    onClick={open ? closePopover : openPopover}
+                    disabled={disabled}
+                    className={cn(
+                        "inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold hover:ring-2 hover:ring-teal-400 ring-0 ring-offset-0 transition-all",
+                        color,
+                        disabled && "opacity-50 cursor-not-allowed"
+                    )}
+                >
+                    {value}
+                    <Pencil className="h-2.5 w-2.5 opacity-50" />
+                </button>
+            ) : (
+                <button
+                    ref={triggerRef}
+                    onClick={open ? closePopover : openPopover}
+                    disabled={disabled}
+                    className="inline-flex items-center gap-1 rounded-lg border border-dashed border-zinc-300 dark:border-zinc-600 px-2.5 py-1.5 text-[11px] font-medium text-zinc-400 hover:border-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+                >
+                    <Plus className="h-3 w-3" />
+                    {label}
+                </button>
+            )}
+
+            {mounted && open && createPortal(
+                <div
+                    ref={popoverRef}
+                    style={{
+                        ...posRef.current,
+                        opacity: isVisible ? 1 : 0,
+                        transform: isVisible ? "translateY(0)" : "translateY(-5px)",
+                        transition: "opacity 150ms ease, transform 150ms ease",
+                    }}
+                    className="rounded-xl border border-zinc-200/80 dark:border-zinc-700/80 bg-white dark:bg-[#1c1c1e] shadow-lg overflow-hidden"
+                >
+                    <div className="p-3 space-y-2">
+                        <input
+                            ref={inputRef}
+                            value={inputVal}
+                            onChange={e => setInputVal(e.target.value)}
+                            onKeyDown={e => {
+                                if (e.key === 'Enter') handleSave();
+                                if (e.key === 'Escape') closePopover();
+                            }}
+                            placeholder={label}
+                            className="w-full rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-1.5 text-[12px] text-zinc-900 dark:text-white outline-none focus:border-teal-400"
+                        />
+                        <div className="flex gap-2">
+                            <button
+                                onClick={handleSave}
+                                className="flex-1 rounded-lg bg-teal-600 px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-teal-700 transition-colors"
+                            >
+                                Lưu
+                            </button>
+                            {value && (
+                                <button
+                                    onClick={() => { onSave(""); closePopover(); }}
+                                    className="rounded-lg border border-zinc-200 dark:border-zinc-700 px-3 py-1.5 text-[11px] font-medium text-zinc-500 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+                                >
+                                    Xóa
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
+        </div>
+    );
+}
+
 // Modal xác nhận ngắt kết nối TikTok
 interface DisconnectModalProps {
     channelName: string;
@@ -175,14 +314,8 @@ interface DisconnectModalProps {
 function DisconnectModal({ channelName, channelId, onClose, onAction, loading }: DisconnectModalProps) {
     return (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-            {/* Backdrop */}
-            <div
-                className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-                onClick={onClose}
-            />
-            {/* Modal */}
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
             <div className="relative w-full max-w-sm rounded-2xl border border-zinc-200 bg-white shadow-2xl dark:border-zinc-800 dark:bg-[#1a1a1a] p-6 space-y-5 animate-in fade-in zoom-in-95 duration-200">
-                {/* Icon + Title */}
                 <div className="flex items-start gap-4">
                     <div className="shrink-0 flex h-10 w-10 items-center justify-center rounded-xl bg-orange-100 dark:bg-orange-900/30">
                         <WifiOff className="h-5 w-5 text-orange-600 dark:text-orange-400" />
@@ -193,17 +326,12 @@ function DisconnectModal({ channelName, channelId, onClose, onAction, loading }:
                             Kênh: <span className="font-semibold text-zinc-700 dark:text-zinc-300">{channelName}</span>
                         </p>
                     </div>
-                    <button
-                        onClick={onClose}
-                        className="ml-auto shrink-0 p-1.5 rounded-lg text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-                    >
+                    <button onClick={onClose} className="ml-auto shrink-0 p-1.5 rounded-lg text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
                         <X className="h-4 w-4" />
                     </button>
                 </div>
 
-                {/* Options */}
                 <div className="space-y-2.5">
-                    {/* Option 1: Chỉ ngắt kết nối */}
                     <button
                         disabled={loading}
                         onClick={() => onAction(channelId, false)}
@@ -220,7 +348,6 @@ function DisconnectModal({ channelName, channelId, onClose, onAction, loading }:
                         </div>
                     </button>
 
-                    {/* Option 2: Xóa hoàn toàn */}
                     <button
                         disabled={loading}
                         onClick={() => onAction(channelId, true)}
@@ -254,51 +381,33 @@ export function QuanTriTab() {
     const { user } = useAuth();
     const [teams, setTeams] = useState<Team[]>([]);
     const [users, setUsers] = useState<UserWithChannels[]>([]);
+    const [projects, setProjects] = useState<Project[]>([]);
     const [loading, setLoading] = useState(true);
-    const [expandedTeam, setExpandedTeam] = useState<string | null>(null);
-    const [showCreateTeam, setShowCreateTeam] = useState(false);
-    const [newTeamName, setNewTeamName] = useState("");
-    const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
-    const [editTeamName, setEditTeamName] = useState("");
     const [actionLoading, setActionLoading] = useState(false);
     const [filterTeamId, setFilterTeamId] = useState<string>("");
     const [disconnectModal, setDisconnectModal] = useState<{ channelId: string; channelName: string } | null>(null);
 
+    // Project management state
+    const [showCreateProject, setShowCreateProject] = useState(false);
+    const [newProjectName, setNewProjectName] = useState("");
+    const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
+    const [editProjectName, setEditProjectName] = useState("");
+
     const refresh = async (showSpinner = true) => {
         if (!user) return;
         if (showSpinner) setLoading(true);
-        const [teamsData, usersResult] = await Promise.all([
+        const [teamsData, usersResult, projectsData] = await Promise.all([
             getTeamsList(user.id, "admin"),
             getAllUsersWithChannels(),
+            getProjects(),
         ]);
         setTeams(teamsData);
         if (usersResult.success && usersResult.data) setUsers(usersResult.data);
+        setProjects(projectsData);
         if (showSpinner) setLoading(false);
     };
 
     useEffect(() => { refresh(true); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [user]);
-
-    const handleCreateTeam = async () => {
-        if (!newTeamName.trim()) return;
-        setActionLoading(true);
-        await createNewTeam(newTeamName.trim(), []);
-        setNewTeamName(""); setShowCreateTeam(false);
-        await refresh(false); setActionLoading(false);
-    };
-
-    const handleDeleteTeam = async (teamId: string) => {
-        if (!confirm("Bạn có chắc muốn xóa Mảng này?")) return;
-        setActionLoading(true);
-        await deleteTeam(teamId); setExpandedTeam(null);
-        await refresh(false); setActionLoading(false);
-    };
-
-    const handleRenameTeam = async (teamId: string) => {
-        if (!editTeamName.trim()) return;
-        setActionLoading(true);
-        await updateTeamName(teamId, editTeamName.trim());
-        setEditingTeamId(null); await refresh(false); setActionLoading(false);
-    };
 
     const handleAssignTeam = async (userId: string, teamId: string) => {
         setActionLoading(true);
@@ -318,6 +427,46 @@ export function QuanTriTab() {
         setActionLoading(false);
     };
 
+    const handleUpdateSchool = async (userId: string, field: 'truong' | 'coSo', value: string) => {
+        const u = users.find(x => x.id === userId);
+        if (!u) return;
+        const truong = field === 'truong' ? value : (u.truong || '');
+        const coSo = field === 'coSo' ? value : (u.coSo || '');
+        setActionLoading(true);
+        await updateUserSchoolInfo(userId, truong, coSo);
+        await refresh(false);
+        setActionLoading(false);
+    };
+
+    // Project handlers
+    const handleCreateProject = async () => {
+        if (!newProjectName.trim()) return;
+        setActionLoading(true);
+        await createProject(newProjectName.trim());
+        setNewProjectName(""); setShowCreateProject(false);
+        await refresh(false); setActionLoading(false);
+    };
+
+    const handleRenameProject = async (projectId: string) => {
+        if (!editProjectName.trim()) return;
+        setActionLoading(true);
+        await updateProject(projectId, { name: editProjectName.trim() });
+        setEditingProjectId(null); await refresh(false); setActionLoading(false);
+    };
+
+    const handleToggleProjectStatus = async (p: Project) => {
+        setActionLoading(true);
+        await updateProject(p.id, { status: p.status === 'active' ? 'ended' : 'active' });
+        await refresh(false); setActionLoading(false);
+    };
+
+    const handleDeleteProject = async (projectId: string) => {
+        if (!confirm("Xóa dự án này? Các video đang thuộc dự án sẽ được bỏ liên kết.")) return;
+        setActionLoading(true);
+        await deleteProject(projectId);
+        await refresh(false); setActionLoading(false);
+    };
+
     if (loading) {
         return (
             <div className="flex items-center justify-center py-20">
@@ -328,7 +477,6 @@ export function QuanTriTab() {
 
     return (
         <>
-            {/* Disconnect Modal */}
             {disconnectModal && (
                 <DisconnectModal
                     channelId={disconnectModal.channelId}
@@ -339,7 +487,7 @@ export function QuanTriTab() {
                 />
             )}
 
-            <div className="space-y-8">
+            <div className="space-y-10">
                 {/* === Tài khoản chờ duyệt === */}
                 {users.filter(u => u.status === 'pending').length > 0 && (
                     <div className="space-y-3">
@@ -390,15 +538,17 @@ export function QuanTriTab() {
                             )}
                         </div>
                     </div>
-                    <div className="rounded-xl border border-zinc-100/50 bg-white shadow-[0_4px_24px_rgba(0,0,0,0.03)] dark:border-zinc-800/50 dark:bg-zinc-900">
+                    <div className="rounded-xl border border-zinc-100/50 bg-white shadow-[0_4px_24px_rgba(0,0,0,0.03)] dark:border-zinc-800/50 dark:bg-zinc-900 overflow-x-auto">
                         <table className="w-full text-[11px] sm:text-[12px]">
                             <thead>
                                 <tr className="border-b border-zinc-100 dark:border-zinc-800/80">
-                                    <th className="px-6 py-5 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50">Người dùng</th>
-                                    <th className="px-6 py-5 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50">Kênh TikTok</th>
-                                    <th className="px-6 py-5 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50">Mảng</th>
-                                    <th className="px-6 py-5 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50">Vai trò</th>
-                                    <th className="px-6 py-5 text-right w-10 bg-zinc-50/50 dark:bg-zinc-900/50"></th>
+                                    <th className="px-5 py-4 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50 whitespace-nowrap">Người dùng</th>
+                                    <th className="px-5 py-4 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50 whitespace-nowrap">Kênh TikTok</th>
+                                    <th className="px-5 py-4 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50 whitespace-nowrap">Mảng</th>
+                                    <th className="px-5 py-4 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50 whitespace-nowrap">Trường</th>
+                                    <th className="px-5 py-4 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50 whitespace-nowrap">Cơ sở</th>
+                                    <th className="px-5 py-4 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50 whitespace-nowrap">Vai trò</th>
+                                    <th className="px-5 py-4 text-right w-10 bg-zinc-50/50 dark:bg-zinc-900/50"></th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -410,13 +560,13 @@ export function QuanTriTab() {
                                     const currentTeamId = teams.find(t => t.members?.includes(u.id))?.id || "";
                                     return (
                                         <tr key={u.id} className="border-b border-zinc-50/50 last:border-0 dark:border-zinc-800/30 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 transition-colors">
-                                            <td className="px-6 py-4">
+                                            <td className="px-5 py-4">
                                                 <div>
                                                     <span className="font-bold text-zinc-900 dark:text-white block mb-0.5">{u.name}</span>
                                                     <p className="font-medium text-zinc-400">{u.email}</p>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4">
+                                            <td className="px-5 py-4">
                                                 {u.channels.length > 0 ? (
                                                     <div className="flex flex-wrap gap-2">
                                                         {u.channels.map(ch => (
@@ -424,7 +574,6 @@ export function QuanTriTab() {
                                                                 <span className="font-bold tracking-tight text-zinc-600 dark:text-zinc-400 whitespace-nowrap">
                                                                     {ch.displayName || ch.username}
                                                                 </span>
-                                                                {/* Nút ngắt kết nối - hiện khi hover */}
                                                                 <button
                                                                     disabled={actionLoading}
                                                                     onClick={() => setDisconnectModal({ channelId: ch.id, channelName: ch.displayName || ch.username || ch.id })}
@@ -440,7 +589,7 @@ export function QuanTriTab() {
                                                     <span className="text-xs font-medium text-zinc-400 italic">—</span>
                                                 )}
                                             </td>
-                                            <td className="px-6 py-4">
+                                            <td className="px-5 py-4">
                                                 <TeamTag
                                                     teams={teams}
                                                     currentTeamId={currentTeamId}
@@ -448,7 +597,25 @@ export function QuanTriTab() {
                                                     onAssign={tId => handleAssignTeam(u.id, tId)}
                                                 />
                                             </td>
-                                            <td className="px-6 py-4">
+                                            <td className="px-5 py-4">
+                                                <InfoTag
+                                                    label="Trường"
+                                                    value={u.truong}
+                                                    disabled={actionLoading}
+                                                    onSave={val => handleUpdateSchool(u.id, 'truong', val)}
+                                                    color="bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300"
+                                                />
+                                            </td>
+                                            <td className="px-5 py-4">
+                                                <InfoTag
+                                                    label="Cơ sở"
+                                                    value={u.coSo}
+                                                    disabled={actionLoading}
+                                                    onSave={val => handleUpdateSchool(u.id, 'coSo', val)}
+                                                    color="bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300"
+                                                />
+                                            </td>
+                                            <td className="px-5 py-4">
                                                 <span className={`inline-flex rounded-lg px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-widest ${
                                                     u.role === 'admin'
                                                         ? "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"
@@ -457,7 +624,7 @@ export function QuanTriTab() {
                                                     {u.role}
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-4 text-right">
+                                            <td className="px-5 py-4 text-right">
                                                 {u.role !== 'admin' && (
                                                     <button disabled={actionLoading}
                                                         onClick={async () => {
@@ -476,6 +643,131 @@ export function QuanTriTab() {
                                 })}
                             </tbody>
                         </table>
+                    </div>
+                </div>
+
+                {/* === Quản lý Dự án === */}
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                        <h2 className="text-lg font-extrabold text-zinc-900 dark:text-white flex items-center gap-2">
+                            <FolderKanban className="h-5 w-5 text-zinc-500" />
+                            Dự án
+                            <span className="rounded-full bg-zinc-100 dark:bg-zinc-800 px-2.5 py-0.5 text-xs font-bold text-zinc-500 dark:text-zinc-400">
+                                {projects.length}
+                            </span>
+                        </h2>
+                        <button
+                            disabled={actionLoading}
+                            onClick={() => setShowCreateProject(true)}
+                            className="flex items-center gap-1.5 rounded-xl bg-zinc-900 dark:bg-white px-4 py-2 text-[12px] font-bold text-white dark:text-zinc-900 hover:bg-zinc-700 dark:hover:bg-zinc-200 disabled:opacity-50 transition-colors"
+                        >
+                            <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
+                            Tạo dự án
+                        </button>
+                    </div>
+
+                    {/* Create project form */}
+                    {showCreateProject && (
+                        <div className="flex items-center gap-2 rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700 bg-zinc-50/50 dark:bg-zinc-900/50 px-4 py-3">
+                            <input
+                                autoFocus
+                                value={newProjectName}
+                                onChange={e => setNewProjectName(e.target.value)}
+                                onKeyDown={e => { if (e.key === 'Enter') handleCreateProject(); if (e.key === 'Escape') { setShowCreateProject(false); setNewProjectName(""); } }}
+                                placeholder="Tên dự án..."
+                                className="flex-1 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-2 text-[13px] text-zinc-900 dark:text-white outline-none focus:border-zinc-400"
+                            />
+                            <button onClick={handleCreateProject} disabled={actionLoading || !newProjectName.trim()}
+                                className="flex items-center gap-1 rounded-lg bg-zinc-900 dark:bg-white px-3 py-2 text-[12px] font-semibold text-white dark:text-zinc-900 hover:bg-zinc-700 dark:hover:bg-zinc-200 disabled:opacity-50 transition-colors">
+                                <Check className="h-3.5 w-3.5" /> Tạo
+                            </button>
+                            <button onClick={() => { setShowCreateProject(false); setNewProjectName(""); }}
+                                className="p-2 text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-lg transition-colors">
+                                <X className="h-4 w-4" />
+                            </button>
+                        </div>
+                    )}
+
+                    <div className="rounded-xl border border-zinc-100/50 bg-white shadow-[0_4px_24px_rgba(0,0,0,0.03)] dark:border-zinc-800/50 dark:bg-zinc-900 overflow-hidden">
+                        {projects.length === 0 ? (
+                            <div className="flex items-center justify-center py-12 text-zinc-400 text-sm">
+                                Chưa có dự án nào. Nhấn &quot;Tạo dự án&quot; để bắt đầu.
+                            </div>
+                        ) : (
+                            <table className="w-full text-[12px]">
+                                <thead>
+                                    <tr className="border-b border-zinc-100 dark:border-zinc-800/80">
+                                        <th className="px-5 py-4 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50">Tên dự án</th>
+                                        <th className="px-5 py-4 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50">Trạng thái</th>
+                                        <th className="px-5 py-4 text-right bg-zinc-50/50 dark:bg-zinc-900/50"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {projects.map(p => (
+                                        <tr key={p.id} className="border-b border-zinc-50/50 last:border-0 dark:border-zinc-800/30 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 transition-colors">
+                                            <td className="px-5 py-4">
+                                                {editingProjectId === p.id ? (
+                                                    <div className="flex items-center gap-2">
+                                                        <input
+                                                            autoFocus
+                                                            value={editProjectName}
+                                                            onChange={e => setEditProjectName(e.target.value)}
+                                                            onKeyDown={e => { if (e.key === 'Enter') handleRenameProject(p.id); if (e.key === 'Escape') setEditingProjectId(null); }}
+                                                            className="rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 px-3 py-1.5 text-[12px] text-zinc-900 dark:text-white outline-none focus:border-blue-400 w-48"
+                                                        />
+                                                        <button onClick={() => handleRenameProject(p.id)} disabled={actionLoading}
+                                                            className="p-1.5 rounded-lg bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 hover:bg-zinc-700 dark:hover:bg-zinc-200 disabled:opacity-50 transition-colors">
+                                                            <Check className="h-3.5 w-3.5" />
+                                                        </button>
+                                                        <button onClick={() => setEditingProjectId(null)}
+                                                            className="p-1.5 rounded-lg text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
+                                                            <X className="h-3.5 w-3.5" />
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <span className="font-semibold text-zinc-900 dark:text-white">{p.name}</span>
+                                                )}
+                                            </td>
+                                            <td className="px-5 py-4">
+                                                <button
+                                                    onClick={() => handleToggleProjectStatus(p)}
+                                                    disabled={actionLoading}
+                                                    className={cn(
+                                                        "inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] font-bold transition-all hover:opacity-80 disabled:opacity-50",
+                                                        p.status === 'active'
+                                                            ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400"
+                                                            : "bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400"
+                                                    )}
+                                                >
+                                                    {p.status === 'active'
+                                                        ? <><PlayCircle className="h-3 w-3" /> Đang chạy</>
+                                                        : <><StopCircle className="h-3 w-3" /> Đã kết thúc</>
+                                                    }
+                                                </button>
+                                            </td>
+                                            <td className="px-5 py-4 text-right">
+                                                <div className="flex items-center justify-end gap-1">
+                                                    <button
+                                                        disabled={actionLoading}
+                                                        onClick={() => { setEditingProjectId(p.id); setEditProjectName(p.name); }}
+                                                        className="p-2 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg disabled:opacity-50 transition-colors"
+                                                    >
+                                                        <Pencil className="h-3.5 w-3.5" />
+                                                    </button>
+                                                    <button
+                                                        disabled={actionLoading}
+                                                        onClick={() => handleDeleteProject(p.id)}
+                                                        className="p-2 text-zinc-400 hover:bg-red-50 hover:text-red-500 rounded-lg dark:hover:bg-red-900/20 disabled:opacity-50 transition-colors"
+                                                    >
+                                                        <Trash2 className="h-3.5 w-3.5" />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        )}
                     </div>
                 </div>
             </div>

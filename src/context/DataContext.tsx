@@ -5,8 +5,9 @@ import { useAuth } from "./AuthContext";
 import { getAllVideos } from "@/app/actions/videos";
 import { getAllChannelStats, ChannelStat } from "@/app/actions/stats";
 import { getTeamsList } from "@/app/actions/helpers";
+import { getProjects } from "@/app/actions/project";
 import { syncAllChannels, syncMyChannels, getMyChannels } from "@/app/actions/report";
-import { Video, Team } from "@/types";
+import { Video, Team, Project } from "@/types";
 
 export interface ChannelInfo {
     id: string;
@@ -20,16 +21,18 @@ interface DataContextType {
     channelTeamMap: Record<string, string>;
     allStats: ChannelStat[];
     teams: Team[];
+    projects: Project[];
     myChannels: ChannelInfo[];
-    myChannelAvatar: string | null; // avatar của kênh TikTok đầu tiên
+    myChannelAvatar: string | null;
     hasChannel: boolean | null;
     // Granular loading states
-    metaLoading: boolean;   // teams, stats, channels — loads first (fast)
-    videosLoading: boolean; // videos — loads second (can be slow)
-    dataLoading: boolean;   // combined: true if either is loading
+    metaLoading: boolean;
+    videosLoading: boolean;
+    dataLoading: boolean;
     syncing: boolean;
     syncMsg: string;
     doSync: () => Promise<void>;
+    updateVideoLocal: (videoId: string, updates: Partial<Video>) => void;
 }
 
 const DataContext = createContext<DataContextType>({
@@ -37,6 +40,7 @@ const DataContext = createContext<DataContextType>({
     channelTeamMap: {},
     allStats: [],
     teams: [],
+    projects: [],
     myChannels: [],
     myChannelAvatar: null,
     hasChannel: null,
@@ -46,6 +50,7 @@ const DataContext = createContext<DataContextType>({
     syncing: false,
     syncMsg: "",
     doSync: async () => {},
+    updateVideoLocal: () => {},
 });
 
 export function DataProvider({ children }: { children: React.ReactNode }) {
@@ -54,6 +59,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     const [channelTeamMap, setChannelTeamMap] = useState<Record<string, string>>({});
     const [allStats, setAllStats] = useState<ChannelStat[]>([]);
     const [teams, setTeams] = useState<Team[]>([]);
+    const [projects, setProjects] = useState<Project[]>([]);
     const [myChannels, setMyChannels] = useState<ChannelInfo[]>([]);
     const [hasChannel, setHasChannel] = useState<boolean | null>(null);
     const [metaLoading, setMetaLoading] = useState(false);
@@ -63,22 +69,22 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     const loadedForRef = useRef<string | null>(null);
 
     const fetchData = useCallback(async (uid: string, userRole: string, admin: boolean) => {
-        // Phase 1: Load meta (stats, teams, channels) — fast, show immediately
         setMetaLoading(true);
         setVideosLoading(true);
 
-        const [statsData, teamsData, channels] = await Promise.all([
+        const [statsData, teamsData, channels, projectsData] = await Promise.all([
             getAllChannelStats(uid, userRole),
             admin ? getTeamsList(uid, "admin") : Promise.resolve([]),
             getMyChannels(uid),
+            getProjects(),
         ]);
         setAllStats(statsData);
         setTeams(teamsData);
         setMyChannels(channels);
         setHasChannel(channels.length > 0);
+        setProjects(projectsData);
         setMetaLoading(false);
 
-        // Phase 2: Load videos — can be slow, show skeleton in UI meanwhile
         const videosData = await getAllVideos(uid, userRole);
         setAllVideos(videosData.videos);
         setChannelTeamMap(videosData.channelTeamMap);
@@ -105,14 +111,17 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         setSyncing(false);
     }, [user?.id, role, isAdmin, fetchData]);
 
+    const updateVideoLocal = useCallback((videoId: string, updates: Partial<Video>) => {
+        setAllVideos(prev => prev.map(v => v.id === videoId ? { ...v, ...updates } : v));
+    }, []);
+
     const dataLoading = metaLoading || videosLoading;
-    // Avatar từ kênh TikTok đầu tiên (member)
     const myChannelAvatar = myChannels[0]?.avatar ?? null;
 
     return (
         <DataContext.Provider value={{
-            allVideos, channelTeamMap, allStats, teams, myChannels, myChannelAvatar, hasChannel,
-            metaLoading, videosLoading, dataLoading, syncing, syncMsg, doSync,
+            allVideos, channelTeamMap, allStats, teams, projects, myChannels, myChannelAvatar, hasChannel,
+            metaLoading, videosLoading, dataLoading, syncing, syncMsg, doSync, updateVideoLocal,
         }}>
             {children}
         </DataContext.Provider>

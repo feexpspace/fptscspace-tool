@@ -37,6 +37,8 @@ export interface ChannelStat {
     channelOwnerName: string;
     channelUsername: string;
     followerCount: number;
+    truong?: string;
+    coSo?: string;
 }
 
 export async function getAllChannelStats(userId: string, role: string): Promise<ChannelStat[]> {
@@ -57,15 +59,17 @@ export async function getAllChannelStats(userId: string, role: string): Promise<
 
         const userIds2 = [...new Set((channelsData || []).map(c => c.user_id).filter(Boolean))];
         const { data: usersData } = await supabaseAdmin
-            .from('users').select('id, name').in('id', userIds2);
+            .from('users').select('id, name, truong, co_so').in('id', userIds2);
 
-        const userNameMap = Object.fromEntries((usersData || []).map(u => [u.id, u.name]));
+        const userMap = Object.fromEntries((usersData || []).map(u => [u.id, { name: u.name, truong: u.truong, coSo: u.co_so }]));
 
         return (channelsData || []).map(c => ({
             channelId: c.id,
-            channelOwnerName: userNameMap[c.user_id] || c.display_name || '',
+            channelOwnerName: userMap[c.user_id]?.name || c.display_name || '',
             channelUsername: c.username || '',
             followerCount: c.follower || 0,
+            truong: userMap[c.user_id]?.truong || undefined,
+            coSo: userMap[c.user_id]?.coSo || undefined,
         }));
     } catch {
         return [];

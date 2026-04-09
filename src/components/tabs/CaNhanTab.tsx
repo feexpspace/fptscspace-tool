@@ -1,21 +1,32 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
-import { ExternalLink, RefreshCw, Link, ChevronUp, ChevronDown, Eye, Heart, MessageCircle, Share2, Film } from "lucide-react";
+import { useState, useMemo, useEffect, useRef } from "react";
+import { ExternalLink, RefreshCw, Link, ChevronUp, ChevronDown, Eye, Heart, MessageCircle, Share2, Film, Copy, Check, FileText, FolderKanban } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useData } from "@/context/DataContext";
 import { Pagination } from "@/components/Pagination";
 import { CustomSelect } from "@/components/CustomSelect";
+import { updateVideoMeta } from "@/app/actions/videos";
 
 export function CaNhanTab() {
     const { user, isAdmin } = useAuth();
-    const { allVideos, channelTeamMap, teams, myChannels, hasChannel, videosLoading, metaLoading, syncing, doSync } = useData();
-    const [selectedChannel, setSelectedChannel] = useState(""); // admin: filter by channel
-    const [selectedTeam, setSelectedTeam] = useState("");       // admin: filter by team
+    const { allVideos, channelTeamMap, teams, projects, hasChannel, videosLoading, metaLoading, syncing, doSync, updateVideoLocal } = useData();
+    const [selectedChannel, setSelectedChannel] = useState("");
+    const [selectedTeam, setSelectedTeam] = useState("");
     const [selectedMonth, setSelectedMonth] = useState("");
+    const [selectedProject, setSelectedProject] = useState("");
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({ key: 'date', direction: 'desc' });
     const [page, setPage] = useState(1);
     const pageSize = 20;
+
+    // Admin copy feature
+    const [copyDate, setCopyDate] = useState("");
+    const [copied, setCopied] = useState(false);
+
+    // Inline file link editing
+    const [editingFileLink, setEditingFileLink] = useState<{ videoId: string; value: string } | null>(null);
+    const [savingFileLink, setSavingFileLink] = useState<string | null>(null);
+    const fileLinkInputRef = useRef<HTMLInputElement>(null);
 
     const monthOptions = useMemo(() => {
         const options: { value: string; label: string }[] = [];
@@ -29,7 +40,9 @@ export function CaNhanTab() {
         return options;
     }, []);
 
-    // Derive unique channels from allVideos for the channel dropdown (admin)
+    const activeProjects = useMemo(() => projects.filter(p => p.status === 'active'), [projects]);
+    const allProjectOptions = useMemo(() => projects.map(p => ({ value: p.id, label: p.name })), [projects]);
+
     const allChannels = useMemo(() => {
         const map = new Map<string, { id: string; displayName: string; username: string }>();
         allVideos.forEach(v => {
@@ -44,7 +57,6 @@ export function CaNhanTab() {
         return Array.from(map.values());
     }, [allVideos]);
 
-    // Client-side filtering — instant, no server call
     const filteredVideos = useMemo(() => {
         let videos = allVideos;
 
@@ -62,27 +74,17 @@ export function CaNhanTab() {
             });
         }
 
-        // Apply sorting
+        if (selectedProject) {
+            videos = videos.filter(v => v.projectId === selectedProject);
+        }
+
         videos.sort((a, b) => {
-            let aValue: number = 0;
-            let bValue: number = 0;
-            
-            if (sortConfig.key === 'date') {
-                aValue = a.createTime.getTime();
-                bValue = b.createTime.getTime();
-            } else if (sortConfig.key === 'view') {
-                aValue = a.stats?.view || 0;
-                bValue = b.stats?.view || 0;
-            } else if (sortConfig.key === 'like') {
-                aValue = a.stats?.like || 0;
-                bValue = b.stats?.like || 0;
-            } else if (sortConfig.key === 'comment') {
-                aValue = a.stats?.comment || 0;
-                bValue = b.stats?.comment || 0;
-            } else if (sortConfig.key === 'share') {
-                aValue = a.stats?.share || 0;
-                bValue = b.stats?.share || 0;
-            }
+            let aValue = 0, bValue = 0;
+            if (sortConfig.key === 'date') { aValue = a.createTime.getTime(); bValue = b.createTime.getTime(); }
+            else if (sortConfig.key === 'view') { aValue = a.stats?.view || 0; bValue = b.stats?.view || 0; }
+            else if (sortConfig.key === 'like') { aValue = a.stats?.like || 0; bValue = b.stats?.like || 0; }
+            else if (sortConfig.key === 'comment') { aValue = a.stats?.comment || 0; bValue = b.stats?.comment || 0; }
+            else if (sortConfig.key === 'share') { aValue = a.stats?.share || 0; bValue = b.stats?.share || 0; }
 
             if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
             if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
@@ -90,7 +92,7 @@ export function CaNhanTab() {
         });
 
         return videos;
-    }, [allVideos, channelTeamMap, selectedChannel, selectedTeam, selectedMonth, isAdmin, sortConfig]);
+    }, [allVideos, channelTeamMap, selectedChannel, selectedTeam, selectedMonth, selectedProject, isAdmin, sortConfig]);
 
     const statsSummary = useMemo(() => {
         let views = 0, likes = 0, comments = 0, shares = 0;
@@ -103,7 +105,7 @@ export function CaNhanTab() {
         return { views, likes, comments, shares };
     }, [filteredVideos]);
 
-    useEffect(() => { setPage(1); }, [selectedChannel, selectedTeam, selectedMonth]);
+    useEffect(() => { setPage(1); }, [selectedChannel, selectedTeam, selectedMonth, selectedProject]);
 
     const totalPages = Math.ceil(filteredVideos.length / pageSize);
     const pagedVideos = filteredVideos.slice((page - 1) * pageSize, page * pageSize);
@@ -115,25 +117,63 @@ export function CaNhanTab() {
 
     const handleSort = (key: string) => {
         let direction: 'asc' | 'desc' = 'desc';
-        if (sortConfig.key === key && sortConfig.direction === 'desc') {
-            direction = 'asc';
-        }
+        if (sortConfig.key === key && sortConfig.direction === 'desc') direction = 'asc';
         setSortConfig({ key, direction });
         setPage(1);
     };
 
     const SortIcon = ({ sortKey }: { sortKey: string }) => {
         if (sortConfig.key !== sortKey) return <ChevronDown className="h-3 w-3 opacity-20 transition-opacity group-hover:opacity-100" />;
-        return sortConfig.direction === 'asc' 
-            ? <ChevronUp className="h-3 w-3 text-blue-500" /> 
+        return sortConfig.direction === 'asc'
+            ? <ChevronUp className="h-3 w-3 text-blue-500" />
             : <ChevronDown className="h-3 w-3 text-blue-500" />;
+    };
+
+    // Save file link
+    const handleSaveFileLink = async (videoId: string, value: string) => {
+        setSavingFileLink(videoId);
+        setEditingFileLink(null);
+        await updateVideoMeta(videoId, { fileLink: value || null });
+        updateVideoLocal(videoId, { fileLink: value || undefined });
+        setSavingFileLink(null);
+    };
+
+    // Save project
+    const handleSaveProject = async (videoId: string, projectId: string) => {
+        await updateVideoMeta(videoId, { projectId: projectId || null });
+        updateVideoLocal(videoId, { projectId: projectId || undefined });
+    };
+
+    // Admin copy feature
+    const handleCopy = async () => {
+        if (!copyDate) return;
+        const [y, m, d] = copyDate.split('-').map(Number);
+        const dateVideos = allVideos.filter(v => {
+            const t = v.createTime;
+            return t.getFullYear() === y && (t.getMonth() + 1) === m && t.getDate() === d;
+        });
+
+        if (dateVideos.length === 0) {
+            alert("Không có video nào trong ngày này.");
+            return;
+        }
+
+        const text = dateVideos.map((v, i) => {
+            const title = v.title || v.description || `Video ${i + 1}`;
+            const link = v.link || "";
+            const file = v.fileLink || "";
+            return `${i + 1}. ${title}\nLink: ${link}\nFile: ${file}`;
+        }).join("\n\n");
+
+        await navigator.clipboard.writeText(text);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
     };
 
     return (
         <div className="space-y-6">
-            {/* Header section — luôn 1 hàng */}
+            {/* Header section */}
             <div className="flex items-center gap-2 w-full">
-                {/* Filters — flex-1 */}
                 <div className="flex items-center gap-2 flex-1 overflow-x-auto scrollbar-none">
                     <div className="shrink-0 min-w-[130px] flex-1 max-w-[180px]">
                         <CustomSelect
@@ -165,9 +205,17 @@ export function CaNhanTab() {
                             </div>
                         </>
                     )}
+
+                    <div className="shrink-0 min-w-[130px] flex-1 max-w-[200px]">
+                        <CustomSelect
+                            value={selectedProject}
+                            onChange={v => { setSelectedProject(v); setPage(1); }}
+                            options={allProjectOptions}
+                            placeholder="Tất cả dự án"
+                        />
+                    </div>
                 </div>
 
-                {/* Actions — shrink-0 */}
                 <div className="flex items-center gap-2 shrink-0">
                     {!isAdmin && hasChannel === false && !metaLoading && (
                         <a
@@ -191,6 +239,26 @@ export function CaNhanTab() {
                 </div>
             </div>
 
+            {/* Admin: Date + Copy */}
+            {isAdmin && (
+                <div className="flex items-center gap-2">
+                    <input
+                        type="date"
+                        value={copyDate}
+                        onChange={e => setCopyDate(e.target.value)}
+                        className="rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-[12px] text-zinc-900 dark:text-white outline-none focus:border-blue-400 h-[34px]"
+                    />
+                    <button
+                        onClick={handleCopy}
+                        disabled={!copyDate || copied}
+                        className="flex items-center gap-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 h-[34px] px-3 text-[12px] font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all whitespace-nowrap"
+                    >
+                        {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+                        {copied ? "Đã copy!" : "Copy link + file"}
+                    </button>
+                </div>
+            )}
+
             {/* Stats Summary row */}
             <div className="flex items-center flex-wrap gap-2 pt-1 border-t border-zinc-100 dark:border-zinc-800/80">
                 {videosLoading ? (
@@ -201,7 +269,6 @@ export function CaNhanTab() {
                     </>
                 ) : (
                     <>
-                        {/* Video count */}
                         <span className="inline-flex items-center gap-1.5 text-xs font-bold text-zinc-500 bg-zinc-100 dark:bg-zinc-800 dark:text-zinc-400 px-2.5 py-1.5 rounded-lg whitespace-nowrap">
                             <Film className="h-3.5 w-3.5" />
                             <span>{filteredVideos.length}</span>
@@ -232,12 +299,11 @@ export function CaNhanTab() {
 
             {/* Video Table */}
             {videosLoading ? (
-                // Skeleton table rows
                 <div className="overflow-x-auto rounded-xl border border-zinc-100/50 bg-white shadow-[0_4px_24px_rgba(0,0,0,0.03)] dark:border-zinc-800/50 dark:bg-zinc-900">
                     <table className="w-full text-[11px] sm:text-[12px]">
                         <thead>
                             <tr className="border-b border-zinc-100 dark:border-zinc-800/80">
-                                {['40px','80px',isAdmin ? '100px' : null,'1fr','120px','56px','80px','72px','80px','72px'].filter(Boolean).map((w, i) => (
+                                {['40px', '80px', isAdmin ? '100px' : null, '1fr', '120px', '56px', '56px', '120px', '80px', '72px', '80px', '72px'].filter(Boolean).map((w, i) => (
                                     <th key={i} className="px-3 py-4 bg-zinc-50/50 dark:bg-zinc-900/50" style={{ width: w ?? 'auto' }}>
                                         <div className="h-3 rounded bg-zinc-200/70 dark:bg-zinc-700/50 animate-pulse" />
                                     </th>
@@ -247,12 +313,9 @@ export function CaNhanTab() {
                         <tbody>
                             {Array.from({ length: 8 }).map((_, i) => (
                                 <tr key={i} className="border-b border-zinc-50/50 last:border-0 dark:border-zinc-800/30">
-                                    {[40, 70, ...(isAdmin ? [90] : []), 180, 100, 40, 60, 50, 60, 50].map((w, j) => (
+                                    {[40, 70, ...(isAdmin ? [90] : []), 180, 100, 40, 40, 100, 60, 50, 60, 50].map((w, j) => (
                                         <td key={j} className="px-3 py-4">
-                                            <div
-                                                className="h-3.5 rounded bg-zinc-100 dark:bg-zinc-800 animate-pulse"
-                                                style={{ width: w, opacity: 1 - i * 0.08 }}
-                                            />
+                                            <div className="h-3.5 rounded bg-zinc-100 dark:bg-zinc-800 animate-pulse" style={{ width: w, opacity: 1 - i * 0.08 }} />
                                         </td>
                                     ))}
                                 </tr>
@@ -274,6 +337,12 @@ export function CaNhanTab() {
                                     <th className="px-3 py-4 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50">Caption</th>
                                     <th className="px-3 py-4 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50">Hashtag</th>
                                     <th className="px-3 py-4 text-center text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50 w-10">Link</th>
+                                    <th className="px-3 py-4 text-center text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50 w-10">
+                                        <div className="flex items-center justify-center gap-1"><FileText className="h-3 w-3" />File</div>
+                                    </th>
+                                    <th className="px-3 py-4 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50 min-w-[120px]">
+                                        <div className="flex items-center gap-1"><FolderKanban className="h-3 w-3" />Dự án</div>
+                                    </th>
                                     <th className="px-3 py-4 text-right text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50 cursor-pointer group hover:bg-zinc-100 dark:hover:bg-zinc-800" onClick={() => handleSort('view')}>
                                         <div className="flex items-center justify-end gap-1.5"><SortIcon sortKey="view" /> <Eye className="h-3.5 w-3.5" /></div>
                                     </th>
@@ -293,6 +362,9 @@ export function CaNhanTab() {
                                     const caption = video.title || video.description || "";
                                     const captionClean = caption.replace(/#\w+/g, "").trim();
                                     const hashtags = extractHashtags(caption);
+                                    const isEditingFile = editingFileLink?.videoId === video.id;
+                                    const isSavingFile = savingFileLink === video.id;
+                                    const projectName = projects.find(p => p.id === video.projectId)?.name;
 
                                     return (
                                         <tr key={video.id} className="border-b border-zinc-50/50 last:border-0 dark:border-zinc-800/30 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 transition-colors">
@@ -329,12 +401,64 @@ export function CaNhanTab() {
                                                     </div>
                                                 )}
                                             </td>
+                                            {/* Link clip */}
                                             <td className="px-3 py-4 text-center">
                                                 {video.link && (
                                                     <a href={video.link} target="_blank" rel="noopener noreferrer"
                                                         className="inline-flex text-zinc-400 hover:text-blue-500 transition-colors bg-white hover:bg-blue-50 dark:bg-zinc-800 dark:hover:bg-blue-900/30 p-2 rounded-lg border border-zinc-100 dark:border-zinc-700/50">
                                                         <ExternalLink className="h-4 w-4 stroke-[2.5]" />
                                                     </a>
+                                                )}
+                                            </td>
+                                            {/* Link file — inline edit */}
+                                            <td className="px-3 py-4 text-center min-w-[100px]">
+                                                {isEditingFile ? (
+                                                    <div className="flex items-center gap-1">
+                                                        <input
+                                                            ref={fileLinkInputRef}
+                                                            autoFocus
+                                                            value={editingFileLink.value}
+                                                            onChange={e => setEditingFileLink({ videoId: video.id, value: e.target.value })}
+                                                            onKeyDown={e => {
+                                                                if (e.key === 'Enter') handleSaveFileLink(video.id, editingFileLink.value);
+                                                                if (e.key === 'Escape') setEditingFileLink(null);
+                                                            }}
+                                                            onBlur={() => handleSaveFileLink(video.id, editingFileLink.value)}
+                                                            placeholder="Paste link..."
+                                                            className="w-[160px] rounded-lg border border-blue-300 bg-white dark:bg-zinc-800 dark:border-blue-600 px-2 py-1 text-[11px] text-zinc-900 dark:text-white outline-none"
+                                                        />
+                                                    </div>
+                                                ) : isSavingFile ? (
+                                                    <div className="inline-flex items-center justify-center h-8 w-8">
+                                                        <div className="h-3 w-3 animate-spin rounded-full border border-zinc-300 border-t-zinc-600" />
+                                                    </div>
+                                                ) : video.fileLink ? (
+                                                    <button
+                                                        onClick={() => setEditingFileLink({ videoId: video.id, value: video.fileLink || "" })}
+                                                        title={video.fileLink}
+                                                        className="inline-flex text-zinc-400 hover:text-emerald-500 transition-colors bg-white hover:bg-emerald-50 dark:bg-zinc-800 dark:hover:bg-emerald-900/30 p-2 rounded-lg border border-zinc-100 dark:border-zinc-700/50"
+                                                    >
+                                                        <FileText className="h-4 w-4 stroke-[2.5] text-emerald-500" />
+                                                    </button>
+                                                ) : (
+                                                    <button
+                                                        onClick={() => setEditingFileLink({ videoId: video.id, value: "" })}
+                                                        className="inline-flex text-zinc-300 hover:text-zinc-500 transition-colors bg-white hover:bg-zinc-50 dark:bg-zinc-800 dark:hover:bg-zinc-700 p-2 rounded-lg border border-dashed border-zinc-200 dark:border-zinc-700"
+                                                    >
+                                                        <FileText className="h-4 w-4 stroke-[2]" />
+                                                    </button>
+                                                )}
+                                            </td>
+                                            {/* Dự án dropdown */}
+                                            <td className="px-3 py-4 min-w-[130px]">
+                                                <CustomSelect
+                                                    value={video.projectId || ""}
+                                                    onChange={val => handleSaveProject(video.id, val)}
+                                                    options={activeProjects.map(p => ({ value: p.id, label: p.name }))}
+                                                    placeholder={projectName ? undefined : "— Chọn —"}
+                                                />
+                                                {video.projectId && !activeProjects.find(p => p.id === video.projectId) && projectName && (
+                                                    <span className="mt-1 block text-[10px] text-zinc-400 italic">{projectName} (đã kết thúc)</span>
                                                 )}
                                             </td>
                                             <td className="px-3 py-4 text-right font-bold text-zinc-900 dark:text-white">

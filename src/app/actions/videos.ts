@@ -91,12 +91,34 @@ export async function getAllVideos(userId: string, role: string): Promise<AllVid
             },
             editorId: row.editor_id,
             editorName: row.editor_name,
+            fileLink: row.file_link || undefined,
+            projectId: row.project_id || undefined,
         }));
 
         return { videos, channelTeamMap };
     } catch (error) {
         console.error("getAllVideos error:", error);
         return { videos: [], channelTeamMap: {} };
+    }
+}
+
+export async function updateVideoMeta(
+    videoId: string,
+    updates: { fileLink?: string | null; projectId?: string | null }
+): Promise<{ success: boolean }> {
+    try {
+        const dbUpdates: Record<string, any> = {};
+        if ('fileLink' in updates) dbUpdates.file_link = updates.fileLink || null;
+        if ('projectId' in updates) dbUpdates.project_id = updates.projectId || null;
+
+        const { error } = await supabaseAdmin
+            .from('videos')
+            .update(dbUpdates)
+            .eq('id', videoId);
+
+        return { success: !error };
+    } catch {
+        return { success: false };
     }
 }
 
@@ -161,6 +183,8 @@ export async function getVideoList(
             },
             editorId: row.editor_id,
             editorName: row.editor_name,
+            fileLink: row.file_link || undefined,
+            projectId: row.project_id || undefined,
         }));
 
         return { videos, total: count || 0, page, pageSize };

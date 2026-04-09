@@ -21,6 +21,8 @@ export async function getAllUsersWithChannels(): Promise<{ success: boolean, dat
             role: u.role,
             teamId: u.team_id || '',
             status: u.status || 'pending',
+            truong: u.truong || '',
+            coSo: u.co_so || '',
         }));
 
         const channels: Channel[] = (channelsData || []).map(c => ({
@@ -102,6 +104,18 @@ export async function deleteUserAccount(userId: string) {
     } catch (error) {
         console.error("Lỗi xóa user:", error);
         return { success: false, error: "Lỗi server khi xóa người dùng." };
+    }
+}
+
+export async function updateUserSchoolInfo(userId: string, truong: string, coSo: string): Promise<{ success: boolean }> {
+    try {
+        const { error } = await supabaseAdmin
+            .from('users')
+            .update({ truong: truong || null, co_so: coSo || null })
+            .eq('id', userId);
+        return { success: !error };
+    } catch {
+        return { success: false };
     }
 }
 

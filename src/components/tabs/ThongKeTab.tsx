@@ -9,10 +9,11 @@ import { CustomSelect } from "@/components/CustomSelect";
 
 export function ThongKeTab() {
     const { user, isAdmin } = useAuth();
-    const { allVideos, channelTeamMap, allStats, teams, hasChannel, metaLoading, videosLoading, dataLoading, syncing, syncMsg, doSync } = useData();
+    const { allVideos, channelTeamMap, allStats, teams, projects, hasChannel, metaLoading, dataLoading, syncing, doSync } = useData();
     const [selectedTeam, setSelectedTeam] = useState("");
     const [selectedChannel, setSelectedChannel] = useState("");
     const [selectedMonth, setSelectedMonth] = useState("");
+    const [selectedProject, setSelectedProject] = useState("");
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({ key: 'views', direction: 'desc' });
 
     const monthOptions = useMemo(() => {
@@ -27,7 +28,6 @@ export function ThongKeTab() {
         return options;
     }, []);
 
-    // Derive unique channels for filter dropdown
     const allChannels = useMemo(() => {
         const map = new Map<string, { id: string; displayName: string; username: string }>();
         allVideos.forEach(v => {
@@ -38,9 +38,9 @@ export function ThongKeTab() {
         return Array.from(map.values());
     }, [allVideos]);
 
-    // Client-side stats computation — instant filter, no server call
+    const allProjectOptions = useMemo(() => projects.map(p => ({ value: p.id, label: p.name })), [projects]);
+
     const stats = useMemo(() => {
-        // Determine which channels are in scope
         let scopedChannelIds: Set<string>;
         if (selectedChannel) {
             scopedChannelIds = new Set([selectedChannel]);
@@ -57,13 +57,15 @@ export function ThongKeTab() {
 
         const scopedStats = allStats.filter(s => scopedChannelIds.has(s.channelId));
 
-        // Filter videos by scope + month
         let videosForPeriod = allVideos.filter(v => scopedChannelIds.has(v.channelId));
         if (selectedMonth) {
             const [year, mon] = selectedMonth.split('-').map(Number);
             videosForPeriod = videosForPeriod.filter(v => {
                 return v.createTime.getFullYear() === year && (v.createTime.getMonth() + 1) === mon;
             });
+        }
+        if (selectedProject) {
+            videosForPeriod = videosForPeriod.filter(v => v.projectId === selectedProject);
         }
 
         const totalViews = videosForPeriod.reduce((s, v) => s + (v.stats?.view || 0), 0);
@@ -73,7 +75,6 @@ export function ThongKeTab() {
         const totalVideos = videosForPeriod.length;
         const totalFollowers = scopedStats.reduce((s, ch) => s + ch.followerCount, 0);
 
-        // Per-channel aggregation for breakdown table
         const byChannel = new Map<string, { views: number; comments: number; shares: number; videos: number }>();
         videosForPeriod.forEach(v => {
             const cur = byChannel.get(v.channelId) || { views: 0, comments: 0, shares: 0, videos: 0 };
@@ -96,9 +97,11 @@ export function ThongKeTab() {
                     totalViews: agg.views,
                     totalComments: agg.comments,
                     totalShares: agg.shares,
+                    truong: s.truong,
+                    coSo: s.coSo,
                 };
             })
-            .filter(ch => ch.videoCount > 0 || !selectedMonth); // hide empty channels when month filtered
+            .filter(ch => ch.videoCount > 0 || !selectedMonth);
 
         breakdown.sort((a, b) => {
             let aVal = 0; let bVal = 0;
@@ -114,28 +117,25 @@ export function ThongKeTab() {
         });
 
         return { totalViews, totalLikes, totalComments, totalShares, totalFollowers, totalVideos, activeChannels: scopedStats.length, channelBreakdown: breakdown };
-    }, [allVideos, allStats, channelTeamMap, selectedTeam, selectedChannel, selectedMonth, sortConfig]);
+    }, [allVideos, allStats, channelTeamMap, selectedTeam, selectedChannel, selectedMonth, selectedProject, sortConfig]);
 
     const handleSort = (key: string) => {
         let direction: 'asc' | 'desc' = 'desc';
-        if (sortConfig.key === key && sortConfig.direction === 'desc') {
-            direction = 'asc';
-        }
+        if (sortConfig.key === key && sortConfig.direction === 'desc') direction = 'asc';
         setSortConfig({ key, direction });
     };
 
     const SortIcon = ({ sortKey }: { sortKey: string }) => {
         if (sortConfig.key !== sortKey) return <ChevronDown className="h-3 w-3 opacity-20 transition-opacity group-hover:opacity-100" />;
-        return sortConfig.direction === 'asc' 
-            ? <ChevronUp className="h-3 w-3 text-blue-500" /> 
+        return sortConfig.direction === 'asc'
+            ? <ChevronUp className="h-3 w-3 text-blue-500" />
             : <ChevronDown className="h-3 w-3 text-blue-500" />;
     };
 
     return (
         <div className="space-y-6">
-            {/* Header section (Filters + Actions) — luôn 1 hàng */}
+            {/* Header section */}
             <div className="flex items-center gap-2 w-full">
-                {/* Filters — flex-1 để chiếm hết space còn lại */}
                 <div className="flex items-center gap-2 flex-1 overflow-x-auto scrollbar-none">
                     <div className="shrink-0 min-w-[130px] flex-1 max-w-[180px]">
                         <CustomSelect
@@ -167,9 +167,17 @@ export function ThongKeTab() {
                             </div>
                         </>
                     )}
+
+                    <div className="shrink-0 min-w-[130px] flex-1 max-w-[200px]">
+                        <CustomSelect
+                            value={selectedProject}
+                            onChange={setSelectedProject}
+                            options={allProjectOptions}
+                            placeholder="Tất cả dự án"
+                        />
+                    </div>
                 </div>
 
-                {/* Actions — shrink-0 để không bị ép */}
                 <div className="flex items-center gap-1.5 shrink-0">
                     {!isAdmin && hasChannel === false && (
                         <a
@@ -193,10 +201,8 @@ export function ThongKeTab() {
                 </div>
             </div>
 
-
             {/* Stat Cards */}
             {metaLoading ? (
-                // Skeleton stat cards
                 <div className="space-y-4">
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
                         {Array.from({ length: 3 }).map((_, i) => (
@@ -252,6 +258,8 @@ export function ThongKeTab() {
                                 <thead>
                                     <tr className="border-b border-zinc-100 dark:border-zinc-800/80">
                                         <th className="px-6 py-5 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50">Kênh</th>
+                                        <th className="px-4 py-5 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50 whitespace-nowrap">Trường</th>
+                                        <th className="px-4 py-5 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50 whitespace-nowrap">Cơ sở</th>
                                         <th className="px-6 py-5 text-right text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50 cursor-pointer group hover:bg-zinc-100 dark:hover:bg-zinc-800" onClick={() => handleSort('followers')}>
                                             <div className="flex items-center justify-end gap-1.5"><SortIcon sortKey="followers" /> Followers</div>
                                         </th>
@@ -279,6 +287,24 @@ export function ThongKeTab() {
                                                         <span className="ml-1.5 text-zinc-400">@{ch.channelUsername}</span>
                                                     )}
                                                 </div>
+                                            </td>
+                                            <td className="px-4 py-4">
+                                                {ch.truong ? (
+                                                    <span className="inline-flex rounded-lg px-2 py-0.5 text-[10px] font-semibold bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300 whitespace-nowrap">
+                                                        {ch.truong}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-zinc-300 dark:text-zinc-600">—</span>
+                                                )}
+                                            </td>
+                                            <td className="px-4 py-4">
+                                                {ch.coSo ? (
+                                                    <span className="inline-flex rounded-lg px-2 py-0.5 text-[10px] font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300 whitespace-nowrap">
+                                                        {ch.coSo}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-zinc-300 dark:text-zinc-600">—</span>
+                                                )}
                                             </td>
                                             <td className="px-4 py-3 text-right text-zinc-700 dark:text-zinc-300">{ch.followerCount.toLocaleString("vi-VN")}</td>
                                             <td className="px-4 py-3 text-right text-zinc-700 dark:text-zinc-300">{ch.videoCount.toLocaleString("vi-VN")}</td>

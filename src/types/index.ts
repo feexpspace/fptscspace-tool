@@ -10,6 +10,8 @@ export interface User {
     role: UserRole;
     teamId: string;
     status: UserStatus;
+    truong?: string;
+    coSo?: string;
 }
 
 export interface Team {
@@ -17,6 +19,13 @@ export interface Team {
     name: string;
     createdAt: Date;
     members: string[];
+}
+
+export interface Project {
+    id: string;
+    name: string;
+    status: 'active' | 'ended';
+    createdAt: Date;
 }
 
 export interface Channel {
@@ -55,6 +64,8 @@ export interface Video {
     channelId: string;
     editorId?: string;
     editorName?: string;
+    fileLink?: string;
+    projectId?: string;
 }
 
 export interface Token {
