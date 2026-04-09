@@ -159,10 +159,9 @@ export function CaNhanTab() {
         }
 
         const text = dateVideos.map((v, i) => {
-            const title = v.title || v.description || `Video ${i + 1}`;
             const link = v.link || "";
             const file = v.fileLink || "";
-            return `${i + 1}. ${title}\nLink: ${link}\nFile: ${file}`;
+            return `${i + 1}. Tên clip\nLink: ${link}\nFile: ${file}`;
         }).join("\n\n");
 
         await navigator.clipboard.writeText(text);
