@@ -166,6 +166,7 @@ export function ThongKeTab() {
                 'Link video >1tr': v1m.map(v => v.link).filter(Boolean).join('\n'),
                 'Số video trên 5 triệu view': v5m.length,
                 'Link video >5tr': v5m.map(v => v.link).filter(Boolean).join('\n'),
+                'Danh sách clip trong tháng': chVideos.map(v => v.link).filter(Boolean).join('\n'),
                 'Chi phí hỗ trợ video': chiPhiHoTro,
                 'Bonus': bonus,
                 'Tổng cộng': chiPhiHoTro + bonus,
@@ -179,6 +180,7 @@ export function ThongKeTab() {
             { wch: 5 }, { wch: 20 }, { wch: 18 }, { wch: 20 }, { wch: 12 },
             { wch: 18 }, { wch: 20 }, { wch: 50 }, { wch: 22 }, { wch: 50 },
             { wch: 24 }, { wch: 50 }, { wch: 24 }, { wch: 50 },
+            { wch: 60 },
             { wch: 22 }, { wch: 22 }, { wch: 22 },
         ];
 
