@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Eye, MessageCircle, Share2, Users, Video, Tv, RefreshCw, Link, Heart, ChevronDown, ChevronUp } from "lucide-react";
+import { Eye, MessageCircle, Share2, Users, Video, Tv, RefreshCw, Link, Heart, ChevronDown, ChevronUp, FileSpreadsheet } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useData } from "@/context/DataContext";
 import { StatCard } from "@/components/StatCard";
@@ -119,6 +119,68 @@ export function ThongKeTab() {
         return { totalViews, totalLikes, totalComments, totalShares, totalFollowers, totalVideos, activeChannels: scopedStats.length, channelBreakdown: breakdown };
     }, [allVideos, allStats, channelTeamMap, selectedTeam, selectedChannel, selectedMonth, selectedProject, sortConfig]);
 
+    const handleExportExcel = async () => {
+        if (!selectedMonth) return;
+        const XLSX = (await import('xlsx')).default;
+
+        const [year, mon] = selectedMonth.split('-').map(Number);
+        const videosInMonth = allVideos.filter(v =>
+            v.createTime.getFullYear() === year && (v.createTime.getMonth() + 1) === mon
+        );
+
+        // Build per-channel rows
+        const rows = allStats.map((s, idx) => {
+            const chVideos = videosInMonth.filter(v => v.channelId === s.channelId);
+            const total = chVideos.length;
+
+            const v10k  = chVideos.filter(v => (v.stats?.view || 0) >= 10_000);
+            const v100k = chVideos.filter(v => (v.stats?.view || 0) >= 100_000);
+            const v1m   = chVideos.filter(v => (v.stats?.view || 0) >= 1_000_000);
+            const v5m   = chVideos.filter(v => (v.stats?.view || 0) >= 5_000_000);
+
+            const chiPhiHoTro = total * 100_000;
+            const bonus =
+                v10k.length  * 100_000 +
+                v100k.length * 500_000 +
+                v1m.length   * 2_000_000 +
+                v5m.length   * 4_000_000;
+
+            return {
+                'STT': idx + 1,
+                'Họ tên': s.channelOwnerName,
+                'Kênh': s.channelUsername ? `@${s.channelUsername}` : '',
+                'Trường': s.truong || '',
+                'Cơ sở': s.coSo || '',
+                'Số video trong tháng': total,
+                'Số video trên 10k view': v10k.length,
+                'Link video >10k': v10k.map(v => v.link).filter(Boolean).join('\n'),
+                'Số video trên 100k view': v100k.length,
+                'Link video >100k': v100k.map(v => v.link).filter(Boolean).join('\n'),
+                'Số video trên 1 triệu view': v1m.length,
+                'Link video >1tr': v1m.map(v => v.link).filter(Boolean).join('\n'),
+                'Số video trên 5 triệu view': v5m.length,
+                'Link video >5tr': v5m.map(v => v.link).filter(Boolean).join('\n'),
+                'Chi phí hỗ trợ video': chiPhiHoTro,
+                'Bonus': bonus,
+                'Tổng cộng': chiPhiHoTro + bonus,
+            };
+        }).filter(r => r['Số video trong tháng'] > 0);
+
+        const ws = XLSX.utils.json_to_sheet(rows);
+
+        // Column widths
+        ws['!cols'] = [
+            { wch: 5 }, { wch: 20 }, { wch: 18 }, { wch: 20 }, { wch: 12 },
+            { wch: 18 }, { wch: 20 }, { wch: 50 }, { wch: 22 }, { wch: 50 },
+            { wch: 24 }, { wch: 50 }, { wch: 24 }, { wch: 50 },
+            { wch: 22 }, { wch: 22 }, { wch: 22 },
+        ];
+
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, `Tháng ${mon}-${year}`);
+        XLSX.writeFile(wb, `baocao_thang${mon}_${year}.xlsx`);
+    };
+
     const handleSort = (key: string) => {
         let direction: 'asc' | 'desc' = 'desc';
         if (sortConfig.key === key && sortConfig.direction === 'desc') direction = 'asc';
@@ -179,6 +241,16 @@ export function ThongKeTab() {
                 </div>
 
                 <div className="flex items-center gap-1.5 shrink-0">
+                    {isAdmin && selectedMonth && (
+                        <button
+                            onClick={handleExportExcel}
+                            disabled={dataLoading}
+                            className="flex items-center gap-1 rounded-lg border border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-900/20 h-[34px] px-3 text-[12px] font-semibold text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/40 disabled:opacity-50 disabled:cursor-not-allowed transition-all whitespace-nowrap"
+                        >
+                            <FileSpreadsheet className="h-3.5 w-3.5" />
+                            Xuất Excel
+                        </button>
+                    )}
                     {!isAdmin && hasChannel === false && (
                         <a
                             href={`/api/tiktok/login?userId=${user?.id}`}
