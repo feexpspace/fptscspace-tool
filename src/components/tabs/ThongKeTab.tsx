@@ -121,7 +121,8 @@ export function ThongKeTab() {
 
     const handleExportExcel = async () => {
         if (!selectedMonth) return;
-        const XLSX = (await import('xlsx')).default;
+        const xlsxModule = await import('xlsx');
+        const XLSX = xlsxModule.default ?? xlsxModule;
 
         const [year, mon] = selectedMonth.split('-').map(Number);
         const videosInMonth = allVideos.filter(v =>
