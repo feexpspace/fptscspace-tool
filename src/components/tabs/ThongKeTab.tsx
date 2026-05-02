@@ -129,8 +129,13 @@ export function ThongKeTab() {
             v.createTime.getFullYear() === year && (v.createTime.getMonth() + 1) === mon
         );
 
+        // Filter channels by selected team
+        const scopedStats = selectedTeam
+            ? allStats.filter(s => channelTeamMap[s.channelId] === selectedTeam)
+            : allStats;
+
         // Build per-channel rows
-        const rows = allStats.map((s, idx) => {
+        const rows = scopedStats.map((s, idx) => {
             const chVideos = videosInMonth.filter(v => v.channelId === s.channelId);
             const total = chVideos.length;
 
