@@ -23,6 +23,7 @@ export async function getAllUsersWithChannels(): Promise<{ success: boolean, dat
             status: u.status || 'pending',
             truong: u.truong || '',
             coSo: u.co_so || '',
+            canApprove: !!u.can_approve,
         }));
 
         const channels: Channel[] = (channelsData || []).map(c => ({

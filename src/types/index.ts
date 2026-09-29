@@ -12,6 +12,7 @@ export interface User {
     status: UserStatus;
     truong?: string;
     coSo?: string;
+    canApprove?: boolean;
 }
 
 export interface Team {
@@ -44,6 +45,8 @@ export interface Channel {
     userId: string;
 }
 
+export type AcceptanceStatus = 'approved' | 'rejected';
+
 export interface Video {
     id: string;
     videoId: string;
@@ -66,6 +69,8 @@ export interface Video {
     editorName?: string;
     fileLink?: string;
     projectId?: string;
+    acceptanceStatus?: AcceptanceStatus | null;
+    acceptanceNote?: string;
 }
 
 export interface Token {

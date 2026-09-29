@@ -7,6 +7,7 @@ import { useData } from "@/context/DataContext";
 import { Pagination } from "@/components/Pagination";
 import { CustomSelect } from "@/components/CustomSelect";
 import { updateVideoMeta } from "@/app/actions/videos";
+import { AcceptanceBadge } from "@/components/AcceptanceBadge";
 
 export function CaNhanTab() {
     const { user, isAdmin } = useAuth();
@@ -15,6 +16,7 @@ export function CaNhanTab() {
     const [selectedTeam, setSelectedTeam] = useState("");
     const [selectedMonth, setSelectedMonth] = useState("");
     const [selectedProject, setSelectedProject] = useState("");
+    const [selectedAcceptance, setSelectedAcceptance] = useState("");
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({ key: 'date', direction: 'desc' });
     const [page, setPage] = useState(1);
     const pageSize = 20;
@@ -78,7 +80,11 @@ export function CaNhanTab() {
             videos = videos.filter(v => v.projectId === selectedProject);
         }
 
-        videos.sort((a, b) => {
+        if (selectedAcceptance) {
+            videos = videos.filter(v => (v.acceptanceStatus || 'pending') === selectedAcceptance);
+        }
+
+        videos = [...videos].sort((a, b) => {
             let aValue = 0, bValue = 0;
             if (sortConfig.key === 'date') { aValue = a.createTime.getTime(); bValue = b.createTime.getTime(); }
             else if (sortConfig.key === 'view') { aValue = a.stats?.view || 0; bValue = b.stats?.view || 0; }
@@ -92,7 +98,7 @@ export function CaNhanTab() {
         });
 
         return videos;
-    }, [allVideos, channelTeamMap, selectedChannel, selectedTeam, selectedMonth, selectedProject, isAdmin, sortConfig]);
+    }, [allVideos, channelTeamMap, selectedChannel, selectedTeam, selectedMonth, selectedProject, selectedAcceptance, isAdmin, sortConfig]);
 
     const statsSummary = useMemo(() => {
         let views = 0, likes = 0, comments = 0, shares = 0;
@@ -105,7 +111,7 @@ export function CaNhanTab() {
         return { views, likes, comments, shares };
     }, [filteredVideos]);
 
-    useEffect(() => { setPage(1); }, [selectedChannel, selectedTeam, selectedMonth, selectedProject]);
+    useEffect(() => { setPage(1); }, [selectedChannel, selectedTeam, selectedMonth, selectedProject, selectedAcceptance]);
 
     const totalPages = Math.ceil(filteredVideos.length / pageSize);
     const pagedVideos = filteredVideos.slice((page - 1) * pageSize, page * pageSize);
@@ -213,6 +219,19 @@ export function CaNhanTab() {
                             placeholder="Tất cả dự án"
                         />
                     </div>
+
+                    <div className="shrink-0 min-w-[130px] flex-1 max-w-[180px]">
+                        <CustomSelect
+                            value={selectedAcceptance}
+                            onChange={v => { setSelectedAcceptance(v); setPage(1); }}
+                            options={[
+                                { value: 'approved', label: 'Đã duyệt NT' },
+                                { value: 'rejected', label: 'Không duyệt' },
+                                { value: 'pending', label: 'Chưa duyệt' },
+                            ]}
+                            placeholder="Tất cả nghiệm thu"
+                        />
+                    </div>
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">
@@ -302,7 +321,7 @@ export function CaNhanTab() {
                     <table className="w-full text-[11px] sm:text-[12px]">
                         <thead>
                             <tr className="border-b border-zinc-100 dark:border-zinc-800/80">
-                                {['40px', '80px', isAdmin ? '100px' : null, '1fr', '120px', '56px', '56px', '120px', '80px', '72px', '80px', '72px'].filter(Boolean).map((w, i) => (
+                                {['40px', '80px', isAdmin ? '100px' : null, '1fr', '120px', '56px', '56px', '120px', '100px', '80px', '72px', '80px', '72px'].filter(Boolean).map((w, i) => (
                                     <th key={i} className="px-3 py-4 bg-zinc-50/50 dark:bg-zinc-900/50" style={{ width: w ?? 'auto' }}>
                                         <div className="h-3 rounded bg-zinc-200/70 dark:bg-zinc-700/50 animate-pulse" />
                                     </th>
@@ -312,7 +331,7 @@ export function CaNhanTab() {
                         <tbody>
                             {Array.from({ length: 8 }).map((_, i) => (
                                 <tr key={i} className="border-b border-zinc-50/50 last:border-0 dark:border-zinc-800/30">
-                                    {[40, 70, ...(isAdmin ? [90] : []), 180, 100, 40, 40, 100, 60, 50, 60, 50].map((w, j) => (
+                                    {[40, 70, ...(isAdmin ? [90] : []), 180, 100, 40, 40, 100, 80, 60, 50, 60, 50].map((w, j) => (
                                         <td key={j} className="px-3 py-4">
                                             <div className="h-3.5 rounded bg-zinc-100 dark:bg-zinc-800 animate-pulse" style={{ width: w, opacity: 1 - i * 0.08 }} />
                                         </td>
@@ -342,6 +361,7 @@ export function CaNhanTab() {
                                     <th className="px-3 py-4 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50 min-w-[120px]">
                                         <div className="flex items-center gap-1"><FolderKanban className="h-3 w-3" />Dự án</div>
                                     </th>
+                                    <th className="px-3 py-4 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50 whitespace-nowrap">Nghiệm thu</th>
                                     <th className="px-3 py-4 text-right text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50 cursor-pointer group hover:bg-zinc-100 dark:hover:bg-zinc-800" onClick={() => handleSort('view')}>
                                         <div className="flex items-center justify-end gap-1.5"><SortIcon sortKey="view" /> <Eye className="h-3.5 w-3.5" /></div>
                                     </th>
@@ -458,6 +478,15 @@ export function CaNhanTab() {
                                                 />
                                                 {video.projectId && !activeProjects.find(p => p.id === video.projectId) && projectName && (
                                                     <span className="mt-1 block text-[10px] text-zinc-400 italic">{projectName} (đã kết thúc)</span>
+                                                )}
+                                            </td>
+                                            {/* Nghiệm thu + nhận xét */}
+                                            <td className="px-3 py-4 min-w-[110px] max-w-[220px]">
+                                                <AcceptanceBadge status={video.acceptanceStatus} />
+                                                {video.acceptanceNote && (
+                                                    <p className="mt-1 text-[11px] leading-snug text-zinc-500 dark:text-zinc-400 whitespace-pre-wrap">
+                                                        💬 {video.acceptanceNote}
+                                                    </p>
                                                 )}
                                             </td>
                                             <td className="px-3 py-4 text-right font-bold text-zinc-900 dark:text-white">

@@ -11,6 +11,7 @@ interface AuthContextType {
     isAdmin: boolean;
     isMember: boolean;
     isPending: boolean;
+    canApprove: boolean;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -20,6 +21,7 @@ const AuthContext = createContext<AuthContextType>({
     isAdmin: false,
     isMember: false,
     isPending: false,
+    canApprove: false,
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -41,7 +43,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     prev?.id === data.id &&
                     prev?.role === data.role &&
                     prev?.status === data.status &&
-                    prev?.teamId === (data.team_id || '')
+                    prev?.teamId === (data.team_id || '') &&
+                    prev?.canApprove === !!data.can_approve
                 ) return prev;
                 return {
                     id: data.id,
@@ -50,6 +53,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     role: data.role as UserRole,
                     teamId: data.team_id || '',
                     status: data.status || 'pending',
+                    canApprove: !!data.can_approve,
                 };
             });
         } else {
@@ -90,9 +94,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const isAdmin = role === 'admin';
     const isMember = role === 'member';
     const isPending = user?.status === 'pending';
+    const canApprove = isAdmin && !!user?.canApprove;
 
     return (
-        <AuthContext.Provider value={{ user, loading, role, isAdmin, isMember, isPending }}>
+        <AuthContext.Provider value={{ user, loading, role, isAdmin, isMember, isPending, canApprove }}>
             {children}
         </AuthContext.Provider>
     );

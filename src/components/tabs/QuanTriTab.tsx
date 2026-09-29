@@ -2,12 +2,14 @@
 
 import { useEffect, useState, useRef, useCallback, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
-import { Trash2, X, Pencil, Check, ShieldCheck, Unlink, WifiOff, Plus, ChevronDown, FolderKanban, PlayCircle, StopCircle } from "lucide-react";
+import { Trash2, X, Pencil, Check, ShieldCheck, Unlink, WifiOff, Plus, ChevronDown, FolderKanban, PlayCircle, StopCircle, BadgeCheck } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { getAllUsersWithChannels, approveUser, deleteUserAccount, UserWithChannels, disconnectTikTokToken, disconnectTikTokFull, updateUserSchoolInfo } from "@/app/actions/account";
 import { Team, Project } from "@/types";
 import { getTeamsList } from "@/app/actions/helpers";
 import { assignUserToTeam } from "@/app/actions/team";
+import { setUserCanApprove } from "@/app/actions/acceptance";
+import { supabase } from "@/lib/supabase";
 import { getProjects, createProject, updateProject, deleteProject } from "@/app/actions/project";
 import { CustomSelect } from "@/components/CustomSelect";
 import { cn } from "@/lib/utils";
@@ -427,6 +429,14 @@ export function QuanTriTab() {
         setActionLoading(false);
     };
 
+    const handleToggleCanApprove = async (u: UserWithChannels) => {
+        setActionLoading(true);
+        const { data: { session } } = await supabase.auth.getSession();
+        const result = await setUserCanApprove(session?.access_token || "", u.id, !u.canApprove);
+        if (!result.success) alert(result.error);
+        await refresh(false); setActionLoading(false);
+    };
+
     const handleUpdateSchool = async (userId: string, field: 'truong' | 'coSo', value: string) => {
         const u = users.find(x => x.id === userId);
         if (!u) return;
@@ -623,6 +633,22 @@ export function QuanTriTab() {
                                                 }`}>
                                                     {u.role}
                                                 </span>
+                                                {u.role === 'admin' && (
+                                                    <button
+                                                        disabled={actionLoading}
+                                                        onClick={() => handleToggleCanApprove(u)}
+                                                        title={u.canApprove ? "Thu hồi quyền duyệt nghiệm thu" : "Cấp quyền duyệt nghiệm thu"}
+                                                        className={cn(
+                                                            "ml-1.5 inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-[10px] font-bold transition-all disabled:opacity-50 whitespace-nowrap",
+                                                            u.canApprove
+                                                                ? "bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/40 dark:text-green-400"
+                                                                : "border border-dashed border-zinc-300 text-zinc-400 hover:border-zinc-400 hover:text-zinc-600 dark:border-zinc-600 dark:hover:text-zinc-300"
+                                                        )}
+                                                    >
+                                                        <BadgeCheck className="h-3 w-3" />
+                                                        {u.canApprove ? "Duyệt NT" : "Cấp quyền duyệt NT"}
+                                                    </button>
+                                                )}
                                             </td>
                                             <td className="px-5 py-4 text-right">
                                                 {u.role !== 'admin' && (

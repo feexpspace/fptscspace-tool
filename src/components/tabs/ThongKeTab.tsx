@@ -6,6 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useData } from "@/context/DataContext";
 import { StatCard } from "@/components/StatCard";
 import { CustomSelect } from "@/components/CustomSelect";
+import { ChannelAcceptanceModal } from "@/components/ChannelAcceptanceModal";
 
 export function ThongKeTab() {
     const { user, isAdmin } = useAuth();
@@ -15,6 +16,7 @@ export function ThongKeTab() {
     const [selectedMonth, setSelectedMonth] = useState("");
     const [selectedProject, setSelectedProject] = useState("");
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({ key: 'views', direction: 'desc' });
+    const [reviewChannel, setReviewChannel] = useState<{ id: string; name: string; username: string } | null>(null);
 
     const monthOptions = useMemo(() => {
         const options: { value: string; label: string }[] = [];
@@ -75,19 +77,20 @@ export function ThongKeTab() {
         const totalVideos = videosForPeriod.length;
         const totalFollowers = scopedStats.reduce((s, ch) => s + ch.followerCount, 0);
 
-        const byChannel = new Map<string, { views: number; comments: number; shares: number; videos: number }>();
+        const byChannel = new Map<string, { views: number; comments: number; shares: number; videos: number; approved: number }>();
         videosForPeriod.forEach(v => {
-            const cur = byChannel.get(v.channelId) || { views: 0, comments: 0, shares: 0, videos: 0 };
+            const cur = byChannel.get(v.channelId) || { views: 0, comments: 0, shares: 0, videos: 0, approved: 0 };
             cur.views += v.stats?.view || 0;
             cur.comments += v.stats?.comment || 0;
             cur.shares += v.stats?.share || 0;
             cur.videos += 1;
+            if (v.acceptanceStatus === 'approved') cur.approved += 1;
             byChannel.set(v.channelId, cur);
         });
 
         let breakdown = scopedStats
             .map(s => {
-                const agg = byChannel.get(s.channelId) || { views: 0, comments: 0, shares: 0, videos: 0 };
+                const agg = byChannel.get(s.channelId) || { views: 0, comments: 0, shares: 0, videos: 0, approved: 0 };
                 return {
                     channelId: s.channelId,
                     channelName: s.channelOwnerName,
@@ -97,6 +100,7 @@ export function ThongKeTab() {
                     totalViews: agg.views,
                     totalComments: agg.comments,
                     totalShares: agg.shares,
+                    approvedCount: agg.approved,
                     truong: s.truong,
                     coSo: s.coSo,
                 };
@@ -134,17 +138,23 @@ export function ThongKeTab() {
             ? allStats.filter(s => channelTeamMap[s.channelId] === selectedTeam)
             : allStats;
 
-        // Build per-channel rows
+        const scopedChannelIds = new Set(scopedStats.map(s => s.channelId));
+        const unreviewed = videosInMonth.filter(v => scopedChannelIds.has(v.channelId) && !v.acceptanceStatus).length;
+        if (unreviewed > 0 && !confirm(`Còn ${unreviewed} clip chưa duyệt nghiệm thu trong tháng ${mon}/${year}. Các clip này sẽ KHÔNG được tính thưởng. Tiếp tục xuất Excel?`)) return;
+
+        // Build per-channel rows — chỉ tính thưởng KPI & thưởng view cho clip đã duyệt nghiệm thu
         const rows = scopedStats.map((s, idx) => {
             const chVideos = videosInMonth.filter(v => v.channelId === s.channelId);
             const total = chVideos.length;
+            const approved = chVideos.filter(v => v.acceptanceStatus === 'approved');
+            const notApproved = chVideos.filter(v => v.acceptanceStatus !== 'approved');
 
-            const v10k  = chVideos.filter(v => (v.stats?.view || 0) >= 10_000);
-            const v100k = chVideos.filter(v => (v.stats?.view || 0) >= 100_000);
-            const v1m   = chVideos.filter(v => (v.stats?.view || 0) >= 1_000_000);
-            const v5m   = chVideos.filter(v => (v.stats?.view || 0) >= 5_000_000);
+            const v10k  = approved.filter(v => (v.stats?.view || 0) >= 10_000);
+            const v100k = approved.filter(v => (v.stats?.view || 0) >= 100_000);
+            const v1m   = approved.filter(v => (v.stats?.view || 0) >= 1_000_000);
+            const v5m   = approved.filter(v => (v.stats?.view || 0) >= 5_000_000);
 
-            const chiPhiHoTro = total * 100_000;
+            const chiPhiHoTro = approved.length * 100_000;
             const bonus =
                 v10k.length  * 100_000 +
                 v100k.length * 500_000 +
@@ -158,6 +168,7 @@ export function ThongKeTab() {
                 'Trường': s.truong || '',
                 'Cơ sở': s.coSo || '',
                 'Số video trong tháng': total,
+                'Số video được duyệt NT': approved.length,
                 'Số video trên 10k view': v10k.length,
                 'Link video >10k': v10k.map(v => v.link).filter(Boolean).join('\n'),
                 'Số video trên 100k view': v100k.length,
@@ -167,6 +178,9 @@ export function ThongKeTab() {
                 'Số video trên 5 triệu view': v5m.length,
                 'Link video >5tr': v5m.map(v => v.link).filter(Boolean).join('\n'),
                 'Danh sách clip trong tháng': chVideos.map(v => v.link).filter(Boolean).join('\n'),
+                'Clip không được tính thưởng': notApproved
+                    .map(v => `${v.link || ''} (${v.acceptanceStatus === 'rejected' ? 'Không duyệt' : 'Chưa duyệt'}${v.acceptanceNote ? `: ${v.acceptanceNote}` : ''})`)
+                    .join('\n'),
                 'Chi phí hỗ trợ video': chiPhiHoTro,
                 'Bonus': bonus,
                 'Tổng cộng': chiPhiHoTro + bonus,
@@ -178,9 +192,9 @@ export function ThongKeTab() {
         // Column widths
         ws['!cols'] = [
             { wch: 5 }, { wch: 20 }, { wch: 18 }, { wch: 20 }, { wch: 12 },
-            { wch: 18 }, { wch: 20 }, { wch: 50 }, { wch: 22 }, { wch: 50 },
+            { wch: 18 }, { wch: 20 }, { wch: 20 }, { wch: 50 }, { wch: 22 }, { wch: 50 },
             { wch: 24 }, { wch: 50 }, { wch: 24 }, { wch: 50 },
-            { wch: 60 },
+            { wch: 60 }, { wch: 60 },
             { wch: 22 }, { wch: 22 }, { wch: 22 },
         ];
 
@@ -204,6 +218,16 @@ export function ThongKeTab() {
 
     return (
         <div className="space-y-6">
+            {reviewChannel && (
+                <ChannelAcceptanceModal
+                    channelId={reviewChannel.id}
+                    channelName={reviewChannel.name}
+                    channelUsername={reviewChannel.username}
+                    month={selectedMonth}
+                    onClose={() => setReviewChannel(null)}
+                />
+            )}
+
             {/* Header section */}
             <div className="flex items-center gap-2 w-full">
                 <div className="flex items-center gap-2 flex-1 overflow-x-auto scrollbar-none">
@@ -355,11 +379,17 @@ export function ThongKeTab() {
                                         <th className="px-6 py-5 text-right text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50 cursor-pointer group hover:bg-zinc-100 dark:hover:bg-zinc-800" onClick={() => handleSort('shares')}>
                                             <div className="flex items-center justify-end gap-1.5"><SortIcon sortKey="shares" /> Chia sẻ</div>
                                         </th>
+                                        <th className="px-6 py-5 text-right text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-900/50 whitespace-nowrap">Nghiệm thu</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {stats.channelBreakdown.map((ch) => (
-                                        <tr key={ch.channelId} className="border-b border-zinc-50/50 last:border-0 dark:border-zinc-800/30 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 transition-colors">
+                                        <tr
+                                            key={ch.channelId}
+                                            onClick={() => setReviewChannel({ id: ch.channelId, name: ch.channelName, username: ch.channelUsername })}
+                                            title="Xem video & duyệt nghiệm thu"
+                                            className="border-b border-zinc-50/50 last:border-0 dark:border-zinc-800/30 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 transition-colors cursor-pointer"
+                                        >
                                             <td className="px-6 py-5">
                                                 <div>
                                                     <span className="font-medium text-zinc-900 dark:text-white">{ch.channelName}</span>
@@ -391,6 +421,19 @@ export function ThongKeTab() {
                                             <td className="px-4 py-3 text-right text-zinc-700 dark:text-zinc-300">{ch.totalViews.toLocaleString("vi-VN")}</td>
                                             <td className="px-4 py-3 text-right text-zinc-700 dark:text-zinc-300">{ch.totalComments.toLocaleString("vi-VN")}</td>
                                             <td className="px-4 py-3 text-right text-zinc-700 dark:text-zinc-300">{ch.totalShares.toLocaleString("vi-VN")}</td>
+                                            <td className="px-6 py-3 text-right whitespace-nowrap">
+                                                {ch.videoCount > 0 ? (
+                                                    <span className={`inline-flex rounded-lg px-2 py-0.5 text-[10px] font-bold ${
+                                                        ch.approvedCount === ch.videoCount
+                                                            ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400"
+                                                            : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
+                                                    }`}>
+                                                        {ch.approvedCount}/{ch.videoCount}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-zinc-300 dark:text-zinc-600">—</span>
+                                                )}
+                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>

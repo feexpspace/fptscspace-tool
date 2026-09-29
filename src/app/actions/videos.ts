@@ -93,6 +93,8 @@ export async function getAllVideos(userId: string, role: string): Promise<AllVid
             editorName: row.editor_name,
             fileLink: row.file_link || undefined,
             projectId: row.project_id || undefined,
+            acceptanceStatus: row.acceptance_status || null,
+            acceptanceNote: row.acceptance_note || undefined,
         }));
 
         return { videos, channelTeamMap };
@@ -185,6 +187,8 @@ export async function getVideoList(
             editorName: row.editor_name,
             fileLink: row.file_link || undefined,
             projectId: row.project_id || undefined,
+            acceptanceStatus: row.acceptance_status || null,
+            acceptanceNote: row.acceptance_note || undefined,
         }));
 
         return { videos, total: count || 0, page, pageSize };
